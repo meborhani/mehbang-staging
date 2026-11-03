@@ -1515,6 +1515,14 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
   .kxl3 .kb-dc b{display:inline-block;min-width:1.5em;border-radius:99px;background:#4a1f55;color:#fff6dc;padding:0 .3em;margin-inline-start:.3em}
   .kxl3 .kb-dc.sel{outline:calc(4*var(--u)) solid #f5b800}.kxl3 .kb-dc:disabled{opacity:.45}
 }
+
+.kx-ib.kx-cb{background-image:var(--kx-ib)}.kx-ib.kx-cb i{display:block;font-style:normal;font-size:calc(46*var(--u));line-height:1}
+.kx-bub{position:absolute;left:50%;bottom:calc(100% - 6*var(--u));transform:translateX(-50%);width:max-content;max-width:90%;background:#fff;color:#4a2a10;border:calc(3*var(--u)) solid #7b4a22;border-radius:calc(16*var(--u));padding:calc(5*var(--u)) calc(12*var(--u));font-size:calc(22*var(--u));font-weight:800;line-height:1.35;text-align:center;z-index:30;box-shadow:0 calc(4*var(--u)) calc(8*var(--u)) #0007;pointer-events:none;animation:jzbub .25s ease-out}
+.kx-me .kx-bub{bottom:calc(100% + 2*var(--u))}
+.kx-chp{position:absolute;inset:6% 4%;z-index:60;background:#fff6dcf2;border:calc(4*var(--u)) solid #b98a2e;border-radius:calc(22*var(--u));padding:calc(12*var(--u));display:flex;flex-direction:column;gap:calc(8*var(--u));overflow:hidden}
+.kx-chp h4{margin:0;text-align:center;color:#4a1f55;font-size:calc(30*var(--u))}
+.kx-chp>div{flex:1;min-height:0;overflow:auto;display:flex;flex-wrap:wrap;gap:calc(6*var(--u));align-content:flex-start}
+.kx-chp .btn{font-size:max(11px,calc(24*var(--u)));padding:.3em .7em;background:linear-gradient(#fff6dc,#ecd49a)!important;color:#4a1f55!important;border:calc(3*var(--u)) solid #b98a2e!important;border-radius:calc(14*var(--u));font-weight:800;box-shadow:none;width:auto}
 @media (orientation:portrait){.jz2c:not(#mini *){}}
 </style>
 </head>
@@ -7031,9 +7039,13 @@ function kbLegal(seat){
   return out;
 }
 function kbRefill(l,i){var x=M.x;x.rows[l][i]=x.deck[l].length?x.deck[l].pop():-1;}
+var KB_CH=['این کارت رو از دست بدی، حسرتش می‌مونه!','گوهرهای بانک داره تموم می‌شه، عجله کن 😏','من که پیشاپیش شاهزاده رو برداشتم!','نوبتت رو زود بازی کن، خوابم برد 😴','با این تخفیف‌هات که نمی‌رسی!','کارت رزرو کردی؟ ترسیدی؟ 😂','امتیازت کجا بود؟ 🤔','این دور رو من می‌برم، ببین!','گوهر طلا رو بده من، تو که بلد نیستی!','تو فقط کارت‌های ارزون می‌خری 😅','شاهزاده مال منه، دست نزن!','آفرین، حرکت خوبی بود 👏','بازی رو جدی بگیر، رقیب قدرتمندی داری!','اگه ببازی، شام با تو! 🍽️','کی گفته گوهر سیاه بی‌ارزشه؟','همین الان تخفیف سبز رو کامل می‌کنم!','قشنگ بود، ولی من جلوترم 😎','کهربا مال کسیه که صبر کنه!','این بازی رو از همین حالا بردم 🏆','یه حرکت خفن در راهه، منتظر باش!','نگران نباش، باخت هم درس خوبیه 😉','بازی عالی! ادامه بده 👌','حواست به پشته‌های سطح ۳ باشه!','تو بخر، من برنده می‌شم 😄'];
 function kbAct(seat,kind,m){var ok=kbAct0(seat,kind,m);return ok;}
+function kbSay(seat,i){var x=M.x;x.cn=(x.cn|0)+1;x.ch={s:seat,i:i,n:x.cn};}
 function kbAct0(seat,kind,m){
-  var x=M.x;if(kind!=='kb'||!m||typeof m!=='object'||M.over||M.wait||seat!==M.turn)return false;
+  var x=M.x;
+  if(kind==='kb'&&m&&typeof m==='object'&&m.a==='ct'&&!M.over&&!M.wait){var ci=m.i;if(ci%1!==0||ci<0||ci>=KB_CH.length)return false;var nw=Date.now();x.cl=x.cl||{};if(x.cl[seat]&&nw-x.cl[seat]<1500)return false;x.cl[seat]=nw;kbSay(seat,ci);mgAfter();return true;}
+  if(kind!=='kb'||!m||typeof m!=='object'||M.over||M.wait||seat!==M.turn)return false;
   var p=x.pl[seat],a=m.a,i,ok=false,nm=M.names[seat];
   if(x.ph==='disc'){
     if(a!=='dc')return false;var c=m.c|0;if(!(c>=0&&c<6)||p.t[c]<1)return false;
@@ -7159,6 +7171,7 @@ function kbSchedule(){
   M.t=setTimeout(function(){
     if(M!==cur||cur.over||cur.rn!==rn)return;
     var s=cur.turn;if(!cur.ai[s])return;
+    if(Math.random()<.14)kbSay(s,Math.floor(Math.random()*KB_CH.length));
     var a=kbAi(s);if(a)kbAct(s,'kb',a);
   },window.__FAST?15:(M.x.ph==='act'?1000:600));
 }
@@ -7235,7 +7248,7 @@ function kbView(seat){
   var x=M.x;
   return {bank:x.bank,rows:x.rows,dk:x.deck.map(function(d){return d.length;}),nob:x.nob,
     pl:x.pl.map(function(p,i){return {t:p.t,c:p.c,r:p.r.map(function(q){return (i===seat||q.v)?q.id:-1;}),nb:p.nb};}),
-    ph:x.ph,ea:x.endAt?1:0,fi:x.first,lg:x.lg,nc:x.nc,tn:x.tn|0,rem:(x.dl>0?Math.max(0,Math.min(61000,x.dl-Date.now())):0),sb:x.pl.map(function(q,i){return !!(M.sub&&M.sub[i]);}),dcs:x.pl.map(function(q,i){return kbDisc(i);})};
+    ph:x.ph,ea:x.endAt?1:0,fi:x.first,lg:x.lg,nc:x.nc,tn:x.tn|0,ch:x.ch||null,rem:(x.dl>0?Math.max(0,Math.min(61000,x.dl-Date.now())):0),sb:x.pl.map(function(q,i){return !!(M.sub&&M.sub[i]);}),dcs:x.pl.map(function(q,i){return kbDisc(i);})};
 }
 function kbRes(p,seat){return p.r.map(function(q){return typeof q==='object'?((seat===M.me||q.v)?q.id:-1):q;});}
 function kbDk(l){var x=M.x;return x.deck?x.deck[l].length:x.dk[l];}
@@ -7280,6 +7293,9 @@ function kbHtml(){
   var x=M.x,me=M.me,n=M.n,i,l,my=M.turn===me&&!M.over,act=my&&x.ph==='act',P=x.pl[me],bon=kbBonus(P);
   if(!my){M.ksel=[];M.kcs=null;}
   if(!M.ksel)M.ksel=[];
+  if(x.ch&&x.ch.n!==M.kcn){M.kcn=x.ch.n;M.kch={s:x.ch.s,i:x.ch.i,until:Date.now()+4200};setTimeout(function(){if(M&&M.g&&M.g.type==='kahroba')mgRender();},4400);}
+  var kcb=M.kch&&M.kch.until>Date.now()?M.kch:null;
+  function kbub(k){return kcb&&kcb.s===k&&KB_CH[kcb.i]?'<div class="kx-bub">'+KB_CH[kcb.i]+'</div>':'';}
   var sc=null;
   if(M.kcs){var q=M.kcs.split(':');sc={s:q[0],l:+q[1],i:+q[2]};}
   function idAt(s){return s.s==='row'?x.rows[s.l][s.i]:(s.s==='res'?kbRes(P,me)[s.i]:-1);}
@@ -7315,7 +7331,7 @@ function kbHtml(){
     var q2=x.pl[i],qb=kbBonus(q2),bh='';
     KX_ORD.forEach(function(c){bh+=kbCC(c,qb[c],1);});
     var th='';BO.forEach(function(c){th+=kbCC(c,q2.t[c]);});
-    opH+='<div class="kx-o'+(M.turn===i&&!M.over?' on':'')+'"><span class="kx-av">'+avHtml(kbAvx(i),M.names[i],M.ai[i],0)+'</span><b class="kx-on">'+kbNm(i)+'</b><span class="kx-w"><img alt="" src="'+KXA.wr+'"><i>'+fa(kbPts(q2))+'</i></span><span class="kx-tk" title="گوهرها">'+th+'</span><span class="kx-bon" title="تخفیف دائمی">'+bh+'</span></div>';
+    opH+='<div class="kx-o'+(M.turn===i&&!M.over?' on':'')+'"><span class="kx-av">'+avHtml(kbAvx(i),M.names[i],M.ai[i],0)+'</span><b class="kx-on">'+kbNm(i)+'</b><span class="kx-w"><img alt="" src="'+KXA.wr+'"><i>'+fa(kbPts(q2))+'</i></span><span class="kx-tk" title="گوهرها">'+th+'</span><span class="kx-bon" title="تخفیف دائمی">'+bh+'</span>'+kbub(i)+'</div>';
   }
   var tkH='';
   BO.forEach(function(c){
@@ -7340,14 +7356,14 @@ function kbHtml(){
   else mainLbl='پایان نوبت';
   var bestP=0;x.pl.forEach(function(q){bestP=Math.max(bestP,kbPts(q));});var sub=x.endAt||x.ea?'دور آخر · برترین '+fa(bestP):'برترین امتیاز: '+fa(bestP)+' از ۱۵';
   var kxv='';['bg','bgp','bgd','fr-o','fr-me'].forEach(function(k){if(KXA[k])kxv+='--kx-'+k+':url('+KXA[k]+');';});
-  return '<div class="pkw kbw"'+(kxv?' style="'+kxv+'"':'')+'><div class="kx-st kxn'+(n-1)+' kxl'+kbLay()+'">'+
+  return '<div class="pkw kbw"'+(kxv?' style="'+kxv+'"':'')+'><div class="kx-st kxn'+(n-1)+' kxl'+kbLay()+'">'+(M.kcp?'<div class="kx-chp"><h4>گفتگو و کری 😎</h4><div>'+KB_CH.map(function(t,k){return '<button class="btn sm" data-kb="say" data-i="'+k+'">'+t+'</button>';}).join('')+'</div><button class="btn sm" data-kb="chat">بستن</button></div>':'')+
     '<div class="kx-hd"><div class="kx-tm" id="kbTm"></div><button class="kx-hb g" data-kb="gear" aria-label="تنظیمات"></button><button class="kx-hb m" data-mg="back" aria-label="بازگشت"></button><div class="kx-turn"><span class="kx-dot'+(my?' on':'')+'"></span><b id="mgSt">'+kbStatus()+'</b><small>'+sub+'</small></div></div>'+
     '<div class="kx-M"><div class="kx-nbs" style="--nn:'+x.nob.length+'">'+nobH+'</div>'+
     '<section class="kx-bd">'+dkS+rowsH+'</section><div class="kx-bank">'+bankH+'</div></div>'+
     '<div class="kx-S"><div class="kx-os" data-n="'+(n-1)+'">'+opH+'</div>'+
-    '<div class="kx-me'+(my?' on':'')+'"><div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز</small>'+(kbSbA()[me]?'<em class="kx-tg">رایانه</em>':'')+'</div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
+    '<div class="kx-me'+(my?' on':'')+'">'+kbub(me)+'<div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز</small>'+(kbSbA()[me]?'<em class="kx-tg">رایانه</em>':'')+'</div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
     kbDcm(x,P,my)+
-    '<div class="kx-act"><button class="kx-ib" data-kb="help" aria-label="راهنما"><i>i</i></button><button class="kx-ib rs'+(canRes?' on':'')+'" data-kb="res"'+(canRes?'':' disabled')+' aria-label="رزرو"><u></u></button><button class="kx-go'+(mainOn?' on':(my&&!M.over?' idle':''))+'" '+mainAct+(mainOn?'':' disabled')+'><span>'+mainLbl+'</span></button></div>'+
+    '<div class="kx-act"><button class="kx-ib" data-kb="help" aria-label="راهنما"><i>i</i></button><button class="kx-ib kx-cb" data-kb="chat" aria-label="گفتگو"><i>💬</i></button><button class="kx-ib rs'+(canRes?' on':'')+'" data-kb="res"'+(canRes?'':' disabled')+' aria-label="رزرو"><u></u></button><button class="kx-go'+(mainOn?' on':(my&&!M.over?' idle':''))+'" '+mainAct+(mainOn?'':' disabled')+'><span>'+mainLbl+'</span></button></div>'+
     '</div>'+
     '<img class="kx-cl" alt="" src="'+KXA.cl+'"><img class="kx-cr" alt="" src="'+KXA.cr+'">'+
     kbRm(P,me,my,bon,rsv)+
@@ -7389,6 +7405,8 @@ function kbClick(t){
   var el,x=M.x,me=M.me,my=M.turn===me&&!M.over,act=my&&x.ph==='act';
   if((el=t.closest('[data-kb]'))){
     var k=el.dataset.kb,sc=null;
+    if(k==='chat'){M.kcp=!M.kcp;mgRender();return true;}
+    if(k==='say'){M.kcp=false;mgDo('kb',{a:'ct',i:+el.dataset.i});mgRender();return true;}
     if(M.kcs){var q=M.kcs.split(':');sc={s:q[0],l:+q[1],i:+q[2]};}
     if(k==='gear'){openGlobalSettings();return true;}
     if(k==='help'){kbRules();return true;}
