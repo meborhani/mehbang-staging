@@ -1492,6 +1492,28 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
   .kxl2 .kx-hb.m,.kxl3 .kx-hb.m{left:0;top:44px}
   .kxl2 .kx-tm,.kxl3 .kx-tm{left:0;top:88px}
 }
+
+.kx-dkr{display:none}
+@media (orientation:portrait){
+  .kxl2 .kx-rw,.kxl3 .kx-rw{grid-template-columns:repeat(4,168fr) 70fr}
+  .kxl2 .kx-nbs,.kxl3 .kx-nbs{height:calc(190*var(--u));gap:calc(6*var(--u))}
+  .kxl2 .kx-hd,.kxl3 .kx-hd{height:calc(92*var(--u))}
+  .kxl2 .kx-tm,.kxl3 .kx-tm{top:calc(6*var(--u));height:calc(80*var(--u));width:calc(80*var(--u));font-size:calc(26*var(--u))}
+  .kxl2 .kb-nb img,.kxl3 .kb-nb img{max-width:calc(900*var(--u)/var(--nn))}
+  .kxl3 .kx-bd{padding:0 calc(4*var(--u))}
+  .kxl3 .kx-nbs{height:calc(122*var(--u))}
+  .kxl3 .kx-rw{width:94%;margin-inline:auto}
+  .kxl3 .kx-os{zoom:.8}
+  .kxl2 .kx-os{zoom:.9}
+  .kxl3 .kx-bd{gap:calc(4*var(--u))}
+  .kxl3 .kb-dc{font-size:calc(22*var(--u));padding:calc(2*var(--u)) 0}
+  .kxl3 .kx-rw{grid-template-columns:repeat(4,1fr)}
+  .kxl3 .kx-rw .kb-dk{display:none}
+  .kxl3 .kx-dkr{display:flex;justify-content:space-around;gap:calc(8*var(--u));padding:0 calc(6*var(--u))}
+  .kxl3 .kb-dc{flex:1;background:linear-gradient(#fff6dc,#ecd49a);border:calc(3*var(--u)) solid #b98a2e;border-radius:calc(16*var(--u));color:#4a1f55;font-weight:900;font-size:calc(26*var(--u));padding:calc(5*var(--u)) 0;font-family:inherit}
+  .kxl3 .kb-dc b{display:inline-block;min-width:1.5em;border-radius:99px;background:#4a1f55;color:#fff6dc;padding:0 .3em;margin-inline-start:.3em}
+  .kxl3 .kb-dc.sel{outline:calc(4*var(--u)) solid #f5b800}.kxl3 .kb-dc:disabled{opacity:.45}
+}
 @media (orientation:portrait){.jz2c:not(#mini *){}}
 </style>
 </head>
@@ -3425,7 +3447,7 @@ function haveStr(){var m=me();return (m&&fmtRes(m.res))||'هیچ';}
 function openGlobalSettings(){
   var sh=openSheet('<h3>تنظیمات</h3><div class="sub">صدا و لرزش برای همهٔ بازی‌ها یکی است.</div><div class="three"><button class="btn" data-tg="mus"></button><button class="btn" data-tg="snd"></button><button class="btn" data-tg="vib"></button></div><button class="btn wide" data-close>بستن</button>');
   var cb=sh.querySelector('[data-close]');
-  if(cb&&M&&M.g&&M.g.type==='kahroba'){var kcur=kbLay();cb.insertAdjacentHTML('beforebegin','<div class="kxl"><div class="sub stg-lbl">چیدمان کهربا</div><div class="three">'+[1,2,3].map(function(q){return '<button class="btn'+(kcur===q?' primary':'')+'" data-kxl="'+q+'">چیدمان '+fa(q)+'</button>';}).join('')+'</div><p class="sub small">۱: شاهزاده‌ها بالا · ۲: شاهزاده‌ها کنار کارت‌ها · ۳: شاهزاده‌ها و بانک کنار کارت‌ها. روی صفحهٔ افقی اثر دارد.</p></div>');}
+  if(cb&&M&&M.g&&M.g.type==='kahroba'){var kcur=kbLay();cb.insertAdjacentHTML('beforebegin','<div class="kxl"><div class="sub stg-lbl">چیدمان کهربا</div><div class="three">'+[1,2,3].map(function(q){return '<button class="btn'+(kcur===q?' primary':'')+'" data-kxl="'+q+'">چیدمان '+fa(q)+'</button>';}).join('')+'</div><p class="sub small">۱: شاهزاده‌ها بالا · ۲: شاهزاده‌ها کنار کارت‌ها · ۳: شاهزاده‌ها و بانک کنار کارت‌ها. در حالت عمودی هم کارت‌ها و شاهزاده‌ها را بزرگ‌تر می‌کنند.</p></div>');}
   if(cb&&!isStandalone())cb.insertAdjacentHTML('beforebegin','<div class="inst"><div class="sub stg-lbl">نصب برنامه</div>'+(DEFI?'<button class="btn wide" data-install>نصب روی صفحهٔ اصلی</button>':'<p class="sub small">در Chrome اندروید: منو ⋮ ← «نصب برنامه». در iPhone: دکمهٔ اشتراک ← «Add to Home Screen».</p>')+'</div>');
   paintFeel();
   sh.addEventListener('click',function(e){
@@ -7264,7 +7286,7 @@ function kbHtml(){
   var canBuy=act&&sc&&sc.s!=='deck'&&cid>=0&&!!kbPay(P,KBC[cid],bon);
   var canRes=act&&sc&&sc.s!=='res'&&P.r.length<3&&(sc.s==='deck'?kbDk(sc.l)>0:cid>=0);
   var takeOk=act&&M.ksel.length&&kbTakeOk(x.bank,M.ksel);
-  var rowsH='';
+  var rowsH='',dkS='';
   for(l=2;l>=0;l--){
     var rh='<div class="kx-rw">';
     for(i=0;i<4;i++){
@@ -7273,7 +7295,9 @@ function kbHtml(){
     }
     rh+='<button class="kb-dk'+(sc&&sc.s==='deck'&&sc.l===l?' sel':'')+'" data-kc="deck:'+l+':0"'+(kbDk(l)?'':' disabled')+'><img alt="" draggable="false" src="'+KXA['dk'+(l+1)]+'"><b>'+fa(kbDk(l))+'</b></button>';
     rowsH+=rh+'</div>';
+    dkS+='<button class="kb-dc'+(sc&&sc.s==='deck'&&sc.l===l?' sel':'')+'" data-kc="deck:'+l+':0"'+(kbDk(l)?'':' disabled')+'>سطح '+fa(l+1)+' <b>'+fa(kbDk(l))+'</b></button>';
   }
+  dkS='<div class="kx-dkr">'+dkS+'</div>';
   var nobH='';
   x.nob.forEach(function(id){
     var pick=my&&x.ph==='noble'&&x.nc.indexOf(id)>=0;
@@ -7318,7 +7342,7 @@ function kbHtml(){
   return '<div class="pkw kbw"'+(kxv?' style="'+kxv+'"':'')+'><div class="kx-st kxn'+(n-1)+' kxl'+kbLay()+'">'+
     '<div class="kx-hd"><div class="kx-tm" id="kbTm"></div><button class="kx-hb g" data-kb="gear" aria-label="تنظیمات"></button><button class="kx-hb m" data-mg="back" aria-label="بازگشت"></button><div class="kx-turn"><span class="kx-dot'+(my?' on':'')+'"></span><b id="mgSt">'+kbStatus()+'</b><small>'+sub+'</small></div></div>'+
     '<div class="kx-M"><div class="kx-nbs" style="--nn:'+x.nob.length+'">'+nobH+'</div>'+
-    '<section class="kx-bd">'+rowsH+'</section><div class="kx-bank">'+bankH+'</div></div>'+
+    '<section class="kx-bd">'+dkS+rowsH+'</section><div class="kx-bank">'+bankH+'</div></div>'+
     '<div class="kx-S"><div class="kx-os" data-n="'+(n-1)+'">'+opH+'</div>'+
     '<div class="kx-me'+(my?' on':'')+'"><div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز</small>'+(kbSbA()[me]?'<em class="kx-tg">رایانه</em>':'')+'</div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
     kbDcm(x,P,my)+
