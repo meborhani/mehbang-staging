@@ -7713,6 +7713,22 @@ if(recLoad()&&isReload())setTimeout(function(){try{resumeSaved();}finally{docume
 window.__cosmic={resumeSaved:function(){resumeSaved();},showEnd:function(){showEnd();},render:function(k,t0,secs){var c=new OfflineAudioContext(1,44100*secs,44100),cm=compose(k,0);MUS.master=c.createGain();MUS.master.gain.value=.6;var cp=c.createDynamicsCompressor();MUS.master.connect(cp);cp.connect(c.destination);cm.ev.forEach(function(e){if(e[0]>=t0&&e[0]<t0+secs)mPlay(c,e,-t0);});return c.startRendering().then(function(b){var d=b.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var v=Math.abs(d[i]);if(v>pk)pk=v;sq+=d[i]*d[i];}MUS.master=null;return {peak:+pk.toFixed(3),rms:+Math.sqrt(sq/d.length).toFixed(4)};});},compose:function(k,l){var r=compose(k,l||0);return {n:r.ev.length,dur:r.dur};},state:function(){if(S)S.me=MY;return S;},fx:function(k,t){if(t)applyTheme(t,true);playFx(k);},theme:function(t){applyTheme(t,true);}};
 })();
 </script>
+<script>
+/* UI inspector: only active with ?inspect=1 (for layout bug reports) */
+(function(){try{if(!/[?&]inspect=1/.test(location.search))return;
+var on=false,box=document.createElement('div'),pn=document.createElement('div'),bt=document.createElement('button'),last='';
+box.style.cssText='position:fixed;z-index:2147483646;border:2px solid #f00;background:rgba(255,0,0,.15);pointer-events:none;display:none';
+pn.style.cssText='position:fixed;left:6px;right:6px;bottom:6px;z-index:2147483647;background:#111e;color:#fff;font:12px/1.5 monospace;padding:8px;border-radius:8px;direction:ltr;max-height:38vh;overflow:auto;display:none;white-space:pre-wrap';
+bt.textContent='🎯';bt.style.cssText='position:fixed;left:6px;top:50%;z-index:2147483647;width:44px;height:44px;border-radius:50%;border:2px solid #f00;background:#fff;font-size:22px';
+function nm(e){var s=e.tagName.toLowerCase();if(e.id)s+='#'+e.id;if(e.className&&typeof e.className==='string')s+='.'+e.className.trim().split(/\s+/).join('.');return s}
+function info(e){var r=e.getBoundingClientRect(),c=getComputedStyle(e),ch=[],p=e;for(var i=0;i<4&&p&&p!==document.body;i++){ch.push(nm(p));p=p.parentElement}
+return 'عنصر: '+ch.join(' < ')+'\nمختصات: x='+Math.round(r.left)+' y='+Math.round(r.top)+' w='+Math.round(r.width)+' h='+Math.round(r.height)+'\nصفحه: '+innerWidth+'x'+innerHeight+' dpr='+devicePixelRatio+' '+(innerWidth>innerHeight?'افقی':'عمودی')+'\nاستایل: display='+c.display+' position='+c.position+' z='+c.zIndex+' overflow='+c.overflow+' font='+c.fontSize}
+function pick(ev){if(!on)return;var t=ev.target;if(t===bt||pn.contains(t))return;ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation&&ev.stopImmediatePropagation();if(ev.type!=='click')return;
+var r=t.getBoundingClientRect();box.style.display='block';box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.width=r.width+'px';box.style.height=r.height+'px';last=info(t);pn.style.display='block';pn.textContent=last;var cb=document.createElement('button');cb.textContent='کپی';cb.style.cssText='display:block;margin-top:6px;padding:4px 14px';cb.onclick=function(e){e.stopPropagation();try{navigator.clipboard.writeText(last);cb.textContent='کپی شد'}catch(x){cb.textContent='کپی نشد؛ متن را دستی بنویس'}};pn.appendChild(cb)}
+['click','pointerdown','mousedown','touchstart','touchend'].forEach(function(n){document.addEventListener(n,pick,true)});
+bt.onclick=function(e){e.stopPropagation();on=!on;bt.style.background=on?'#f66':'#fff';if(!on){box.style.display='none';pn.style.display='none'}};
+document.addEventListener('DOMContentLoaded',function(){document.body.append(box,pn,bt)});if(document.body)document.body.append(box,pn,bt)}catch(e){}})();
+</script>
 
 </body>
 </html>
