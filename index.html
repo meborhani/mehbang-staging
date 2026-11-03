@@ -1027,6 +1027,14 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .kx-g{display:inline-flex;align-items:center;gap:calc(3*var(--u));flex:0 0 auto}
 .kx-g img{height:calc(30*var(--u));width:auto;display:block}
 .kx-g b{font-size:calc(26*var(--u));font-weight:900;color:#2b1238;line-height:1}
+.kb-dcm{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;box-sizing:border-box;width:min(94vw,520px);padding:10px 10px 12px;border:3px solid #c9a24d;border-radius:20px;background:linear-gradient(#fdf4dc,#f1deb0);box-shadow:0 6px 22px #000a;display:flex;flex-direction:column;align-items:center;gap:8px;direction:rtl}
+.kb-dct{font:800 14px/1.4 inherit;color:#4a1f55;text-align:center}
+.kb-dcr{display:flex;gap:8px;direction:ltr;justify-content:center;width:100%}
+.kb-md{position:relative;flex:1 1 0;max-width:76px;aspect-ratio:1;min-width:46px;border-radius:50%;border:3px solid #c9a24d;background:radial-gradient(circle at 35% 30%,#fff7df,#e8cf93);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px #0006}
+.kb-md img{width:64%;height:64%;object-fit:contain;display:block}
+.kb-md b{position:absolute;right:-4px;bottom:-4px;min-width:22px;height:22px;border-radius:11px;background:#4a1f55;color:#fff;font:900 13px/22px inherit;text-align:center;border:2px solid #fbe6b0;box-sizing:border-box}
+.kb-md:disabled{opacity:.35;filter:grayscale(.6);cursor:default}
+.kb-md:not(:disabled):active{transform:scale(.92)}
 .kx-hd{position:relative;flex:0 0 auto;width:100%;aspect-ratio:941/160;background:var(--kx-hdimg) center/100% 100%;order:0;border-radius:0 0 calc(16*var(--u)) calc(16*var(--u))}
 .kx-hb{position:absolute;top:13.8%;width:6.6%;height:39%;background:none;border:0;padding:0;border-radius:calc(14*var(--u))}.kx-hb.g{left:2.1%}.kx-hb.m{left:10.1%}
 .kx-turn{position:absolute;left:77%;top:12.5%;width:22%;height:63%;box-sizing:border-box;border-radius:calc(14*var(--u));border:calc(3*var(--u)) solid #c9a24d;background:linear-gradient(#fdf4dc,#f1deb0);box-shadow:0 calc(2*var(--u)) calc(5*var(--u)) #0004;display:flex;flex-direction:column;justify-content:center;gap:calc(2*var(--u));padding:0 calc(44*var(--u)) 0 calc(8*var(--u));direction:rtl;text-align:right}
@@ -6798,6 +6806,12 @@ setInterval(function(){
   var t=Math.max(0,Math.ceil((d-Date.now())/1000));
   e.textContent='⏱ '+fa(t);e.className='kx-tm'+(t<=10?' w':'');
 },400);
+function kbDcm(x,P,my){
+  if(!(my&&x.ph==='disc'&&!M.over))return '';
+  var ex=kbTot(P)-10,h='';
+  for(var c=0;c<6;c++){h+='<button class="kb-md" data-km="'+c+'"'+(P.t[c]>0?'':' disabled')+' aria-label="برگرداندن گوهر"><img alt="" draggable="false" src="'+KXA.gem[c]+'"><b>'+fa(P.t[c])+'</b></button>';}
+  return '<div class="kb-dcm"><div class="kb-dct">'+fa(ex)+' گوهر اضافه داری؛ روی مدال گوهر بزن تا برگردد</div><div class="kb-dcr">'+h+'</div></div>';
+}
 function kbView(seat){
   var x=M.x;
   return {bank:x.bank,rows:x.rows,dk:x.deck.map(function(d){return d.length;}),nob:x.nob,
@@ -6911,6 +6925,7 @@ function kbHtml(){
     '<section class="kx-bd">'+rowsH+'</section><div class="kx-bank">'+bankH+'</div></div>'+
     '<div class="kx-S"><div class="kx-os" data-n="'+(n-1)+'">'+opH+'</div>'+
     '<div class="kx-me'+(my?' on':'')+'"><div class="kx-mav"><span class="kx-mva">'+avHtml(kbAvx(me),M.names[me],M.ai[me],0)+'</span><b>'+kbNm(me)+'</b></div><div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز پیروزی</small></div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
+    kbDcm(x,P,my)+
     '<div class="kx-act"><button class="kx-ib" data-kb="help" aria-label="راهنما"><i>i</i></button><button class="kx-ib rs'+(canRes?' on':'')+'" data-kb="res"'+(canRes?'':' disabled')+' aria-label="رزرو"><u></u></button><button class="kx-go'+(mainOn?' on':(my&&!M.over?' idle':''))+'" '+mainAct+(mainOn?'':' disabled')+'><span>'+mainLbl+'</span></button></div>'+
     '</div>'+
     '<img class="kx-cl" alt="" src="'+KXA.cl+'"><img class="kx-cr" alt="" src="'+KXA.cr+'">'+
@@ -7306,6 +7321,18 @@ function mgHostRestore(){
     setTimeout(function(){if(M!==cur||cur.over||cur.links[seat])return;mgLeaveSeat(seat,null);},60000);})(s);
   toast('اتاق قبلی بازگردانی شد؛ بازیکن‌ها خودکار وصل می‌شوند');
 }
+var MG_HID=0;
+/* phone minimized / tab frozen while hosting: links die in the background, so on return re-host the same room (same code, saved state) and let players reclaim their seats */
+document.addEventListener('visibilitychange',function(){
+  try{
+    if(document.hidden){MG_HID=Date.now();if(M&&M.mode==='host'&&M.code&&!M.over&&!M.wait&&!M.left)mgHostSave();return;}
+    var away=MG_HID?Date.now()-MG_HID:0;MG_HID=0;
+    if(away<(window.__MGAW||12000)||!M||M.mode!=='host'||!M.code||M.over||M.wait||M.left||!lsGet(MGH,null))return;
+    var parked=(PARK&&M===PARK);
+    mgHostSave();M.__keepRec=true;mgClose();mgHostRestore();
+    if(parked&&M)mgPark();
+  }catch(e){}
+});
 function mgAfter(){
   if(!M)return;
   if(M.g.type==='kahroba'&&M.mode==='host'){kbRcl();kbTimer();}
