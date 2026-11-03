@@ -1431,6 +1431,47 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .jz2-tile .jz2-hat{width:calc(58*var(--g));height:calc(58*var(--g))}
 .jz2-pkb{grid-column:1/-1;display:flex;gap:calc(12*var(--g));justify-content:center;align-items:center}
 .jz2-pkb .btn.primary{background:linear-gradient(#37b56d,#1d7f43);color:#fff;border-color:#fff}.jz2-pkb .btn{background:#f5e5c0;color:#4a2a10;border:calc(3*var(--g)) solid #d8b673;font-size:calc(24*var(--g))!important;min-height:calc(48*var(--g))!important;padding:0 calc(26*var(--g))!important;border-radius:calc(20*var(--g))!important;font-weight:800}
+
+/* ===== Kahroba UI 1.0.2: no title/turn box, timer slot, gold spinning turn frame, bigger board ===== */
+.kx-st .kx-turn,.kx-st .kx-pl,.kx-lv,.kx-mav{display:none!important}
+.kx-hd::before{display:none!important}
+.kx-tm{z-index:6;pointer-events:none;color:#4a1f55;font-weight:900;text-align:center;line-height:1;white-space:nowrap;background:var(--kx-sb) center/100% 100% no-repeat;border-radius:calc(18*var(--u));padding:0;display:grid;place-items:center;font-size:calc(26*var(--u));text-shadow:0 1px 0 #fff8;filter:drop-shadow(0 calc(2*var(--u)) calc(3*var(--u)) #0006)}
+.kx-tm:empty{display:none}.kx-tm.w{background:var(--kx-sb) center/100% 100% no-repeat;color:#c0161e;animation:pkpulse .8s ease-in-out infinite}
+@property --kxa{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes kxspin{to{--kxa:360deg}}
+.kx-o.on::after,.kx-me.on::after{content:'';position:absolute;inset:calc(-3*var(--u));border-radius:calc(22*var(--u));padding:calc(4*var(--u));background:conic-gradient(from var(--kxa),#c9a24d 0,#fff1a0 14%,#e0a800 28%,#c9a24d 50%,#fff1a0 64%,#e0a800 78%,#c9a24d 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:kxspin 2.2s linear infinite;pointer-events:none;z-index:3}
+.kx-o.on,.kx-me.on{box-shadow:0 0 calc(12*var(--u)) #f5b80099}
+@media (orientation:portrait){
+  .kx-hd{height:calc(124*var(--u))}
+  .kx-tm{position:absolute;right:calc(8*var(--u));top:calc(12*var(--u));left:auto;transform:none;width:calc(96*var(--u));height:calc(104*var(--u));font-size:calc(30*var(--u))}
+  .kx-rw{grid-template-columns:repeat(4,168fr) 124fr}
+  .kx-me{grid-template-columns:calc(120*var(--u)) minmax(0,1fr) calc(366*var(--u));grid-template-areas:"pt mt rv"}
+}
+@media (orientation:landscape){
+  .kx-st .kx-S .kx-me{grid-template-columns:calc(92*var(--u)) minmax(0,1fr)!important;grid-template-areas:"pt mt" "rv rv"!important;grid-template-rows:auto minmax(0,1fr)!important}
+  .kx-st .kx-S .kx-me .kx-mpt{flex-direction:column;align-self:center;justify-self:center;gap:0}
+  .kx-st .kx-S .kx-me .kx-mpt small{font-size:calc(22*var(--u));line-height:1.1}
+  .kx-st .kx-S .kx-me .kx-w.big{width:calc(80*var(--u))}.kx-st .kx-S .kx-me .kx-w.big i{font-size:calc(40*var(--u))}
+  .kx-st .kx-S .kx-me .kx-mt{container-type:inline-size;justify-content:space-around;padding:calc(6*var(--u)) calc(4*var(--u));gap:calc(2*var(--u))}
+  .kx-st .kx-S .kx-me .kx-mt .kx-tl{font-size:min(calc(26*var(--u)),7.6cqw)!important}
+  .kx-st .kx-S .kx-me .kb-tk,.kx-st .kx-S .kx-me .kx-dcr .kx-g{width:100%}
+  .kx-st .kx-S .kx-me .kx-gi{display:flex;justify-content:center;width:100%}
+  .kx-st .kx-S .kx-me .kx-gi img,.kx-st .kx-S .kx-me .kx-dcr .kx-g img{height:auto!important;width:min(calc(54*var(--u)),13.2cqw)!important}
+  .kx-st .kx-S .kx-me .kb-tk b,.kx-st .kx-S .kx-me .kx-dcr .kx-g b{font-size:min(calc(34*var(--u)),9.4cqw)!important}
+}
+@media (orientation:landscape) and (min-height:461px){
+  .kx-st{grid-template-areas:"M hd" "M S";grid-template-rows:calc(74*var(--u)) minmax(0,1fr);row-gap:calc(8*var(--u))}
+  .kx-hd{height:calc(74*var(--u))!important;background:none!important;border:0!important;box-shadow:none!important;overflow:visible!important}
+  .kx-tm{position:absolute;right:calc(16*var(--u));left:auto;top:50%;transform:translateY(-50%);width:calc(74*var(--u));height:calc(74*var(--u))}
+  .kx-nbs{height:calc(134*var(--u))}
+  .kx-bd{container-type:size}
+  .kx-rw{--ch:min(calc((100cqh - 16*var(--u))/3),calc((100cqw - 30*var(--u))/var(--dv,4.7)*1.431))}
+  .kx-rw .kb-cd,.kx-rw .kb-dk{height:var(--ch)}
+  .kx-rw .kb-cd{width:auto;aspect-ratio:334/478}
+}
+@media (orientation:landscape) and (max-height:460px){
+  .kx-tm{position:absolute;left:92px;top:0;transform:none;width:40px;height:40px;font-size:13px;padding:0}
+}
 @media (orientation:portrait){.jz2c:not(#mini *){}}
 </style>
 </head>
@@ -7201,7 +7242,7 @@ function kbHtml(){
   var takeOk=act&&M.ksel.length&&kbTakeOk(x.bank,M.ksel);
   var rowsH='';
   for(l=2;l>=0;l--){
-    var rh='<div class="kx-rw"><img class="kx-lv" alt="" draggable="false" src="'+KXA['lv'+(l+1)]+'">';
+    var rh='<div class="kx-rw">';
     for(i=0;i<4;i++){
       var id=x.rows[l][i],can=act&&id>=0&&!!kbPay(P,KBC[id],bon);
       rh+=kbCard(id,'data-kc="row:'+l+':'+i+'"',(sc&&sc.s==='row'&&sc.l===l&&sc.i===i?'sel ':'')+(can?'ok':''));
@@ -7252,11 +7293,10 @@ function kbHtml(){
   var kxv='';['bg','bgp','bgd','fr-o','fr-me'].forEach(function(k){if(KXA[k])kxv+='--kx-'+k+':url('+KXA[k]+');';});
   return '<div class="pkw kbw"'+(kxv?' style="'+kxv+'"':'')+'><div class="kx-st kxn'+(n-1)+'">'+
     '<div class="kx-hd"><div class="kx-tm" id="kbTm"></div><button class="kx-hb g" data-kb="gear" aria-label="تنظیمات"></button><button class="kx-hb m" data-mg="back" aria-label="بازگشت"></button><div class="kx-turn"><span class="kx-dot'+(my?' on':'')+'"></span><b id="mgSt">'+kbStatus()+'</b><small>'+sub+'</small></div></div>'+
-    '<div class="kx-pl"><span>بازی '+fa(n)+' نفره</span></div>'+
     '<div class="kx-M"><div class="kx-nbs" style="--nn:'+x.nob.length+'">'+nobH+'</div>'+
     '<section class="kx-bd">'+rowsH+'</section><div class="kx-bank">'+bankH+'</div></div>'+
     '<div class="kx-S"><div class="kx-os" data-n="'+(n-1)+'">'+opH+'</div>'+
-    '<div class="kx-me'+(my?' on':'')+'"><div class="kx-mav"><span class="kx-mva">'+avHtml(kbAvx(me),M.names[me],M.ai[me],0)+'</span><b>'+kbNm(me)+'</b></div><div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز پیروزی</small></div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
+    '<div class="kx-me'+(my?' on':'')+'"><div class="kx-mpt"><span class="kx-w big"><img alt="" src="'+KXA.wrb+'"><i>'+fa(kbPts(P))+'</i></span><small>امتیاز</small>'+(kbSbA()[me]?'<em class="kx-tg">رایانه</em>':'')+'</div><div class="kx-mt"><div class="kx-tl">گوهرهای شما (موجود):</div><div class="kb-tks">'+tkH+'</div><div class="kx-tl kx-dl">تخفیف دائمی:</div><div class="kx-dcr">'+dcH+'</div></div><div class="kx-rsv"><div class="kx-tl">کارت‌های رزرو ('+fa(P.r.length)+' / ۳)</div><div class="kb-rs">'+rsH+'</div></div></div>'+
     kbDcm(x,P,my)+
     '<div class="kx-act"><button class="kx-ib" data-kb="help" aria-label="راهنما"><i>i</i></button><button class="kx-ib rs'+(canRes?' on':'')+'" data-kb="res"'+(canRes?'':' disabled')+' aria-label="رزرو"><u></u></button><button class="kx-go'+(mainOn?' on':(my&&!M.over?' idle':''))+'" '+mainAct+(mainOn?'':' disabled')+'><span>'+mainLbl+'</span></button></div>'+
     '</div>'+
