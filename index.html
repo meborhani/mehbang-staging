@@ -4838,12 +4838,12 @@ setTimeout(sbSync,1500);
 var MGS={
   ttt:{id:'ttt',type:'grid',name:'دوز',sub:'سه نشان در یک ردیف',w:3,h:3,k:3,grav:false,max:2},
   c4:{id:'c4',type:'grid',name:'چهار در ردیف',sub:'چهار مهره را در یک خط بچین',w:7,h:6,k:4,grav:true,max:2},
-  chess:{id:'chess',type:'chess',name:'شطرنج',sub:'نبرد کلاسیک دو نفره',w:8,h:8,max:2},
-  tavla:{id:'tavla',type:'tavla',name:'تخته نرد',sub:'دونفره؛ شرط با سکه تا صفر شدن موجودی؛ فقط افقی',w:0,h:0,max:2,land:true},
-  poker:{id:'poker',type:'poker',name:'پوکر',sub:'تگزاس هولدم با سکه‌های مهبانگ؛ فقط افقی',w:0,h:0,max:9,land:true},
-  jaliz:{id:'jaliz',type:'jaliz',name:'جالیز',sub:'کشاورزی و معامله؛ ۳ تا ۷ نفره؛ فقط افقی',w:0,h:0,max:7,rot:true},
+  chess:{id:'chess',type:'chess',name:'شطرنج',sub:'نبرد کلاسیک',w:8,h:8,max:2},
+  tavla:{id:'tavla',type:'tavla',name:'تخته نرد',sub:'شرط با سکه تا صفر شدن موجودی',w:0,h:0,max:2,land:true},
+  poker:{id:'poker',type:'poker',name:'پوکر',sub:'تگزاس هولدم با سکه‌های مهبانگ',w:0,h:0,max:9,land:true},
+  jaliz:{id:'jaliz',type:'jaliz',name:'جالیز',sub:'کشاورزی و معامله',w:0,h:0,max:7,rot:true},
   kahroba:{id:'kahroba',type:'kahroba',name:'کهربا',sub:'جواهر جمع کن، اشراف جذب کن',w:0,h:0,max:4},
-  manch:{id:'manch',type:'manch',name:'منچ',sub:'۲ تا ۴ نفره؛ تاس بریز و مهره‌ها را به خانه برسان',w:11,h:11,max:4}
+  manch:{id:'manch',type:'manch',name:'منچ',sub:'تاس بریز و مهره‌ها را برسان',w:11,h:11,max:4}
 };
 var MG_SAY=['آفرین!','فکر کن، فکر 😏','بازی خوبی بود','یه دست دیگه؟','عجله نکن'];
 var M=null;
@@ -7065,7 +7065,7 @@ function renderHub(){
   var h='<div class="hb-in hub"><div class="hbtop" style="grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:4px"><div class="hb-coin" data-coin></div><button class="btn sm" data-hg="acct" style="min-height:0;padding:3px 8px;font-size:13px;min-width:0;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+'<span style="display:inline-block;width:18px;height:18px;vertical-align:-4px">'+(myAv()!==-1?avHtml(myAv(),'',false,0):'👤')+'</span> '+(ACCT?ACCT.name:(cleanName(loadName())||'پروفایل / ورود'))+'</button><button class="btn sm" data-hg="hist" aria-label="سوابق بازی‌ها" title="سوابق بازی‌ها" style="min-height:0;padding:3px 8px;font-size:13px">📜</button><span class="tgq"><button class="btn sm" data-tg="mus" data-ic="🎵" aria-label="موسیقی"></button><button class="btn sm" data-tg="snd" data-ic="🔊" aria-label="افکت"></button><button class="btn sm" data-tg="vib" data-ic="📳" aria-label="ویبره"></button></span>'+(mgrjOk()?'<button class="btn sm primary" data-hg="mgrj" style="min-height:0;padding:3px 10px;font-size:13px">↩ بازگشت به بازی قبلی</button>':'')+'</div><h1 class="hb-h">مهبانگ گیم</h1><div class="hb-s">یک بازی انتخاب کن، با هوش مصنوعی یا با دوستت از طریق کد اتاق</div>';
   if(PARK&&M===PARK&&!M.over){h+='<div style="grid-column:1/-1;display:flex;gap:6px"><button class="btn primary big" data-hg="mgpark" style="flex:1;min-width:0">'+(M.wait?'بازگشت به اتاق':'بازگشت به بازی')+' · '+esc2(M.g.name)+(M.code?' ('+fa(M.code)+')':'')+'</button><button class="btn big" data-hg="mgparkx" style="flex:none">بستن</button></div>';}
   if(!(PARK&&M===PARK)&&mgHostOk()){var hr=lsGet(MGH,null);h+='<button class="btn big" data-hg="mghost" style="grid-column:1/-1">↩ بازگشت به اتاق قبلی · '+esc2(MGS[hr.g].name)+' ('+fa(hr.code)+')</button>';}
-  h+='<button class="hb-card" data-hg="catan"><div class="hb-ic">'+mgIcon('catan')+'</div><div><b>سیطره کتان</b><small>بازی استراتژی ۲ تا ۶ نفره با چند تم</small></div><span class="hb-tag">۲–۶ نفره</span></button>';
+  h+='<button class="hb-card" data-hg="catan"><div class="hb-ic">'+mgIcon('catan')+'</div><div><b>سیطره کتان</b><small>بازی استراتژی با چند تم</small></div><span class="hb-tag">۲–۶ نفره</span></button>';
   Object.keys(MGS).forEach(function(k){
     var g=MGS[k];
     h+='<button class="hb-card" data-hg="'+k+'"><div class="hb-ic">'+mgIcon(k)+'</div><div><b>'+g.name+'</b><small>'+g.sub+'</small></div><span class="hb-tag">'+(g.max>2?'۲–'+fa(g.max)+' نفره':'۲ نفره')+'</span></button>';
