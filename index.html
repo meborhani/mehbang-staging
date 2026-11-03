@@ -1028,7 +1028,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .kx-g img{height:calc(30*var(--u));width:auto;display:block}
 .kx-g b{font-size:calc(26*var(--u));font-weight:900;color:#2b1238;line-height:1}
 .kb-dcm{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;box-sizing:border-box;width:min(94vw,520px);padding:10px 10px 12px;border:3px solid #c9a24d;border-radius:20px;background:linear-gradient(#fdf4dc,#f1deb0);box-shadow:0 6px 22px #000a;display:flex;flex-direction:column;align-items:center;gap:8px;direction:rtl}
-.kb-dct{font:800 14px/1.4 inherit;color:#4a1f55;text-align:center}
+.kb-dct{font:800 13px/1.5 inherit;color:#4a1f55;text-align:center}
 .kb-dcr{display:flex;gap:8px;direction:ltr;justify-content:center;width:100%}
 .kb-md{position:relative;flex:1 1 0;max-width:76px;aspect-ratio:1;min-width:46px;border-radius:50%;border:3px solid #c9a24d;background:radial-gradient(circle at 35% 30%,#fff7df,#e8cf93);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 2px 6px #0006}
 .kb-md img{width:64%;height:64%;object-fit:contain;display:block}
@@ -6810,7 +6810,7 @@ function kbDcm(x,P,my){
   if(!(my&&x.ph==='disc'&&!M.over))return '';
   var ex=kbTot(P)-10,h='';
   for(var c=0;c<6;c++){h+='<button class="kb-md" data-km="'+c+'"'+(P.t[c]>0?'':' disabled')+' aria-label="برگرداندن گوهر"><img alt="" draggable="false" src="'+KXA.gem[c]+'"><b>'+fa(P.t[c])+'</b></button>';}
-  return '<div class="kb-dcm"><div class="kb-dct">'+fa(ex)+' گوهر اضافه داری؛ روی مدال گوهر بزن تا برگردد</div><div class="kb-dcr">'+h+'</div></div>';
+  return '<div class="kb-dcm"><div class="kb-dct">'+fa(ex)+' گوهر اضافه داری. گوهرهایی که می‌خواهی به بانک برگردد را انتخاب کن؛ حداکثر ۱۰ گوهر می‌توانی نگه داری.</div><div class="kb-dcr">'+h+'</div></div>';
 }
 function kbView(seat){
   var x=M.x;
@@ -6826,7 +6826,7 @@ function kbStatus(){
   if(kbSbA()[M.me])return 'رایانه جایگزین تو بازی می‌کند؛ پس از پایان نوبتش کنترل را می‌گیری';
   var me=M.turn===M.me;
   if(me){
-    if(x.ph==='disc')return 'بیشتر از ۱۰ مهره داری؛ روی مهره‌های خودت بزن تا برگردد';
+    if(x.ph==='disc')return 'گوهرهای برگشتی به بانک را انتخاب کن';
     if(x.ph==='noble')return 'یک اشراف‌زاده را انتخاب کن';
     return 'نوبت توست'+(x.endAt||x.ea?' · دور آخر':'');
   }
@@ -6852,7 +6852,7 @@ function kbRm(P,me,my,bon,rsv){
   else if(!my)st='نوبت حریف است؛ در نوبت خودت می‌توانی این کارت را بخری.';
   else if(x.ph==='disc')st='ابتدا گوهر اضافه را برگردان.';
   else if(x.ph==='noble')st='ابتدا یک اشراف‌زاده انتخاب کن.';
-  else if(!pay){var lk='';KX_ORD.forEach(function(c2){if(lack[c2])lk+=kbCC(c2,lack[c2]);});st='گوهر کافی نداری. کمبود: <span class="kb-rml" style="display:inline-flex">'+lk+'</span>'+(tl>P.t[5]?' (جوکر هم کافی نیست)':'');}
+  else if(!pay){var lk='';KX_ORD.forEach(function(c2){if(lack[c2])lk+=kbCC(c2,lack[c2]);});st='گوهر کافی نداری. کمبود: <span class="kb-rml" style="display:inline-flex">'+lk+'</span>'+(tl>P.t[5]?' (سکه طلایی هم کافی نیست)':'');}
   else{ok=true;st='قابل خرید است.';}
   return '<div class="kb-rm" data-krc="1"><div class="kb-rmx"><div class="kb-rmcard">'+kbCard(id,'','')+'</div><div class="kb-rmi"><h3>سطح '+fa(cd.l+1)+' · امتیاز '+fa(cd.p)+'</h3><div class="kb-rml"><span>هزینه:</span>'+(cost||'<span>رایگان</span>')+'</div><div class="kb-rms '+(ok?'ok':'no')+'">'+st+'</div><div class="kb-rmr"><button class="buy" data-krb="1"'+(ok?'':' disabled')+'>خرید کارت</button><button data-krc="1">بستن</button></div></div></div></div>';
 }
@@ -6939,13 +6939,13 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&M&&M.mode!=
 function kbRules(){
   var L=['<b>هدف:</b> اولین نفری باش که به ۱۵ امتیاز یا بیشتر برسد. امتیاز از کارت‌های خریداری‌شده و شاهزاده‌ها (هر شاهزاده ۳ امتیاز) جمع می‌شود.',
   '<b>هر نوبت فقط یک کار:</b> گوهر برداشتن، خرید کارت، یا رزرو کارت.',
-  '<b>برداشتن گوهر:</b> سه گوهر با رنگ‌های متفاوت، یا دو گوهر هم‌رنگ به شرطی که در بانک دست‌کم ۴ عدد از آن رنگ مانده باشد. اگر کمتر از سه رنگ در بانک مانده، همان‌هایی که هست را برمی‌داری. جوکر طلایی را نمی‌شود مستقیم برداشت.',
+  '<b>برداشتن گوهر:</b> سه گوهر با رنگ‌های متفاوت، یا دو گوهر هم‌رنگ به شرطی که در بانک دست‌کم ۴ عدد از آن رنگ مانده باشد. اگر کمتر از سه رنگ در بانک مانده، همان‌هایی که هست را برمی‌داری. سکه طلایی را نمی‌شود مستقیم برداشت.',
   '<b>خرید کارت:</b> از کارت‌های روی میز یا کارت‌های رزروشده‌ی خودت. هزینه با گوهرهای خودت و تخفیف دائمی پرداخت می‌شود و گوهرهای خرج‌شده به بانک برمی‌گردد. جای کارت خریداری‌شده از پشته‌ی همان سطح پر می‌شود.',
   '<b>تخفیف دائمی:</b> هر کارتی که می‌خری یک تخفیف دائمی هم‌رنگ خودش به تو می‌دهد؛ از هزینه‌ی خریدهای بعدی همان رنگ، یک گوهر کم می‌شود.',
-  '<b>رزرو:</b> یک کارت روی میز یا بالای یکی از پشته‌ها را برای خودت کنار می‌گذاری (حداکثر ۳ کارت رزرو). اگر در بانک جوکر طلایی مانده باشد، یکی هم به تو می‌رسد. کارت رزروشده را بعداً می‌توانی بخری.',
-  '<b>جوکر طلایی:</b> جای هر رنگی که کم داری می‌نشیند.',
+  '<b>رزرو:</b> یک کارت روی میز یا بالای یکی از پشته‌ها را برای خودت کنار می‌گذاری (حداکثر ۳ کارت رزرو). اگر در بانک سکه طلایی مانده باشد، یکی هم به تو می‌رسد. کارت رزروشده را بعداً می‌توانی بخری.',
+  '<b>سکه طلایی:</b> جای هر رنگی که کم داری می‌نشیند.',
   '<b>شاهزاده‌ها:</b> اگر مجموع تخفیف‌های دائمی تو به نیاز یک شاهزاده برسد، او به تو می‌پیوندد و ۳ امتیاز می‌دهد. اگر هم‌زمان چند شاهزاده شرایطشان را داشته باشند، یکی را انتخاب می‌کنی.',
-  '<b>سقف ۱۰ گوهر:</b> بعد از نوبتت اگر بیشتر از ۱۰ گوهر (با احتساب جوکر) داری، باید گوهر اضافه را به بانک برگردانی.',
+  '<b>سقف ۱۰ گوهر:</b> بعد از نوبتت اگر بیشتر از ۱۰ گوهر (با احتساب سکه طلایی) داری، باید گوهر اضافه را به بانک برگردانی.',
   '<b>پایان بازی:</b> وقتی کسی به ۱۵ امتیاز برسد، دور جاری تا نوبت بازیکن اول کامل می‌شود و بعد بازی تمام می‌شود.',
   '<b>برنده:</b> بیشترین امتیاز؛ اگر مساوی بود، کسی که کارت کمتری خریده برنده است؛ اگر باز هم مساوی بود، نتیجه مساوی است.',
   '<b>ردّ شدن:</b> فقط وقتی هیچ کار قانونی نداری، نوبت رد می‌شود.',
