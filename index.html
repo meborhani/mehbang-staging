@@ -7498,7 +7498,7 @@ function mgClose(){
   if(M===PARK)PARK=null;
   if(M){
     clearTimeout(M.t);clearTimeout(M.goneT);clearTimeout(M.rt);M.rec=false;if(M.mode==='guest')lsSet('mb_mgrj',null);
-    if(M.mode==='host'&&!M.__keepRec)lsSet(MGH,null);
+    if(M.mode==='host'&&!M.__keepRec){lsSet(MGH,null);mgCloudPush(1);}
     Object.keys(M.links).forEach(function(s){var l=M.links[s];if(l){l.onclose=null;l.close();}});
     if(M.link){M.link.onclose=null;M.link.close();}
     if(M.srv)M.srv.close();
@@ -7517,6 +7517,7 @@ function mgParkDrop(){if(PARK&&M===PARK){mgClose();}PARK=null;}
 function showHub(){
   if(PARK&&M===PARK){$('#mini').hidden=true;}else{mgClose();PARK=null;}
   VIEW='hub';
+  mgCloudPull();
   document.title='مهبانگ گیم';
   $('#intro').hidden=true;$('#lobby').hidden=true;$('#hub').hidden=false;
   presenceStart();ecoDaily();sbSync();
@@ -7754,8 +7755,34 @@ function mgEntry(){
 var MGH='mb_mghost';
 function mgHostSave(){
   if(!M||M.mode!=='host'||!M.code)return;
-  if(M.over||M.wait||M.left){if(M.over||M.left)lsSet(MGH,null);return;}
+  if(M.over||M.wait||M.left){if(M.over||M.left){lsSet(MGH,null);mgCloudPush(1);}return;}
   try{lsSet(MGH,{v:1,g:M.g.id,code:M.code,t:Date.now(),s:{n:M.n,names:M.names,wins:M.wins,ai:M.ai,rn:M.rn,res:M.res,line:M.line,b:M.b,turn:M.turn,x:M.x,bal:M.bal,av:M.av,tok:M.tok,stake:M.stake,pkcfg:M.pkcfg,tvNet:M.tvNet,tvPaid:M.tvPaid,pkBase0:M.pkBase0,pp:M.pp,agn:M.agn,rep:M.rep,st:M.st,sub:M.sub,miss:M.miss,tkey:M.tkey,rcl:M.rcl}});}catch(e){}
+  mgCloudPush();
+}
+/* cloud copy of the hosted room (signed-in players): lets the host come back from another device, e.g. after the phone died */
+var MG_CT=0,MG_CS=0,MG_CODE='';
+function mgCloudPush(drop){
+  if(!ACCT||!sbOk()||!M||M.mode!=='host'||!M.code)return;
+  if(drop){var dc=M.code;clearTimeout(MG_CT);MG_CS=0;sbCall('mb_room_drop',{p_token:ACCT.token,p_code:dc}).catch(function(){});return;}
+  var now=Date.now(),w=2500-(now-MG_CS);
+  clearTimeout(MG_CT);
+  MG_CT=setTimeout(function(){
+    if(!M||M.mode!=='host'||!M.code||M.over||M.left||!ACCT)return;
+    var rec=lsGet(MGH,null);if(!rec||rec.code!==M.code)return;
+    MG_CS=Date.now();
+    sbCall('mb_room_save',{p_token:ACCT.token,p_code:M.code,p_game:M.g.id,p_state:rec}).catch(function(){});
+  },w>0?w:30);
+}
+var MG_PULL=0;
+function mgCloudPull(){
+  if(!ACCT||!sbOk()||Date.now()-MG_PULL<15000)return;MG_PULL=Date.now();
+  sbCall('mb_room_mine',{p_token:ACCT.token}).then(function(r){
+    if(!r||!r.state||!r.code||(PARK&&M===PARK)||(M&&M.mode==='host'&&M.code===r.code))return;
+    if(Date.now()-(+r.t||0)<20000)return;
+    var loc=lsGet(MGH,null);if(loc&&loc.code===r.code&&(+loc.t||0)>=(+r.t||0)-1000)return;
+    var st=r.state;if(!st||st.v!==1||st.code!==r.code||!st.s||!GAMES_BY_ID(st.g))return;
+    st.t=Date.now();lsSet(MGH,st);if(M===null||$('#mini').hidden)renderHub();
+  }).catch(function(){});
 }
 function mgHostOk(){var r=lsGet(MGH,null);return !!(r&&r.v===1&&typeof r.g==='string'&&/^\d{5}$/.test(String(r.code))&&r.s&&Date.now()-(+r.t||0)<6*3600*1000&&GAMES_BY_ID(r.g));}
 function mgHostRestore(){
