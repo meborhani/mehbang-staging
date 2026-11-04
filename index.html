@@ -5464,6 +5464,10 @@ function jzEffV(v,i,f){var o=v.fl[i][f];if(!o)return 0;return o.n>=2?o.n+(v.fe[i
 function jzFValV(v,i,f){var o=v.fl[i][f];return o?jzCoins(o.t,jzEffV(v,i,f))+(v.br[i][f]?1:0):0;}
 function jzEff(seat,f){return jzEffV(M.x,seat,f);}
 function jzFVal(seat,f){return jzFValV(M.x,seat,f);}
+/* random turn order for Jaliz and Kahroba: x.ord is a shuffled list of seats; games without it (old saves) keep seat order */
+function ordMake(n){var o=[],i,j,t;for(i=0;i<n;i++)o.push(i);for(i=n-1;i>0;i--){j=Math.floor(Math.random()*(i+1));t=o[i];o[i]=o[j];o[j]=t;}return o;}
+function ordNext(x,s){var o=x&&x.ord;if(!o||o.length!==M.n)return (s+1)%M.n;var i=o.indexOf(s);return o[(i+1)%o.length];}
+function ordLast(x){var o=x&&x.ord;return (o&&o.length===M.n)?o[o.length-1]:(x.st+M.n-1)%M.n;}
 function jzLeft(s){return (s+1)%M.n;}
 function jzRight(s){return (s+M.n-1)%M.n;}
 function jzEvTarget(seat,k){return k==='crow'?jzLeft(seat):((k==='snow'||k==='thief')?jzRight(seat):seat);}
@@ -5471,7 +5475,7 @@ function jzInit(){
   var d=[],i,k,x,r=jzRange(M.n);
   JZ.forEach(function(c,t){if(c.c>=r.lo&&c.c<=r.hi)for(k=0;k<c.c;k++)d.push(t);});
   var z=function(){return [false,false,false];};
-  x={deck:shuffle(d),disc:[],hand:[],fl:[],nf:[],fe:[],rt:[],sn:[],br:[],cc:[],tr:[],cb:[],bl:[],hh:[],sp:[],fs:M.n+1,evd:shuffle(JZ_EV.slice()),evn:'',ev:null,rd:0,st:M.rn%M.n,hw:-1,pc:0,fu:[],ph:'p',of:null,ps:0,last:false,fin:false,lg:'',ao:0,ro:[],ch:null,cn:0,tw:0};
+  x={deck:shuffle(d),disc:[],hand:[],fl:[],nf:[],fe:[],rt:[],sn:[],br:[],cc:[],tr:[],cb:[],bl:[],hh:[],sp:[],fs:M.n+1,evd:shuffle(JZ_EV.slice()),evn:'',ev:null,rd:0,st:0,hw:-1,pc:0,fu:[],ph:'p',of:null,ps:0,last:false,fin:false,lg:'',ao:0,ro:[],ch:null,cn:0,tw:0};
   for(i=0;i<M.n;i++){
     x.hand.push([]);x.fl.push([null,null,null]);x.nf.push(2);
     x.fe.push(z());x.rt.push(z());x.sn.push(z());x.br.push(z());
@@ -5479,6 +5483,7 @@ function jzInit(){
     x.cc.push(cc);x.tr.push(false);x.cb.push(false);x.bl.push(0);x.hh.push(i);x.sp.push(0);
   }
   M.x=x;
+  x.ord=ordMake(M.n);x.st=x.ord[0];
   for(i=0;i<M.n;i++)x.hand[i]=jzDraw(5);
   M.turn=x.st;
   jzBeginTurn();
@@ -5577,13 +5582,13 @@ function jzBeginTurn(){
   if(!x.hand[M.turn].length)jzFlip();
 }
 function jzNextTurn(){
-  var x=M.x;M.turn=(M.turn+1)%M.n;x.ph='p';x.pc=0;x.lg='';
+  var x=M.x;M.turn=ordNext(x,M.turn);x.ph='p';x.pc=0;x.lg='';
   if(!x.fin&&M.turn===x.st){x.rd++;jzEvent();}
   if(!x.ev)jzBeginTurn();
 }
 function jzFinEnd(){
   var x=M.x;
-  if(M.turn===(x.st+M.n-1)%M.n){jzEnd();return;}
+  if(M.turn===ordLast(x)){jzEnd();return;}
   jzNextTurn();
 }
 function jzFinish(){
@@ -5665,7 +5670,7 @@ function jzTax(){
   else x.lg='💰 مالیات: کسی سکه‌ای از دست نداد.';
 }
 function jzRecy(){
-  var x=M.x,s=(x.st+M.n-1)%M.n,i;
+  var x=M.x,s=ordLast(x),i;
   for(i=0;i<M.n;i++){if(x.disc.length)x.hand[s].push(x.disc.pop());s=(s+M.n-1)%M.n;}
   x.lg='♻️ هر نفر یک کارت از سوخته‌ها برداشت.';
 }
@@ -7018,8 +7023,10 @@ function kbInit(){
   var rows=dk.map(function(d){var r=[];for(var k=0;k<4;k++)r.push(d.pop());return r;});
   var nb=kbShuf([0,1,2,3,4,5,6,7,8,9]).slice(0,n+1);
   var pl=[];for(i=0;i<n;i++)pl.push({t:[0,0,0,0,0,0],c:[],r:[],nb:[]});
-  M.x={bank:[g,g,g,g,g,5],deck:dk,rows:rows,nob:nb,pl:pl,ph:'act',endAt:false,first:M.rn%n,lg:'',nc:[],tn:0,dl:0};M.sub=[];M.miss=[];M.rcl={};M.tkey='';clearTimeout(M.tmr);
+  M.x={bank:[g,g,g,g,g,5],deck:dk,rows:rows,nob:nb,pl:pl,ph:'act',endAt:false,first:0,lg:'',nc:[],tn:0,dl:0};M.sub=[];M.miss=[];M.rcl={};M.tkey='';clearTimeout(M.tmr);
+  M.x.ord=ordMake(n);M.x.first=M.x.ord[0];
   M.turn=M.x.first;M.ksel=[];M.kcs=null;M.krz=null;
+  if(window.__FAST)window.__M=M;
 }
 function kbBonus(p){var b=[0,0,0,0,0];p.c.forEach(function(id){b[KBC[id].c]++;});return b;}
 function kbPts(p){var s=3*p.nb.length;p.c.forEach(function(id){s+=KBC[id].p;});return s;}
@@ -7122,7 +7129,7 @@ function kbPost(seat,skipNoble){
   }
   x.ph='act';x.nc=[];
   if(kbPts(p)>=15)x.endAt=true;
-  var nx=(seat+1)%M.n;
+  var nx=ordNext(x,seat);
   if(nx===x.first&&x.endAt){
     var best=-1,w=[],bc=0;
     x.pl.forEach(function(q,i){var s=kbPts(q);if(s>best||(s===best&&q.c.length<bc)){best=s;bc=q.c.length;w=[i];}else if(s===best&&q.c.length===bc)w.push(i);});
