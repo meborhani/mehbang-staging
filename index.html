@@ -6548,18 +6548,40 @@ function pkDraw(seat){
 }
 /* Monte-Carlo equity: odds of winning at showdown against `opp` random hands, using only this seat's own cards and the public board */
 function pkEquity(seat,N){
-  var x=M.x,h=x.hole[seat],b=x.board,opp=Math.max(1,pkLive().length-1),known={},i,j,rest=[];
+  var x=M.x,h=x.hole[seat],b=x.board,known={},i,j,rest=[];
+  var oppS=pkLive().filter(function(q){return q!==seat;}),opp=Math.max(1,oppS.length),pot0=Math.max(1,pkSum(x.tot));
+  /* what a public bet tells us: an opponent who raised a big bet is assumed to hold at least a pair / a good starting hand */
+  var req=oppS.map(function(q){
+    if(!(x.bet[q]>=x.cur&&x.cur>(b.length?0:(x.cfg.bl||1)*2)))return 0;
+    return x.cur>=pot0*.6?2:1;
+  });
+  function okHand(a,c,lv,bd){
+    if(!lv)return true;
+    if(bd.length>=3){var cat=pkCatOf(pkBest([a,c].concat(bd)));return cat>=lv;}
+    var ra=pkR(a),rc=pkR(c),hi=Math.max(ra,rc),lo=Math.min(ra,rc);
+    if(lv>=2)return ra===rc&&ra>=6||hi>=11&&lo>=8;
+    return ra===rc||hi>=9||(hi>=7&&lo>=5);
+  }
   h.concat(b).forEach(function(c){known[c]=1;});
   for(i=0;i<52;i++)if(!known[i])rest.push(i);
   var need=5-b.length,win=0,L=rest.length,m=2*opp+need;
   for(var it=0;it<N;it++){
     for(i=0;i<m;i++){j=i+Math.floor(Math.random()*(L-i));var t=rest[i];rest[i]=rest[j];rest[j]=t;}
     var bd=b.concat(rest.slice(2*opp,2*opp+need)),mine=pkBest(h.concat(bd)),ties=1,lose=false;
-    for(j=0;j<opp;j++){var sc=pkBest([rest[2*j],rest[2*j+1]].concat(bd));if(sc>mine){lose=true;break;}if(sc===mine)ties++;}
+    for(j=0;j<opp;j++){
+      var tries=0;
+      while(!okHand(rest[2*j],rest[2*j+1],req[j]||0,bd)&&tries++<8){
+        var k=m+Math.floor(Math.random()*(L-m)),k2=m+Math.floor(Math.random()*(L-m));
+        if(L-m<2)break;
+        var u=rest[2*j];rest[2*j]=rest[k];rest[k]=u;u=rest[2*j+1];rest[2*j+1]=rest[k2];rest[k2]=u;
+      }
+      var sc=pkBest([rest[2*j],rest[2*j+1]].concat(bd));if(sc>mine){lose=true;break;}if(sc===mine)ties++;
+    }
     if(!lose)win+=1/ties;
   }
   return win/N;
 }
+if(window.__FAST)window.__pkT={M:function(){return M;},eq:pkEquity};
 /* medium/hard decision model: real equity vs pot odds, persona-flavoured, bluffs chosen by board/opponent count */
 function pkAiAct2(seat){
   var x=M.x,toCall=x.cur-x.bet[seat],pot=pkSum(x.tot),st=x.board.length,r=Math.random(),r2=Math.random();
@@ -7138,8 +7160,24 @@ function kbPost(seat,skipNoble){
   mgAfter();return true;
 }
 function kbNeed(p,card,bon){var m=[0,0,0,0,0],k=0;for(var c=0;c<5;c++){var d=Math.max(0,card.cost[c]-bon[c]-p.t[c]);m[c]=d;k+=d;}return {m:m,k:Math.max(0,k-p.t[5])};}
+/* five fixed Kahroba rivals: the same name always plays the same way.
+   wp points weight, ch frugality, nb noble hunting, rs reserving, bl blocking rivals, tk gem greed, no randomness */
+var KB_AI=[
+ {n:'مهران',  wp:1.5, ch:.7,  nb:.8,  rs:2.2, bl:1.4, tk:.8,  no:.8},  /* reckless: chases big cards, reserves a lot */
+ {n:'لیلا',   wp:.7,  ch:1.5, nb:1,   rs:.35, bl:.4,  tk:1.2, no:.7},  /* cautious: cheap cards first, builds discounts, rarely reserves */
+ {n:'سینا',   wp:.9,  ch:1,   nb:2.6, rs:.9,  bl:.8,  tk:1,   no:.9},  /* noble hunter: collects colours for the nobles */
+ {n:'نگار',   wp:1,   ch:1.1, nb:1,   rs:1.4, bl:2.6, tk:.9,  no:.9},  /* blocker: reserves cards rivals want */
+ {n:'بهرام',  wp:1.05,ch:1,   nb:1.1, rs:1,   bl:1,   tk:1,   no:1.6}  /* balanced but unpredictable */
+];
+function kbNameAi(){
+  var idx=[0,1,2,3,4],o=[],k;M.pp=M.pp||[];
+  while(idx.length){k=Math.floor(Math.random()*idx.length);o.push(idx.splice(k,1)[0]);}
+  var j=0;
+  for(var i=0;i<M.n;i++)if(M.ai[i]===true&&M.agn&&M.agn[i]){M.pp[i]=o[j%5];M.names[i]=KB_AI[o[j%5]].n;j++;}
+}
 function kbAi(seat){
   var x=M.x,p=x.pl[seat],lg=kbLegal(seat),bon=kbBonus(p),d=DIFF,i;
+  var pp=KB_AI[M.pp&&M.pp[seat]!==undefined?M.pp[seat]:4]||KB_AI[4];
   if(lg.length===1)return lg[0];
   if(d===0&&Math.random()<.25)return lg[rint(lg.length)];
   if(x.ph==='disc'){
@@ -7159,21 +7197,21 @@ function kbAi(seat){
     if(a.a==='by'){
       var id=a.s==='res'?p.r[a.i].id:x.rows[a.l][a.i],cd=KBC[id],pay=kbPay(p,cd,bon);
       var sp=pay.reduce(function(u,v){return u+v;},0);
-      s=60+cd.p*14+wb[cd.c]*5+(want[cd.c]>0?3:0)-sp*1.1+(p.c.length<5?5:0);
+      s=60+cd.p*14*pp.wp+wb[cd.c]*5*pp.nb+(want[cd.c]>0?3:0)-sp*1.1*pp.ch+(p.c.length<5?5:0);
       if(kbPts(p)+cd.p>=15)s+=1000;
     }else if(a.a==='tk'){
-      a.c.forEach(function(c){s+=3+want[c]*5+wb[c]*1.5;});
+      a.c.forEach(function(c){s+=(3+want[c]*5+wb[c]*1.5*pp.nb)*pp.tk;});
       if(a.c.length===2)s+=want[a.c[0]]>=2?6:-2;
       var over=Math.max(0,kbTot(p)+a.c.length-10);s-=over*5;
       if(a.c.length<3&&a.c.length!==2)s-=6;
     }else if(a.a==='rs'){
       var cid=a.s==='deck'?-1:x.rows[a.l][a.i];
-      s=4+(x.bank[5]>0?6:0)-p.r.length*4+(kbTot(p)>=9?-8:0);
+      s=(4+(x.bank[5]>0?6:0))*pp.rs-p.r.length*4+(kbTot(p)>=9?-8:0);
       if(cid>=0){var cc=KBC[cid];s+=cc.p>=3?3:0;
-        if(d>=1)opps.forEach(function(q){if(kbPay(q,cc))s+=cc.p>=2?(d===2?14:6):2;});
+        if(d>=1)opps.forEach(function(q){if(kbPay(q,cc))s+=(cc.p>=2?(d===2?14:6):2)*pp.bl;});
         var nd=kbNeed(p,cc,bon).k;if(nd<=3)s+=cc.p*2;}
     }else s=-50;
-    s+=Math.random()*[30,7,1.5][d];
+    s+=Math.random()*[30,7,1.5][d]*pp.no;
     if(s>bsc){bsc=s;bestA=a;}
   });
   return bestA;
@@ -7912,6 +7950,7 @@ function mgBegin(){
   M.wait=false;M.glob=false;M.rn=0;
   mgAiNames(0,M.n);
   if(M.g.type==='poker')pkNameAi();
+  if(M.g.type==='kahroba')kbNameAi();
   mgReset();mgAfter();
 }
 function mgForfeit2(){
@@ -8200,6 +8239,7 @@ $('#mini').addEventListener('click',function(e){
     mgNew(g,'ai',n);M.pkcfg=keepCfg;M.stake=keepStake;M.me=0;M.names[0]=cleanName(loadName())||'تو';
     mgAiNames(1,n);
     if(g.type==='poker')pkNameAi();
+    if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
   else if(k==='mk')mgHost();
