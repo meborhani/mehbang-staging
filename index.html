@@ -4313,7 +4313,26 @@ function resumeSession(){
   else{$('#lobby').hidden=true;render();}
   refreshResume();
 }
-window.addEventListener('popstate',function(){if(VIEW==='session')showIntro();});
+/* Android back button (installed app): in a game ask what to do, in menus go back one step, on the home screen do nothing */
+function mbBack(){
+  if(curSheet){closeSheet();return;}
+  var mini=$('#mini');
+  if(M&&mini&&!mini.hidden){
+    var live=M.mode!=='menu'&&!M.over&&!M.wait&&!M.left;
+    if(!live){if(!mgPark())mgClose();return;}
+    var canPark=(M.mode==='host'||M.mode==='guest')&&!(M.mode==='guest'&&!M.glob&&!M.link);
+    var host=M.mode==='host';
+    var sh=openSheet('<h3>خروج از بازی</h3><p class="sub">'+(canPark?'«بازگشت به منو» بازی را نگه می‌دارد و با دکمهٔ بازگشت به اتاق برمی‌گردی. ':'')+'«بستن بازی» بازی را کامل می‌بندد'+(host?' و اتاق برای همه بسته می‌شود':'')+(canPark?' و راه برگشت نمی‌ماند':' و پیشرفتش از بین می‌رود')+'.</p><div class="mg-r"><button class="btn" data-bk="stay">ماندن در بازی</button>'+(canPark?'<button class="btn primary" data-bk="menu">بازگشت به منو</button>':'')+'<button class="btn" data-bk="close">بستن بازی</button></div>');
+    sh.addEventListener('click',function(e){var q=e.target.closest('[data-bk]');if(!q)return;var v=q.dataset.bk;closeSheet();if(v==='menu'){if(!mgPark())mgClose();}else if(v==='close')mgClose();});
+    return;
+  }
+  if(VIEW==='session')showIntro();
+}
+window.addEventListener('popstate',function(){
+  if(isStandalone()){try{history.pushState({b:1},'');}catch(e){}mbBack();return;}
+  if(VIEW==='session')showIntro();
+});
+if(isStandalone()){try{history.replaceState({b:0},'');history.pushState({b:1},'');}catch(e){}}
 $('#endGame').addEventListener('click',function(){
   var sh=openSheet('<h3>اتمام بازی؟</h3><p class="sub">بازی نیمه‌کاره بسته می‌شود و پیشرفتش از بین می‌رود.</p><button class="btn primary wide" data-eg="y">بله، تمام کن</button><button class="btn wide" data-eg="n">نه، بماند</button>');
   sh.addEventListener('click',function(e){
