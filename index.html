@@ -1538,7 +1538,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .h2-mt b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h2-lv{display:flex;align-items:center;gap:6px}.h2-lv small{font-size:11px;color:var(--mu);white-space:nowrap}
 .h2-lv i{flex:1;height:6px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden;direction:rtl}.h2-lv u{display:block;height:100%;background:linear-gradient(90deg,#EDC278,#A77437)}
-.h2-coin{flex:none;min-height:48px;display:flex;align-items:center;padding:0 16px;border-radius:999px;border:1px solid var(--bd);background:rgba(27,26,32,.82);color:var(--gb);font-weight:800;font-size:15px;white-space:nowrap}
+.h2-gem{color:#d9b8ff}.h2-coin{flex:none;min-height:48px;display:flex;align-items:center;padding:0 10px;border-radius:999px;border:1px solid var(--bd);background:rgba(27,26,32,.82);color:var(--gb);font-weight:800;font-size:15px;white-space:nowrap}
 .h2-brand{text-align:center;margin:2px 0 0}.h2-logo{color:var(--gold);font-size:13px;letter-spacing:4px;opacity:.9}
 .h2-brand h1{margin:0;font-family:var(--font-display);font-size:clamp(30px,8vw,42px);font-weight:900;color:var(--gb);text-shadow:0 3px 14px rgba(0,0,0,.7);line-height:1.2}
 .h2-en{font:11px Arial,sans-serif;letter-spacing:5px;color:var(--mu)}
@@ -7639,6 +7639,9 @@ function mgIcon(id){
   if(id==='manch')return '<svg viewBox="0 0 36 36"><rect x="4" y="4" width="28" height="28" rx="6" fill="var(--panel)" stroke="var(--line)"/><circle cx="12" cy="12" r="4" fill="var(--e1)"/><circle cx="24" cy="12" r="4" fill="var(--e3)"/><circle cx="12" cy="24" r="4" fill="var(--e2)"/><circle cx="24" cy="24" r="4" fill="var(--e0)"/></svg>';
   return '<svg viewBox="0 0 36 36"><polygon points="18,3 31,10.5 31,25.5 18,33 5,25.5 5,10.5" fill="var(--e0)" stroke="var(--line)" stroke-width="2"/><circle cx="18" cy="18" r="5" fill="var(--ember)"/></svg>';
 }
+var GEM_KEY=ACCT?'mb_gems_acc':'mb_gems';
+function gemGet(){var v=lsGet(GEM_KEY,0);return (typeof v==='number'&&v>=0&&v<1e9)?Math.floor(v):0;}
+function gemAdd(n){n=Math.floor(+n)||0;var v=Math.max(0,gemGet()+n);lsSet(GEM_KEY,v);var e=document.querySelector('[data-gem]');if(e)e.textContent='💎 '+fa(v);return v;}
 function hubLevel(){
   var st=myStats(false).all,xp=st.g*10+st.w*20,L=1;
   while(xp>=25*L*L&&L<99)L++;
@@ -7648,7 +7651,7 @@ function hubLevel(){
 function hubTile(k,cls,nm,sub){return '<button class="h2-g h2-'+cls+'" data-hg="'+k+'"><span class="h2-t"><b>'+nm+'</b><small>'+sub+'</small></span><span class="h2-go">▶ شروع بازی</span></button>';}
 function renderHub(){
   var lv=hubLevel(),nm=ACCT?ACCT.name:(cleanName(loadName())||'پروفایل / ورود'),req=FR.filter(function(f){return f.st==='in';}).length;
-  var h='<div class="h2"><header class="h2-hd"><button class="h2-me" data-hg="acct"><span class="h2-av">'+(myAv()!==-1?avHtml(myAv(),'',false,0):'👤')+'</span><span class="h2-mt"><b>'+esc2(nm)+'</b><span class="h2-lv"><small>سطح '+fa(lv.lv)+'</small><i><u style="width:'+lv.pct+'%"></u></i></span></span></button><div class="h2-coin" data-coin aria-label="سکه‌ها"></div></header>';
+  var h='<div class="h2"><header class="h2-hd"><button class="h2-me" data-hg="acct"><span class="h2-av">'+(myAv()!==-1?avHtml(myAv(),'',false,0):'👤')+'</span><span class="h2-mt"><b>'+esc2(nm)+'</b><span class="h2-lv"><small>سطح '+fa(lv.lv)+'</small><i><u style="width:'+lv.pct+'%"></u></i></span></span></button><div class="h2-coin" data-coin aria-label="سکه‌ها"></div><div class="h2-coin h2-gem" data-gem aria-label="جواهر">💎 '+fa(gemGet())+'</div></header>';
   h+='<div class="h2-brand"><div class="h2-logo">◇ M ◇</div><h1>مهبانگ گیم</h1><div class="h2-en">MAHBANG GAMES</div></div>';
   if(PARK&&M===PARK&&!M.over){h+='<div class="h2-row"><button class="h2-b pri" data-hg="mgpark">'+(M.wait?'بازگشت به اتاق':'بازگشت به بازی')+' · '+esc2(M.g.name)+(M.code?' ('+fa(M.code)+')':'')+'</button><button class="h2-b" data-hg="mgparkx">بستن</button></div>';}
   if(!(PARK&&M===PARK)&&mgHostOk()){var hr=lsGet(MGH,null);h+='<button class="h2-b" data-hg="mghost">↩ بازگشت به اتاق قبلی · '+esc2(MGS[hr.g].name)+' ('+fa(hr.code)+')</button>';}
