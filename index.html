@@ -4104,16 +4104,16 @@ function histPull(){
   }).catch(function(){});
 }
 function histOpen(){
-  var h=lsGet(histKey(),[]).slice().reverse(),w=0,l=0,d=0,net=0,rows='';
+  var h=lsGet(histKey(),[]).slice().reverse(),w=0,l=0,d=0,un=0,net=0,rows='';
   function idxOf(e){return h.indexOf(e);}
-  h.forEach(function(e){if(e.r==='w')w++;else if(e.r==='l')l++;else d++;if(typeof e.net==='number')net+=e.net;});
+  h.forEach(function(e){if(e.r==='w')w++;else if(e.r==='l')l++;else if(e.r==='u')un++;else d++;if(typeof e.net==='number')net+=e.net;});
   h.slice(0,40).forEach(function(e){
     var dt='';try{dt=new Date(e.t).toLocaleString('fa-IR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(x){}
-    var rc=e.r==='w'?'#3fbf6a':(e.r==='l'?'#e0524d':'#c9a227'),rt=e.r==='w'?'برد':(e.r==='l'?'باخت':'مساوی');
+    var rc=e.r==='w'?'#3fbf6a':(e.r==='l'?'#e0524d':(e.r==='u'?'#7d7d7d':'#c9a227')),rt=e.r==='w'?'برد':(e.r==='l'?'باخت':(e.r==='u'?'ناتمام':'مساوی'));
     var ops=(e.ops||[]).slice(0,4).map(function(x){return esc2(String(x).slice(0,12));}).join('، ');
     rows+='<div class="hrow'+(e.rp?' hrp':'')+'" '+(e.rp?'data-hi="'+idxOf(e)+'" ':'')+'style="'+(e.rp?'cursor:pointer;':'')+'display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">'+
       '<b style="min-width:42px;text-align:center;color:#fff;background:'+rc+';border-radius:8px;padding:2px 6px;font-size:12px">'+rt+'</b>'+
-      '<div style="flex:1;min-width:0;font-size:12.5px"><b>'+esc2(String(e.g||'بازی'))+'</b> · '+fa(e.n||2)+' نفره · '+(e.o?'آنلاین':'با رایانه')+(ops?'<br><small style="color:var(--ink-dim)">با '+ops+'</small>':'')+(e.rp?'<br><small style="color:var(--ember)">📊 گزارش کامل — بزن تا ببینی</small>':'')+'</div>'+
+      '<div style="flex:1;min-width:0;font-size:12.5px"><b>'+esc2(String(e.g||'بازی'))+'</b> · '+fa(e.n||2)+' نفره · '+(e.o?'آنلاین':'با رایانه')+(ops?'<br><small style="color:var(--ink-dim)">با '+ops+'</small>':'')+(e.u?'<br><small style="color:var(--ink-dim)">'+esc2(String(e.u).slice(0,40))+'</small>':'')+(e.rp?'<br><small style="color:var(--ember)">📊 گزارش کامل — بزن تا ببینی</small>':'')+'</div>'+
       '<div style="text-align:left;font-size:11.5px;color:var(--ink-dim);white-space:nowrap">'+dt+(typeof e.net==='number'&&e.net?'<br><b style="color:'+(e.net>0?'#3fbf6a':'#e0524d')+'">'+(e.net>0?'+':'')+fa(e.net)+' 🪙</b>':'')+'</div></div>';
   });
   var hs=openSheet('<h3>سوابق من</h3><div class="sub" style="text-align:center">'+fa(h.length)+' بازی · '+fa(w)+' برد · '+fa(l)+' باخت'+(d?' · '+fa(d)+' مساوی':'')+(net?' · سکه: '+(net>0?'+':'')+fa(net):'')+'</div><div class="endbody" style="max-height:62dvh;overflow:auto">'+(rows||'<div class="sub" style="text-align:center">هنوز بازی‌ای ثبت نشده. بعد از هر بازی اینجا می‌آید.</div>')+'</div><button class="btn wide" data-close>بستن</button>');
@@ -5561,6 +5561,10 @@ var JZE={
 };
 var JZ_EV=['crow','gard','snow','dry','rain','mkt','model','thief','recy','breed','tax','seed'];
 var JZ_OPT={gard:1,thief:1,seed:1};
+/* ---- jaliz timers: virtual clock (tests / server) or real time ---- */
+var jzClock=null,JZ_T1=40000,JZ_T2=40000;
+function jzNow(){return jzClock?jzClock():Date.now();}
+function jzArm(ms){var x=M.x;x.dl=M.tmr?jzNow()+ms:0;x.dr=0;}
 function jzRange(n){var m=Math.max(3,n);return {lo:m===3?7:6,hi:[0,0,0,15,15,16,17,18][m]};}
 function jzCoins(t,n){var b=JZ[t].b,c=0;for(var i=0;i<4;i++)if(b[i]&&n>=b[i])c=i+1;return c;}
 function jzTot(seat){var s=0;M.x.cc[seat].forEach(function(v){s+=v;});return s;}
@@ -5607,6 +5611,7 @@ function jzDraw(k){
 }
 function jzFlip(){
   var x=M.x,h=x.hh[M.turn];
+  jzArm(JZ_T2);
   x.fu=jzDraw(2);x.ph='tr';x.ao=0;x.lg='';x.hw=-1;x.ro=[];x.tw=0;
   if(h!==M.turn&&x.fu.length){x.ph='hat';x.hw=h;}
   else jzEnterTr();
@@ -5617,7 +5622,7 @@ function jzEnterTr(){
   var x=M.x,s,hum=false;x.ph='tr';x.ro=[];x.tw=0;
   if(!x.fu.length)return;
   for(s=0;s<M.n;s++)if(s!==M.turn&&!M.ai[s])hum=true;
-  if(M.ai[M.turn]&&hum)x.tw=Date.now()+4500;
+  if(M.ai[M.turn]&&hum)x.tw=jzNow()+4500;
   jzGenRo();
 }
 function jzGenRo(){
@@ -5659,6 +5664,7 @@ function jzHarvest(seat,f){
   var x=M.x,fo=x.fl[seat][f],c=jzFVal(seat,f);
   x.cc[seat][fo.t]+=c;stAdd(seat,'hv');stAdd(seat,'hc',c);
   for(var i=0;i<fo.n-c;i++)x.disc.push(fo.t);
+  if(c<1&&!M.over)x.lg=x.nl=(M.names[seat]||'')+': برداشت بدون سکه؛ '+fo.n+' کارت '+JZ[fo.t].n+' سوخت.';
   x.fl[seat][f]=null;
 }
 function jzOpen(seat,f,t){
@@ -5669,8 +5675,7 @@ function jzPlantAuto(seat,t){
   var x=M.x,fl=x.fl[seat],i;
   for(i=0;i<x.nf[seat];i++)if(fl[i]&&fl[i].t===t&&!x.sn[seat][i]){fl[i].n++;return;}
   for(i=0;i<x.nf[seat];i++)if(!fl[i]&&!x.sn[seat][i]){fl[i]={t:t,n:1};return;}
-  var best=-1,bv=1e9;
-  for(i=0;i<x.nf[seat];i++){if(!jzCanHv(seat,i))continue;var v=jzFVal(seat,i)*100+fl[i].n;if(v<bv){bv=v;best=i;}}
+  var best=jzPickHarvest(seat);
   if(best<0){x.disc.push(t);return;}
   jzHarvest(seat,best);fl[best]={t:t,n:1};
 }
@@ -5683,11 +5688,11 @@ function jzPay(seat,k){
 function jzTok(seat){var x=M.x;if(x.hh[seat]===seat)return seat;for(var j=0;j<M.n;j++)if(x.hh[j]===seat)return j;return -1;}
 function jzBeginTurn(){
   var x=M.x;
-  if(x.fin){if(!x.hand[M.turn].length)jzFinEnd();return;}
-  if(!x.hand[M.turn].length)jzFlip();
+  if(x.fin){if(!x.hand[M.turn].length)jzFinEnd();else jzArm(JZ_T1);return;}
+  if(!x.hand[M.turn].length)jzFlip();else jzArm(JZ_T1);
 }
 function jzNextTurn(){
-  var x=M.x;M.turn=ordNext(x,M.turn);x.ph='p';x.pc=0;x.lg='';
+  var x=M.x;M.turn=ordNext(x,M.turn);x.ph='p';x.pc=0;x.lg=x.nl||'';x.nl='';x.dl=0;x.dr=0;x.of=null;x.ro=[];
   if(!x.fin&&M.turn===x.st){x.rd++;jzEvent();}
   if(!x.ev)jzBeginTurn();
 }
@@ -5815,6 +5820,70 @@ function jzAccept(seat){
   x.of=null;x.ro=[];
   return true;
 }
+/* product value = scarcity: fewer cards in the whole deck = more valuable (JZ[t].c is that count) */
+function jzRar(t){return JZ[t].c;}
+function jzRand(a){return a[Math.floor(Math.random()*a.length)];}
+/* which full field to harvest when there is no room: a field that pays coins (the rarer one if several); if none pays, the least valuable one (its cards burn) */
+function jzPickHarvest(seat){
+  var x=M.x,i,pay=[],all=[];
+  for(i=0;i<x.nf[seat];i++){if(!x.fl[seat][i]||!jzCanHv(seat,i))continue;all.push(i);if(jzFVal(seat,i)>0)pay.push(i);}
+  if(!all.length)return -1;
+  var pool=pay.length?pay:all,bv=pay.length?1e9:-1,w=[];
+  pool.forEach(function(f){var r=jzRar(x.fl[seat][f].t);
+    if(pay.length){if(r<bv){bv=r;w=[f];}else if(r===bv)w.push(f);}
+    else{if(r>bv){bv=r;w=[f];}else if(r===bv)w.push(f);}});
+  return jzRand(w);
+}
+/* settle the face-up cards the active player did not handle (timer end or the end-turn button) */
+function jzAutoResolve(seat){
+  var x=M.x,R=x.fu.slice(),guard=0,i,f;x.fu=[];x.of=null;x.ro=[];x.tw=0;
+  function empties(){var e=[];for(var k=0;k<x.nf[seat];k++)if(!x.fl[seat][k]&&!x.sn[seat][k])e.push(k);return e;}
+  while(R.length&&guard++<12){
+    for(i=R.length-1;i>=0;i--){
+      f=jzHas(seat,R[i]);
+      if(f>=0){x.fl[seat][f].n++;R.splice(i,1);}
+    }
+    if(!R.length)break;
+    var em=empties();
+    if(em.length>=R.length){R.forEach(function(t,k){x.fl[seat][em[k]]={t:t,n:1};});R=[];break;}
+    if(em.length===1){
+      R.sort(function(a,b){return jzRar(a)-jzRar(b);});
+      var top=R.filter(function(t){return jzRar(t)===jzRar(R[0]);}),pick=jzRand(top);
+      x.fl[seat][em[0]]={t:pick,n:1};R.splice(R.indexOf(pick),1);
+      R.forEach(function(t){x.disc.push(t);stAdd(seat,'burnt');});
+      x.lg=x.nl=(M.names[seat]||'')+': یک کارت جا نداشت و سوخت.';R=[];break;
+    }
+    var h=jzPickHarvest(seat);
+    if(h<0){R.forEach(function(t){x.disc.push(t);stAdd(seat,'burnt');});R=[];break;}
+    jzHarvest(seat,h);
+  }
+}
+/* deadline reached: returns true when something changed */
+function jzTimers(){
+  var x=M.x;if(!x||M.over||M.wait||!M.tmr||!x.dl||jzNow()<x.dl)return false;
+  x.dl=0;var seat=M.turn;
+  if(x.ev)return false;
+  if(x.ph==='p'){
+    if(x.fin)jzFinEnd();
+    else if(x.pc>=1)jzFlip();
+    else{x.lg=(M.names[seat]||'')+': زمان تمام شد؛ نوبت بدون رو کردن گذشت.';jzNextTurn();}
+  }else if(x.ph==='hat'){x.hw=-1;jzEnterTr();}
+  else if(x.ph==='tr'||x.ph==='fu'){jzAutoResolve(seat);jzFinish();}
+  else return false;
+  return true;
+}
+/* computer: worth of a card = its scarcity; gain of planting `cards` into my fields */
+function jzCardVal(t){return 100/jzRar(t);}
+function jzGain(seat,cards){
+  var x=M.x,sim=[],i,sc=0,ok=true;
+  for(i=0;i<x.nf[seat];i++){if(x.sn[seat][i])sim.push(-9);else if(x.fl[seat][i])sim.push(x.fl[seat][i].t);else sim.push(-1);}
+  cards.forEach(function(t){
+    var k=sim.indexOf(t);
+    if(k>=0)sc+=jzCardVal(t)*1.2;
+    else{var e=sim.indexOf(-1);if(e>=0){sim[e]=t;sc+=jzCardVal(t)*.8;}else{sc-=jzCardVal(t)*.2;ok=false;}}
+  });
+  return {score:sc,ok:ok};
+}
 function jzSpot(seat){var x=M.x,i,c;for(c=0;c<x.fu.length;c++)for(i=0;i<x.nf[seat];i++)if(jzOpen(seat,i,x.fu[c]))return true;return false;}
 function jzAct(seat,kind,m){var ok=jzAct0(seat,kind,m);stAct(seat,m,ok);return ok;}
 function jzAct0(seat,kind,m){
@@ -5926,6 +5995,12 @@ function jzAct0(seat,kind,m){
     jzFinish();ok=true;
   }else if(a==='ra'){
     ok=x.ph==='tr'&&jzAcceptRo(m.k);
+  }else if(a==='et'){
+    if(x.ph!=='tr'&&x.ph!=='fu')return false;
+    jzAutoResolve(seat);jzFinish();ok=true;
+  }else if(a==='tb'){
+    if(x.ph!=='fu'||!x.fu.length||x.of)return false;
+    x.ph='tr';jzGenRo();ok=true;
   }else if(a==='dn'){
     if(x.ph!=='tr')return false;
     x.ph='fu';x.ro=[];x.tw=0;if(!x.fu.length)jzFinish();ok=true;
@@ -5991,7 +6066,7 @@ function jzAiStep(seat){
     of.cards.forEach(function(t){var k2=sim.indexOf(t);if(k2>=0)gain++;else{var e2=sim.indexOf(-1);if(e2>=0){sim[e2]=t;gain++;}}});
     var allOk=gain===of.cards.length;
     x.hand[seat].forEach(function(t){if(t===of.t)cnt++;});
-    var give=of.t===-2?0:of.j,okk=of.t===-2?(gain>=1&&jzTok(seat)>=0):(cnt>=give&&allOk&&gain>=1);
+    var give=of.t===-2?0:of.j,gn=jzGain(seat,of.cards),cost=of.t>=0?give*(jzHas(seat,of.t)>=0?1.5:.6)*jzCardVal(of.t):0,okk=of.t===-2?(gain>=1&&jzTok(seat)>=0):(cnt>=give&&allOk&&gain>=1&&gn.score-cost>0);
     if(Math.random()<.3)jzSay(seat,okk?[35,36,17,19][Math.floor(Math.random()*4)]:[27,29,30,32,33][Math.floor(Math.random()*5)]);
     jzAct(seat,'jz',{a:okk?'ac':'rj'});return;
   }
@@ -6037,12 +6112,13 @@ function jzAiStep(seat){
       x.ro.forEach(function(o4,k4){
         var okr=o4.fi.every(function(i4){return jzHas(seat,x.fu[i4])<0;});
         if(okr&&o4.g.length){var fr=0;for(var q4=0;q4<x.nf[seat];q4++)if(!x.fl[seat][q4]&&!x.sn[seat][q4])fr++;okr=o4.g.every(function(t4){return jzHas(seat,t4)>=0||fr>0;});}
+        if(okr){var loss=0;o4.w.forEach(function(t5){loss+=jzCardVal(t5)*.8;});okr=(jzGain(seat,o4.g).score+(o4.hat?6:0))>=loss*.7;}
         if(okr&&rbest<0)rbest=k4;
       });
       if(rbest>=0){jzAct(seat,'jz',{a:'ra',k:rbest});return;}
       x.ro=[];
     }
-    if(x.tw&&Date.now()<x.tw&&x.fu.length){jzSchedule();return;}
+    if(x.tw&&jzNow()<x.tw&&x.fu.length){jzSchedule();return;}
     if(x.ao<2){
       x.ao++;
       var idx=-1;
@@ -6053,7 +6129,7 @@ function jzAiStep(seat){
         jzAct(seat,'jz',{a:'of',fi:[idx],hi:[],t:want,j:1});return;
       }
     }
-    jzAct(seat,'jz',{a:'dn'});
+    jzAct(seat,'jz',{a:'et'});
   }
 }
 /* ---- jaliz view & UI ---- */
@@ -6089,6 +6165,7 @@ function jzTokV(v,seat){if(v.hh[seat]===seat)return seat;for(var j=0;j<M.n;j++)i
 function jzStatus(){
   var v=jzV(),me=M.me;
   if(M.over)return M.res==='draw'?'مساوی شد':'برنده: '+M.names[M.res];
+  if(M.sv&&M.svd&&M.svd.sub.indexOf(me)>=0)return 'رایانه جای تو بازی می‌کند؛ با اولین حرکتت کنترل برمی‌گردد';
   if(v.ev){
     if(v.ev.pend.indexOf(me)>=0)return JZE[v.ev.k].e+' '+JZE[v.ev.k].h;
     return JZE[v.ev.k].e+' منتظر بقیه…';
@@ -6099,8 +6176,8 @@ function jzStatus(){
     return M.names[v.of.from]+' پیشنهاد می‌دهد';
   }
   if(M.turn!==me)return (M.ai[M.turn]?M.names[M.turn]+' فکر می‌کند…':'نوبت '+M.names[M.turn])+(v.lg?' · '+v.lg:'');
-  if(v.fin)return 'دور آخر: تا '+fa(v.tr[me]?3:2)+' کارت بکار یا «رد کردن»';
-  return {p:v.pc?'زمین را بزن، بعد کارت بعدی را؛ یا «رد کردن»':'زمینی را بزن، بعد هر کارتی از دستت را',tr:'معامله کن؛ اگر نمی‌خواهی «🌱 کاشت» را بزن تا کارت‌های وسط را بکاری',fu:(v.fu.length&&!jzSpotV(v,me)?'جای کاشت نداری؛ یک زمینت را بزن تا برداشت شود':'زمینی را بزن، بعد یکی از کارت‌های وسط را')}[v.ph]||'نوبت توست';
+  if(v.fin)return 'دور آخر: تا '+fa(v.tr[me]?3:2)+' کارت بکار یا «رو کردن»';
+  return {p:v.pc?'زمین را بزن، بعد کارت بعدی را؛ یا «رو کردن»':'زمینی را بزن، بعد هر کارتی از دستت را',tr:'معامله کن؛ اگر نمی‌خواهی «🌱 کاشت» را بزن تا کارت‌های وسط را بکاری',fu:(v.fu.length&&!jzSpotV(v,me)?'جای کاشت نداری؛ یک زمینت را بزن تا برداشت شود':'زمینی را بزن، بعد یکی از کارت‌های وسط را')}[v.ph]||'نوبت توست';
 }
 function jzFm(v,i,f){
   var o=v.fl[i][f],m=(v.fe[i][f]?'🌱':'')+(v.rt[i][f]?'💧':'')+(v.sn[i][f]?'❄️':'')+(v.br[i][f]?'🧬':'');
@@ -6221,9 +6298,10 @@ function jzHtml(){
     if(!v.cb[me])acts+='<button class="btn sm" data-ja="cb"'+(v.co[me]>=1?'':' disabled')+'>🎴 ۳ کارت ۱🪙</button>';
   }
   if(my&&!of){
-    if(v.ph==='p'&&(v.pc>=1||v.fin))mainB='<button class="jz2-go sk" data-ja="sk"><b>رد کردن</b><small>پایان کاشت از دست</small></button>';
+    if(v.ph==='p'&&(v.pc>=1||v.fin))mainB='<button class="jz2-go sk" data-ja="sk"><b>رو کردن</b><small>دو کارت رو می‌شود</small></button>';
     if(v.ph==='fu'&&v.fu.length&&!jzSpotV(v,me)){var anyH=false;for(i=0;i<v.nf[me];i++)if(v.fl[me][i]&&!v.sn[me][i])anyH=true;if(!anyH)mainB='<button class="jz2-go bk" data-ja="bk"><b>🔥 بسوزان</b></button>';}
-    if(v.ph==='tr'){acts+='<button class="btn sm'+(M.jzp==='of'?' primary':'')+'" data-ja="of">پیشنهاد</button>';mainB='<button class="jz2-go" data-ja="dn"><span class="jz2-sp">🌱</span><b>کاشت کارت‌ها</b></button>';}
+    if(v.ph==='tr'){acts+='<button class="btn sm'+(M.jzp==='of'?' primary':'')+'" data-ja="of">پیشنهاد</button>';mainB='<button class="jz2-go" data-ja="dn"><span class="jz2-sp">🌱</span><b>کاشت کارت‌ها</b></button>';acts+='<button class="btn sm primary" data-ja="et">پایان نوبت</button>';}
+    if(v.ph==='fu')acts+='<button class="btn sm" data-ja="tb">معامله</button><button class="btn sm primary" data-ja="et">پایان نوبت</button>';
   }
   if(rvl&&can){
     acts+='<button class="btn sm primary" data-ja="ros"'+(M.gs.fu.length&&(M.gs.hd.length||M.gs.hat)?'':' disabled')+'>پیشنهاد به '+esc2(M.names[M.turn]||'')+'</button>';
@@ -6233,7 +6311,7 @@ function jzHtml(){
   var G=1672;
   /* phase pills */
   var tn=M.over?'پایان بازی':(M.turn===me?'نوبت: شما':'نوبت: '+esc2(M.names[M.turn]||''));
-  var pillsH='<div class="jz2-ph"><span class="jz2-pill t'+(M.turn===me&&!M.over?' me':'')+'">'+tn+'<i>▶</i></span><span class="jz2-pill'+(v.ph==='p'&&!v.ev?' on':'')+'">کاشت از دست <i>✓</i></span><span class="jz2-pill'+(v.ph==='tr'&&!v.ev?' on y':'')+'">معامله / تبادل <i>🤝</i></span><span class="jz2-pill'+(v.ph==='fu'||v.ph==='hat'?' on':'')+'">کاشت وسط <i>🌱</i></span></div>';
+  var pillsH='<div class="jz2-ph"><span class="jz2-pill t'+(M.turn===me&&!M.over?' me':'')+'">'+tn+'<i>▶</i></span>'+(M.sv?'<span class="jz2-pill" id="jzTm">'+jzsTmTxt()+'</span>':'')+'<span class="jz2-pill'+(v.ph==='p'&&!v.ev?' on':'')+'">کاشت از دست <i>✓</i></span><span class="jz2-pill'+(v.ph==='tr'&&!v.ev?' on y':'')+'">معامله / تبادل <i>🤝</i></span><span class="jz2-pill'+(v.ph==='fu'||v.ph==='hat'?' on':'')+'">کاشت وسط <i>🌱</i></span></div>';
   /* table: deck, market, discard, trade slots */
   var offc=of?of.cards:[],sl4='';
   for(i=0;i<4;i++)sl4+='<span class="jz2-ts">'+(offc[i]!==undefined?jzCard(offc[i],'',''):'')+'</span>';
@@ -6338,7 +6416,7 @@ function jzClick(t){
     }else if(a==='ofs'){
       mgDo('jz',{a:'of',fi:M.gs.fu.slice(),hi:M.gs.hd.slice(),t:M.wt,j:M.wj});M.gs={fu:[],hd:[]};M.jzp=null;mgRender();
     }else{
-      if(a==='dn'||a==='sk'||a==='ac'||a==='rj'||a==='hs')M.gs={fu:[],hd:[]};
+      if(a==='dn'||a==='sk'||a==='ac'||a==='rj'||a==='hs'||a==='et'||a==='tb')M.gs={fu:[],hd:[]};
       M.jm=false;mgDo('jz',a==='bk'?{a:'bk',f:-1}:{a:a});
     }
     return true;
@@ -7652,6 +7730,7 @@ function mgClose(){
     if(realClose){lsSet(MGH,null);MGW_LAST='';if(M.mode==='host')mgCloudPush(1);}
     Object.keys(M.links).forEach(function(s){var l=M.links[s];if(l){l.onclose=null;if(realClose&&!M.over){try{l.send({t:'bye'});}catch(e){}setTimeout(function(){try{l.close();}catch(e){}},400);}else l.close();}});
     if(M.link){M.link.onclose=null;M.link.close();}
+    if(M.sv&&M.code&&!M.over&&srvOk()){try{srvCall('jz_leave',{p_code:M.code}).catch(function(){});}catch(e){}}
     if(M.srv)M.srv.close();
   }
   M=null;$('#mini').hidden=true;
@@ -7956,7 +8035,7 @@ function mgRender(){
   }else if(M.wait||M.glob){
     var seats='';
     for(i=0;i<M.n;i++)seats+='<div class="mg-p">'+mgMark(i)+'<span>'+(M.names[i]||'منتظر بازیکن…')+(i===M.me?' (تو)':'')+'</span></div>';
-    var host=M.mode!=='guest';
+    var host=M.sv?!!M.svh:M.mode!=='guest';
     h=mgShell((host?'<div class="hb-s">این کد را برای دوستت بفرست تا وارد شود</div><div class="mg-code">'+M.code+'</div>':'<div class="hb-s">وارد اتاق شدی؛ منتظر شروع بازی توسط میزبان…</div>')+
       '<div class="mg-pl">'+seats+'</div>'+
       (host&&g.type==='poker'?pkCfgHtml():'')+(host&&g.max>2?'<div class="hb-s">تعداد بازیکنان (جاهای خالی را رایانه پر می‌کند)</div><div class="mg-r">'+[2,3,4,5,6,7,8,9].filter(function(n){return n<=g.max&&(g.type!=='jaliz'||n>=3);}).map(function(n){return '<button class="btn'+(M.n===n?' primary':'')+'" data-ln="'+n+'">'+fa(n)+'</button>';}).join('')+'</div><button class="btn primary big" data-mg="start">شروع بازی</button>':'')+
@@ -8041,6 +8120,11 @@ function mgLob(){
 }
 function mgRecord(){
   if(M&&M.mode==='guest'&&M.over)lsSet('mb_mgrj',null);
+  if(M&&M.sv){ /* server rooms: the server already wrote history, score and friend notices */
+    if(M.over&&M.recd!==M.rn){M.recd=M.rn;try{setTimeout(function(){HS=null;hubSync();histPull();},1500);}catch(e){}
+      if(M.rp&&!M.left&&M.rpShown!==M.rn){M.rpShown=M.rn;var cur1=M,rn1=M.rn;setTimeout(function(){if(M===cur1&&M.rn===rn1&&M.over&&M.rp&&!curSheet)rpShow(M.rp,M.me);},window.__FAST?0:1200);}}
+    return;
+  }
   if(!M||(M.mode!=='host'&&M.mode!=='guest'&&M.mode!=='ai')||!M.over||M.recd===M.rn)return;
   M.recd=M.rn;
   if(!M.rp&&M.mode!=='guest'){try{M.rp=mgReport();}catch(e){}}
@@ -8312,13 +8396,89 @@ function mgHost(code0,keepState){
   });}
   startSrv();
 }
+
+/* ---------- Jaliz server rooms: the game runs in the Edge Function «jz»; this adapter makes it look like a link ---------- */
+var JZS_OFF=0;
+function jzsPost(op,code,m){
+  var c=window.MB_SB;
+  return fetch(c.url.replace(/\/$/,'')+'/functions/v1/jz',{method:'POST',headers:{'apikey':c.key,'Authorization':'Bearer '+c.key,'Content-Type':'application/json'},body:JSON.stringify({op:op,token:ACCT.token,code:code,m:m})}).then(function(r){return r.json();});
+}
+function jzsTmTxt(){
+  var d=M&&M.svd;if(!d||M.over)return '';
+  if(d.off.indexOf(M.turn)>=0)return '⏸ قطع اتصال';
+  if(!d.dl)return '';
+  return '⏱ '+fa(Math.max(0,Math.ceil((d.dl-(Date.now()+JZS_OFF))/1000)));
+}
+var JZS_WHY={'خروج بازیکنان':'ناتمام — خروج بازیکنان','قطع سرور':'ناتمام — قطع سرور','host':'میزبان اتاق را بست','expired':'اتاق منقضی شد','server':'اتاق بسته شد'};
+function jzsT(cur){
+  return {join:function(code,onLink,onErr){
+    var closed=false,ver=null,fails=0,lastTick=0,lastRec=0,pollT=0,lobKey='',iv=0,nm=cleanName(loadName())||'مهمان',av=myAvN();
+    var link={onmessage:null,onclose:null,
+      send:function(d){
+        if(!d||closed)return;
+        if(d.t==='jz'&&d.m&&typeof d.m==='object')jzsPost('act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
+        else if(d.t==='svstart')jzsPost('start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
+        else if(d.t==='svn')srvCall('jz_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
+      },
+      close:function(){stop();}};
+    function stop(){closed=true;clearTimeout(pollT);clearInterval(iv);}
+    function emit(m,v){if(closed||!link.onmessage)return;if(v!=null&&m.t==='st')ver=v;link.onmessage(m);}
+    function loop(){
+      clearTimeout(pollT);if(closed)return;
+      srvCall('jz_poll',{p_code:code,p_ver:ver}).then(function(r){
+        if(closed)return;fails=0;
+        if(!r||!r.ok){
+          if(r&&r.why==='login'){stop();emit({t:'svx',why:'نشست حساب منقضی شده؛ دوباره وارد شو'});return;}
+          if(r&&(r.why==='closed'||r.why==='not seated')){stop();emit({t:'svx',why:'این اتاق بسته شده است'});return;}
+          pollT=setTimeout(loop,1500);return;
+        }
+        JZS_OFF=(+r.now||Date.now())-Date.now();
+        var n=r.n|0,names=[],avs=[],i;
+        for(i=0;i<n;i++){names.push('');avs.push(-1);}
+        (r.seats||[]).forEach(function(q){if(q.seat>=0&&q.seat<n){names[q.seat]=q.name;avs[q.seat]=q.av;}});
+        if(r.status==='closed'){stop();emit({t:'svx',why:JZS_WHY[r.why]||'این اتاق بسته شده است'});return;}
+        if(r.status==='wait'){
+          var k=JSON.stringify([n,names,!!r.host,r.you]);
+          if(k!==lobKey){lobKey=k;emit({t:'lob',g:'jaliz',you:r.you,n:n,names:names,av:avs,host:!!r.host,tk:'sv'});}
+        }else if(r.view){ver=r.ver;emit(r.view,r.ver);}
+        if(r.status==='done'){stop();return;}
+        if(Date.now()-lastRec>20000){lastRec=Date.now();lsSet('mb_mgrj',{g:'jaliz',code:code,tk:'sv',t:Date.now(),sr:1});}
+        if(r.status==='play'&&Date.now()-lastTick>1300){
+          lastTick=Date.now();
+          jzsPost('tick',code).then(function(q){if(q&&q.ok&&q.view&&q.ver!==ver)emit(q.view,q.ver);}).catch(function(){});
+        }
+        pollT=setTimeout(loop,1200);
+      }).catch(function(){
+        if(closed)return;
+        if(++fails>=3){stop();if(link.onclose)link.onclose();}else pollT=setTimeout(loop,1500);
+      });
+    }
+    srvCall('jz_join',{p_code:code,p_name:nm,p_av:typeof av==='number'?av:-1}).then(function(r){
+      if(closed)return;
+      onLink(link);
+      if(!r||!r.ok){if(link.onmessage)link.onmessage({t:'no',why:(r&&r.why)||'ورود ممکن نیست'});return;}
+      iv=setInterval(function(){var e=document.getElementById('jzTm');if(e)e.textContent=jzsTmTxt();},500);
+      loop();
+    }).catch(function(){if(!closed)onErr({type:'network'});});
+    return {close:stop};
+  }};
+}
+function jzsMk(){
+  var cur=M,nm=cleanName(loadName())||'میزبان',a=myAvN();
+  cur.msg='در حال ساخت اتاق…';mgRender();
+  srvCall('jz_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:4}).then(function(r){
+    if(M!==cur)return;
+    if(!r||!r.ok){cur.msg='ساخت اتاق ناموفق بود';mgRender();return;}
+    cur.sv=true;mgJoin(String(r.code));
+  }).catch(function(){if(M===cur){cur.msg='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';mgRender();}});
+}
 function mgJoin(code,tk0){
   code=dg(code).replace(/[^0-9]/g,'');
   if(code.length!==5){M.msg='کد ۵ رقمی را درست وارد کن';mgRender();return;}
   if(!onlineAvailable()){M.msg='بازی آنلاین به اینترنت نیاز دارد';mgRender();return;}
   var cur=M,nm=cleanName(loadName())||'مهمان',got=false;
   if(tk0){cur.tk=tk0;cur.noPay=true;}
-  cur.msg='در حال اتصال…';mgRender();
+  cur.msg='در حال اتصال…';if(cur.sv)cur.code=code;mgRender();
   function fail(t){if(M===cur){cur.msg=t;cur.mode='menu';cur.glob=false;cur.link=null;mgRender();}}
   function giveUp(){
     cur.rec=false;
@@ -8340,7 +8500,7 @@ function mgJoin(code,tk0){
   }
   cur.nudge=function(force){if(!force||M!==cur||cur.over||!got)return;if(cur.rec){clearTimeout(cur.rt);cur.rec=false;}if(force&&cur.link){var l=cur.link;cur.link=null;l.onclose=null;try{l.close();}catch(e){}}recon();};
   function attempt(){
-  cur.srv=transport().join(code,function(link){
+  cur.srv=(cur.sv?jzsT(cur):transport()).join(code,function(link){
     if(M!==cur)return;
     cur.link=link;
     link.onclose=function(){
@@ -8354,12 +8514,14 @@ function mgJoin(code,tk0){
       if(d.t==='no'){if(cur.rec){cur.rec=false;clearTimeout(cur.rt);lsSet('mb_mgrj',null);giveUp();link.onclose=null;link.close();return;}fail('ورود ممکن نیست: '+String(d.why||'').slice(0,60));link.onclose=null;link.close();return;}
       if(d.t==='say'){var si=+d.x;if(si>=0&&si<MG_SAY.length)toast(cur.names[0]+': '+MG_SAY[si]);return;}
       if(d.t==='bye'){cur.rec=false;clearTimeout(cur.rt);lsSet('mb_mgrj',null);link.onclose=null;toast('میزبان اتاق را بست');giveUp();return;}
+      if(d.t==='svx'){cur.rec=false;clearTimeout(cur.rt);lsSet('mb_mgrj',null);link.onclose=null;toast(String(d.why||'').slice(0,60));fail(String(d.why||'این اتاق بسته شده است').slice(0,60));return;}
       var n=+d.n;
       if(d.g!==cur.g.id||!(n>=2&&n<=cur.g.max)||!Array.isArray(d.names)||d.names.length!==n)return;
-      var you=+d.you;if(!(you>=1&&you<n))return;
+      var you=+d.you;if(!(you>=(cur.sv?0:1)&&you<n))return;
       if(d.t==='lob'){
-        if(typeof d.tk==='string'&&d.tk.length<=24){cur.tk=d.tk;lsSet('mb_mgrj',{g:cur.g.id,code:code,tk:d.tk,t:Date.now()});}
+        if(typeof d.tk==='string'&&d.tk.length<=24){cur.tk=d.tk;lsSet('mb_mgrj',{g:cur.g.id,code:code,tk:d.tk,t:Date.now(),sr:cur.sv?1:0});}
         if(cur.rec){cur.rec=false;clearTimeout(cur.rt);toast('دوباره وصل شدی ✅');}
+        if(cur.sv){cur.svh=!!d.host;cur.code=code;}
         got=true;cur.n=n;cur.me=you;cur.mode='guest';cur.glob=true;cur.wait=false;
         cur.names=d.names.map(function(x){return cleanName(x);});cur.av=Array.isArray(d.av)&&d.av.length===n?d.av.map(avI):[];cur.wins=cur.names.map(function(){return 0;});cur.ai=cur.names.map(function(){return false;});
         var u0=cleanUid(d.uid);if(u0)addRecent([{uid:u0,name:cur.names[0]||'بازیکن'}]);
@@ -8435,6 +8597,7 @@ function mgJoin(code,tk0){
       cur.res=d.res==='draw'?'draw':(d.res===0||(d.res>0&&d.res<n)?d.res|0:null);
       cur.line=d.line.filter(function(v){return typeof v==='number'&&v>=0&&v<cur.b.length;});
       cur.rn=+d.rn|0;if(cur.rn!==oldRn||!wasOver){cur.sel=-1;cur.promo=null;}
+      cur.svd=null;if(cur.sv&&d.sv&&typeof d.sv==='object'){cur.svd={dl:+d.sv.dl||0,off:Array.isArray(d.sv.off)?d.sv.off.map(Number):[],sub:Array.isArray(d.sv.sub)?d.sv.sub.map(Number):[]};}
       if(d.over&&d.rp&&typeof d.rp==='object'&&Array.isArray(d.rp.rows)&&d.rp.rows.length<80)cur.rp=d.rp;
       if(cur.noPay){cur.paidRn=cur.rn;cur.noPay=false;}
       if(cur.paidRn!==cur.rn){cur.paidRn=cur.rn;if(!cur.g.land||!cur.feePaid){cur.feePaid=1;ecoPayClamp(feeOf(cur.g.id,true));}}
@@ -8488,7 +8651,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv=true;mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
@@ -8505,6 +8668,7 @@ $('#mini').addEventListener('click',function(e){
   var tk=t.closest('[data-tk]');if(tk&&M.mode==='menu'){M.stake=+tk.dataset.tk;mgRender();return;}
   var pn=t.closest('[data-pn]');if(pn){M.pn=+pn.dataset.pn;mgRender();return;}
   var ln=t.closest('[data-ln]');
+  if(ln&&M.sv&&M.svh&&M.link){M.link.send({t:'svn',n:+ln.dataset.ln});return;}
   if(ln&&M.wait){
     var nn=+ln.dataset.ln,taken=0;M.names.forEach(function(q,i){if(q&&i>0)taken++;});
     if(nn<2||nn>M.g.max||taken>nn-1){toast('بازیکنان حاضر بیشتر از این تعداد است');return;}
@@ -8529,9 +8693,9 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
-  else if(k==='mk')mgHost();
-  else if(k==='join'){if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
-  else if(k==='start'){if(M.wait)mgBegin();}
+  else if(k==='mk'){if(M.g.type==='jaliz'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk();}else mgHost();}
+  else if(k==='join'){if(M.g.type==='jaliz'){if(!srvOk()){needAcct();return;}M.sv=true;}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
+  else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
   else if(k==='roll')mgDo('rl');
   else if(k==='resign'){
     if(M.over)return;
@@ -8563,6 +8727,7 @@ refreshResume();
 if(recLoad()&&isReload())setTimeout(function(){try{resumeSaved();}finally{document.documentElement.classList.remove('pre-hub');}},50);else document.documentElement.classList.remove('pre-hub');
 /* a refresh is not a leave: the host of a Jaliz/Poker/... room goes straight back into the same room (a real leave clears the record) */
 try{var mhr=lsGet(MGH,null);if(!recLoad()&&isReload()&&mhr&&mgHostOk()&&Date.now()-(+mhr.t||0)<150000)setTimeout(function(){try{if(!M)mgHostRestore();}catch(e){}},400);}catch(e){}
+try{var rjs=lsGet('mb_mgrj',null);if(isReload()&&rjs&&rjs.sr&&mgrjOk())setTimeout(function(){try{if(!M&&srvOk()){mgOpen(rjs.g);M.sv=true;mgJoin(rjs.code,rjs.tk);}}catch(e){}},700);}catch(e){}
 window.__cosmic={resumeSaved:function(){resumeSaved();},showEnd:function(){showEnd();},render:function(k,t0,secs){var c=new OfflineAudioContext(1,44100*secs,44100),cm=compose(k,0);MUS.master=c.createGain();MUS.master.gain.value=.6;var cp=c.createDynamicsCompressor();MUS.master.connect(cp);cp.connect(c.destination);cm.ev.forEach(function(e){if(e[0]>=t0&&e[0]<t0+secs)mPlay(c,e,-t0);});return c.startRendering().then(function(b){var d=b.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var v=Math.abs(d[i]);if(v>pk)pk=v;sq+=d[i]*d[i];}MUS.master=null;return {peak:+pk.toFixed(3),rms:+Math.sqrt(sq/d.length).toFixed(4)};});},compose:function(k,l){var r=compose(k,l||0);return {n:r.ev.length,dur:r.dur};},state:function(){if(S)S.me=MY;return S;},fx:function(k,t){if(t)applyTheme(t,true);playFx(k);},theme:function(t){applyTheme(t,true);}};
 })();
 </script>
