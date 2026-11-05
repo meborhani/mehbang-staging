@@ -7648,8 +7648,9 @@ function mgClose(){
   if(M===PARK)PARK=null;
   if(M){
     clearTimeout(M.t);clearTimeout(M.goneT);clearTimeout(M.rt);M.rec=false;if(M.mode==='guest')lsSet('mb_mgrj',null);
-    if(M.mode==='host'&&!M.__keepRec){lsSet(MGH,null);mgCloudPush(1);}
-    Object.keys(M.links).forEach(function(s){var l=M.links[s];if(l){l.onclose=null;l.close();}});
+    var realClose=(M.mode==='host'||(M.wait&&M.code))&&!M.__keepRec;
+    if(realClose){lsSet(MGH,null);MGW_LAST='';if(M.mode==='host')mgCloudPush(1);}
+    Object.keys(M.links).forEach(function(s){var l=M.links[s];if(l){l.onclose=null;if(realClose&&!M.over){try{l.send({t:'bye'});}catch(e){}setTimeout(function(){try{l.close();}catch(e){}},400);}else l.close();}});
     if(M.link){M.link.onclose=null;M.link.close();}
     if(M.srv)M.srv.close();
   }
@@ -7940,6 +7941,7 @@ function mgBoardHtml(){
   return '<div class="mn-bd">'+h+'</div>';
 }
 function mgRender(){
+  try{mgWaitSave();}catch(e){}
   if(!M)return;
   var el=$('#mini'),h='',g=M.g,i;
   if(M.mode==='menu'&&!M.wait){
@@ -8063,7 +8065,13 @@ function mgEntry(ai){
   if(g.land){if(!ecoCan(ecoNeed(g,M.pkcfg)+fee))return false;return ecoCharge(fee);}
   return ecoCharge(fee);
 }
-var MGH='mb_mghost';
+var MGH='mb_mghost',MGW_LAST='';
+/* host still in the waiting room: remember code + seat count so a refresh re-opens the same room */
+function mgWaitSave(){
+  if(!M||!M.wait||M.mode!=='menu'||!M.code||M.over||M.left)return;
+  var rec={v:1,g:M.g.id,code:M.code,t:Date.now(),w:1,s:{n:M.n,stake:M.stake,pkcfg:M.pkcfg}},k=JSON.stringify([rec.g,rec.code,rec.s]);
+  if(k===MGW_LAST)return;MGW_LAST=k;lsSet(MGH,rec);
+}
 function mgHostSave(){
   if(!M||M.mode!=='host'||!M.code)return;
   if(M.over||M.wait||M.left){if(M.over||M.left){lsSet(MGH,null);mgCloudPush(1);}return;}
@@ -8100,6 +8108,12 @@ function mgHostRestore(){
   var r=lsGet(MGH,null);if(!mgHostOk()){lsSet(MGH,null);renderHub();return;}
   mgOpen(r.g);
   var sv=r.s,cur=M,k;
+  if(r.w){
+    cur.n=sv.n||cur.n;if(sv.stake!=null)cur.stake=sv.stake;if(sv.pkcfg)cur.pkcfg=sv.pkcfg;
+    mgHost(r.code,true);cur.wait=true;mgRender();
+    toast('اتاق قبلی دوباره باز شد؛ دوستانت خودکار وصل می‌شوند');
+    return;
+  }
   cur.n=sv.n;cur.mode='host';
   ['names','wins','ai','rn','res','line','b','turn','x','bal','av','tok','stake','pkcfg','tvNet','tvPaid','pkBase0','pp','agn','rep','st','sub','miss','tkey','rcl'].forEach(function(f){if(sv[f]!==undefined&&sv[f]!==null)cur[f]=sv[f];});
   cur.me=0;cur.wait=false;cur.glob=false;cur.links={};
@@ -8318,7 +8332,7 @@ function mgJoin(code,tk0){
     cur.rec=true;cur.rcn=0;toast('اتصال قطع شد؛ دوباره وصل می‌شوم…');
     (function again(){
       if(M!==cur||cur.over||!cur.rec)return;
-      if(++cur.rcn>30){giveUp();return;}
+      if(++cur.rcn>60){giveUp();return;}
       try{if(cur.srv)cur.srv.close();}catch(e){}
       attempt();
       cur.rt=setTimeout(again,3000);
@@ -8339,6 +8353,7 @@ function mgJoin(code,tk0){
       if(M!==cur||!d||typeof d!=='object')return;
       if(d.t==='no'){if(cur.rec){cur.rec=false;clearTimeout(cur.rt);lsSet('mb_mgrj',null);giveUp();link.onclose=null;link.close();return;}fail('ورود ممکن نیست: '+String(d.why||'').slice(0,60));link.onclose=null;link.close();return;}
       if(d.t==='say'){var si=+d.x;if(si>=0&&si<MG_SAY.length)toast(cur.names[0]+': '+MG_SAY[si]);return;}
+      if(d.t==='bye'){cur.rec=false;clearTimeout(cur.rt);lsSet('mb_mgrj',null);link.onclose=null;toast('میزبان اتاق را بست');giveUp();return;}
       var n=+d.n;
       if(d.g!==cur.g.id||!(n>=2&&n<=cur.g.max)||!Array.isArray(d.names)||d.names.length!==n)return;
       var you=+d.you;if(!(you>=1&&you<n))return;
@@ -8546,6 +8561,8 @@ applyTheme(loadTheme(),true);
 fitAll();
 refreshResume();
 if(recLoad()&&isReload())setTimeout(function(){try{resumeSaved();}finally{document.documentElement.classList.remove('pre-hub');}},50);else document.documentElement.classList.remove('pre-hub');
+/* a refresh is not a leave: the host of a Jaliz/Poker/... room goes straight back into the same room (a real leave clears the record) */
+try{var mhr=lsGet(MGH,null);if(!recLoad()&&isReload()&&mhr&&mgHostOk()&&Date.now()-(+mhr.t||0)<150000)setTimeout(function(){try{if(!M)mgHostRestore();}catch(e){}},400);}catch(e){}
 window.__cosmic={resumeSaved:function(){resumeSaved();},showEnd:function(){showEnd();},render:function(k,t0,secs){var c=new OfflineAudioContext(1,44100*secs,44100),cm=compose(k,0);MUS.master=c.createGain();MUS.master.gain.value=.6;var cp=c.createDynamicsCompressor();MUS.master.connect(cp);cp.connect(c.destination);cm.ev.forEach(function(e){if(e[0]>=t0&&e[0]<t0+secs)mPlay(c,e,-t0);});return c.startRendering().then(function(b){var d=b.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var v=Math.abs(d[i]);if(v>pk)pk=v;sq+=d[i]*d[i];}MUS.master=null;return {peak:+pk.toFixed(3),rms:+Math.sqrt(sq/d.length).toFixed(4)};});},compose:function(k,l){var r=compose(k,l||0);return {n:r.ev.length,dur:r.dur};},state:function(){if(S)S.me=MY;return S;},fx:function(k,t){if(t)applyTheme(t,true);playFx(k);},theme:function(t){applyTheme(t,true);}};
 })();
 </script>
