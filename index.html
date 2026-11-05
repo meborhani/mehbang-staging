@@ -8411,13 +8411,13 @@ function jzsTmTxt(){
 }
 var JZS_WHY={'خروج بازیکنان':'ناتمام — خروج بازیکنان','قطع سرور':'ناتمام — قطع سرور','host':'میزبان اتاق را بست','expired':'اتاق منقضی شد','server':'اتاق بسته شد'};
 function jzsT(cur){
-  var fn=cur.sv,ACT_T={jaliz:'jz',kahroba:'kb'}[cur.g.id]||'jz';
+  var fn=cur.sv,ACT_T={jaliz:'jz',kahroba:'kb',poker:'pk'}[cur.g.id]||'jz';
   return {join:function(code,onLink,onErr){
     var closed=false,ver=null,fails=0,lastTick=0,lastRec=0,pollT=0,lobKey='',iv=0,nm=cleanName(loadName())||'مهمان',av=myAvN();
     var link={onmessage:null,onclose:null,
       send:function(d){
         if(!d||closed)return;
-        if((d.t==='jz'||d.t==='kb')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
+        if((d.t==='jz'||d.t==='kb'||d.t==='pk')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
         else if(d.t==='svstart')jzsPost(fn,'start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
         else if(d.t==='svn')srvCall(fn+'_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
       },
@@ -8465,9 +8465,9 @@ function jzsT(cur){
   }};
 }
 function jzsMk(gid){
-  var cur=M,nm=cleanName(loadName())||'میزبان',a=myAvN(),fn={jaliz:'jz',kahroba:'kb'}[gid]||gid,dn={jaliz:4,kahroba:4}[gid]||4;
+  var cur=M,nm=cleanName(loadName())||'میزبان',a=myAvN(),fn={jaliz:'jz',kahroba:'kb',poker:'pk'}[gid]||gid,dn={jaliz:4,kahroba:4,poker:4}[gid]||4;
   cur.msg='در حال ساخت اتاق…';mgRender();
-  srvCall(fn+'_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn}).then(function(r){
+  srvCall(fn+'_create',gid==='poker'?{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn,p_cfg:cur.pkcfg}:{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn}).then(function(r){
     if(M!==cur)return;
     if(!r||!r.ok){cur.msg='ساخت اتاق ناموفق بود';mgRender();return;}
     cur.sv=fn;mgJoin(String(r.code));
@@ -8652,7 +8652,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
@@ -8694,8 +8694,8 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
-  else if(k==='mk'){if(M.g.type==='jaliz'||M.g.type==='kahroba'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
-  else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
+  else if(k==='mk'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
+  else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
   else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
   else if(k==='roll')mgDo('rl');
   else if(k==='resign'){
@@ -8728,7 +8728,7 @@ refreshResume();
 if(recLoad()&&isReload())setTimeout(function(){try{resumeSaved();}finally{document.documentElement.classList.remove('pre-hub');}},50);else document.documentElement.classList.remove('pre-hub');
 /* a refresh is not a leave: the host of a Jaliz/Poker/... room goes straight back into the same room (a real leave clears the record) */
 try{var mhr=lsGet(MGH,null);if(!recLoad()&&isReload()&&mhr&&mgHostOk()&&Date.now()-(+mhr.t||0)<150000)setTimeout(function(){try{if(!M)mgHostRestore();}catch(e){}},400);}catch(e){}
-try{var rjs=lsGet('mb_mgrj',null);if(isReload()&&rjs&&rjs.sr&&mgrjOk())setTimeout(function(){try{if(!M&&srvOk()){mgOpen(rjs.g);M.sv={jaliz:'jz',kahroba:'kb'}[rjs.g]||'jz';mgJoin(rjs.code,rjs.tk);}}catch(e){}},700);}catch(e){}
+try{var rjs=lsGet('mb_mgrj',null);if(isReload()&&rjs&&rjs.sr&&mgrjOk())setTimeout(function(){try{if(!M&&srvOk()){mgOpen(rjs.g);M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rjs.g]||'jz';mgJoin(rjs.code,rjs.tk);}}catch(e){}},700);}catch(e){}
 window.__cosmic={resumeSaved:function(){resumeSaved();},showEnd:function(){showEnd();},render:function(k,t0,secs){var c=new OfflineAudioContext(1,44100*secs,44100),cm=compose(k,0);MUS.master=c.createGain();MUS.master.gain.value=.6;var cp=c.createDynamicsCompressor();MUS.master.connect(cp);cp.connect(c.destination);cm.ev.forEach(function(e){if(e[0]>=t0&&e[0]<t0+secs)mPlay(c,e,-t0);});return c.startRendering().then(function(b){var d=b.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var v=Math.abs(d[i]);if(v>pk)pk=v;sq+=d[i]*d[i];}MUS.master=null;return {peak:+pk.toFixed(3),rms:+Math.sqrt(sq/d.length).toFixed(4)};});},compose:function(k,l){var r=compose(k,l||0);return {n:r.ev.length,dur:r.dur};},state:function(){if(S)S.me=MY;return S;},fx:function(k,t){if(t)applyTheme(t,true);playFx(k);},theme:function(t){applyTheme(t,true);}};
 })();
 </script>

@@ -50,10 +50,11 @@ function advance(E,st,ctx,now){
 }
 function views(E,st,ctx,now){
   const M=E.M,s=st.srv,out={};
-  const off=[],sub=[];for(let i=0;i<M.n;i++){off.push(s.dc[i]!=null);sub.push(!!s.sub[i]);}
+  const offB=[],subB=[],offI=[],subI=[];
+  for(let i=0;i<M.n;i++){const o=s.dc[i]!=null,u=!!s.sub[i];offB.push(o);subB.push(u);if(o)offI.push(i);if(u)subI.push(i);}
   ctx.seats.forEach(q=>{
-    const v=E.kbView(q.seat);v.sb=sub;v.dcs=off;
-    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,line:[],b:[],x:v,sv:{dl:M.x.dl||0,off,sub,t:now},rp:M.over?M.rp:undefined};
+    const v=E.kbView(q.seat);v.sb=subB;v.dcs=offB;
+    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,line:[],b:[],x:v,sv:{dl:M.x.dl||0,off:offI,sub:subI,t:now},rp:M.over?M.rp:undefined};
   });
   return out;
 }
