@@ -3714,10 +3714,11 @@ function serializeGame(){
     setupS:S.setupS||0,deck:S.deck.slice(),bld:Array.from(S.bld.entries()),fil:Array.from(S.fil.entries()),longest:S.longest,dark:S.dark,lens:S.lens,entropy:S.entropy,hist:S.hist,bhBy:S.bhBy,bhRound:S.bhRound,bhN:S.bhN,elapsed:Date.now()-S.t0,
     players:S.players.map(function(p){return {name:p.name,ai:p.ai,hum:!!p.hum,token:p.token,uid:p.uid||null,kicked:p.kicked,stats:p.stats,res:p.res.slice(),cards:p.cards,fresh:p.fresh,played:p.played,playedCard:p.playedCard,novaUsed:p.novaUsed,idle:p.idle};})};
 }
-var saveT=null;
+var saveT=null,saveForce=false;
 function scheduleSave(force){
   if(window.__FAST&&!window.__SAVE)return;
-  clearTimeout(saveT);saveT=setTimeout(function(){saveCheckpoint(force);},force?0:350);
+  if(!force&&saveForce)return;
+  clearTimeout(saveT);saveForce=!!force;saveT=setTimeout(function(){var f=saveForce;saveForce=false;saveCheckpoint(f);},force?0:350);
 }
 function saveGate(){return !!S&&!S.over&&S.phase==='play'&&NET.pending.size===0&&(S.mode==='needRoll'||(S.mode==='actions'&&!S.busy&&!S.sel));}
 function saveCheckpoint(force){
