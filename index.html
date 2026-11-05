@@ -1555,6 +1555,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 @media (orientation:landscape) and (max-height:520px){.v3-brand{display:none}.v3-mg{grid-template-columns:repeat(4,minmax(0,1fr))}.v3-st{margin:8px 0}}
 .shopr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .lbl{height:34vh;min-height:120px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;gap:3px;font-size:13px}.lbm b{color:var(--ember)}.lbo{display:inline-block;margin:0 2px;padding:0 6px;border:1px solid var(--line);border-radius:9px;font-size:11px}.lbo.f{border-color:#5fbc43}.rktb{width:100%;border-collapse:collapse;font-size:12px}.rktb td,.rktb th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:center}.rktb tr.me{background:rgba(233,184,103,.15)}
+.ntf{max-height:46vh;overflow-y:auto}#stBody.endbody{max-height:46vh;overflow-y:auto}
 .ntf{display:grid;gap:6px}.ntf>div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px}.ntf small{display:block;color:var(--ink-dim);font-size:11px}
 </style>
 </head>
@@ -7631,7 +7632,7 @@ function hubSync(){
   HS_BUSY=true;var me=ACCT;
   srvCall('mb_hub').then(function(r){
     HS_BUSY=false;if(ACCT!==me)return;
-    if(!r){accExpired();return;}
+    if(!r)return;
     var old=HS;HS=r;
     if(old&&r.lv>old.lv)toast('به مرحلهٔ '+fa(r.lv)+' رسیدی 🎉');
     if(VIEW==='hub'&&$('#hub')&&!$('#hub').hidden&&!curSheet)renderHub();else gemPaint();

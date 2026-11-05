@@ -242,3 +242,23 @@ end $$;
 
 revoke all on function mb__lv(bigint),mb__friend(bigint,bigint),mb__fids(bigint) from public,anon,authenticated;
 grant execute on function mb_hub(text),mb_game_report(text,text,boolean,int,boolean),mb_gem_sell(text,int),mb_rank(text,text),mb_stats(text),mb_fr_list(text),mb_fr_add(text,text),mb_fr_accept(text,text),mb_fr_del(text,text),mb_chat_get(text,bigint),mb_chat_say(text,text),mb_ntf_get(text,boolean) to anon,authenticated;
+
+-- fix: friends' win notification uses the Persian game name
+create or replace function mb_game_report(p_token text,p_game text,p_win boolean,p_pts int,p_online boolean) returns boolean
+language plpgsql security definer set search_path='public','extensions' as $$
+declare a bigint:=mb__session(p_token); g text:=lower(left(coalesce(p_game,''),12)); nm text; f bigint; gn text;
+begin
+  if a is null or g !~ '^[a-z0-9]{2,12}$' then return false; end if;
+  if exists(select 1 from mb_games where account=a and at>now()-interval '15 seconds') then return false; end if;
+  if (select count(*) from mb_games where account=a and at>now()-interval '1 hour')>=40 then return false; end if;
+  insert into mb_games(account,game,win,pts,online) values(a,g,coalesce(p_win,false),greatest(0,least(coalesce(p_pts,0),30)),coalesce(p_online,false));
+  if coalesce(p_online,false) then
+    select username into nm from accounts where id=a;
+    gn:=case g when 'catan' then 'سیطره کتان' when 'poker' then 'پوکر' when 'kahroba' then 'کهربا' when 'jaliz' then 'جالیز' when 'manch' then 'منچ' when 'tavla' then 'تخته نرد' when 'ttt' then 'دوز' when 'c4' then 'چهار در ردیف' when 'chess' then 'شطرنج' else g end;
+    for f in select mb__fids(a) loop
+      insert into mb_ntf(account,msg) values(f,nm||' در '||gn||(case when p_win then ' برد 🏆' else ' بازی کرد' end));
+    end loop;
+  end if;
+  return true;
+end $$;
+grant execute on function mb_game_report(text,text,boolean,int,boolean) to anon,authenticated;
