@@ -2668,9 +2668,13 @@ function aiAccepts(q,give,get,h){
 async function aiOffer(p){
   var humans=S.players.filter(function(q){return !q.ai;});
   if(!humans.length||S.phase!=='play')return false;
-  var h=pick(humans),i,goal=aiGoal(p),want=-1,give=-1;
+  var h,i,goal=aiGoal(p),want=-1,give=-1;
   for(i=0;i<5;i++)if(goal[i]>p.res[i]){want=i;break;}
-  if(want<0||sum(h.res)<1)return false;
+  if(want<0)return false;
+  /* only offer to a human who actually holds the resource the computer wants */
+  var holders=humans.filter(function(q){return q.res[want]>=1;});
+  if(!holders.length)return false;
+  h=pick(holders);
   for(i=0;i<5;i++)if(i!==want&&p.res[i]-goal[i]>=1){give=i;break;}
   if(give<0)return false;
   var yes=await askSeat(h,'offer',{name:p.name,want:want,give:give},30000);
