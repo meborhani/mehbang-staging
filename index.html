@@ -2940,16 +2940,19 @@ async function setupPhase(st,from){
     var p=S.players[seq[s]],second=s>=N;
     S.cur=p.id;S.mode='idle';render();
     var vk,ek,sTmr=timerOn()&&!p.ai,sMs=sTmr?limitFor(p)*1000*tScale():0;
-    if(sTmr){p.timedOut=false;S.tEnd=Date.now()+sMs;scheduleSync();}
+    var sDl=Date.now()+sMs;
+    if(sTmr){p.timedOut=false;S.tEnd=sDl;scheduleSync();}
     if(p.ai){await sleep(380);vk=aiSetupStar(p);}
     else vk=await askSeat(p,'target',{kind:'vertex',keys:starSpots(p,true),cancel:false,hint:(second?'درایو دوم':'درایو نخست')+' را روی یکی از نقطه‌های روشن نصب کن'},sMs);
     if(stale(st))return;
     S.bld.set(vk,{o:p.id,t:'star',planet:false});
     if(second)S.verts.get(vk).tiles.forEach(function(tk){var t=S.tiles.get(tk),r=tileRes(t);if(r>=0)p.res[r]++;});
     render();
-    if(sTmr){S.tEnd=Date.now()+sMs;scheduleSync();}
+    /* the minute is shared by house and road: placing the house does not restart the clock */
+    var rMs=sTmr?Math.max(5000*tScale(),sDl-Date.now()):0;
+    if(sTmr){S.tEnd=Date.now()+rMs;scheduleSync();}
     if(p.ai){await sleep(280);ek=aiSetupFil(p,vk);}
-    else ek=await askSeat(p,'target',{kind:'edge',keys:filSpots(p,vk),cancel:false,hint:'یک کابل شبکه کنار درایو بکش'},sMs);
+    else ek=await askSeat(p,'target',{kind:'edge',keys:filSpots(p,vk),cancel:false,hint:'یک کابل شبکه کنار درایو بکش'},rMs);
     if(stale(st))return;
     if(sTmr){S.tEnd=0;p.acted=!p.timedOut;strikeCheck(p);}
     S.fil.set(ek,p.id);
@@ -3068,7 +3071,7 @@ function ptradeExec(p,qid){
 function runCmd(p,m){
   if(!p||p.ai||S.over||!m)return;
   var c=m.cmd;
-  p.acted=true;
+  if(c!=='roll')p.acted=true;   /* only a trade, purchase, build or card play counts as doing something */
   if(c==='roll'){if(S.cur===p.id&&S.mode==='needRoll'&&!S.busy&&S.waitRoll){var f=S.waitRoll;S.waitRoll=null;f();}return;}
   if(c==='end'){if(S.cur===p.id&&S.mode==='actions'&&!S.busy&&S.waitEnd){var g=S.waitEnd;S.waitEnd=null;g();}return;}
   if(c==='build'){if(['fil','star','gal','buy'].indexOf(m.kind)<0)return;actFor(p,function(){return hBuild(p,m.kind);});return;}
