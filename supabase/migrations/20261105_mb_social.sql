@@ -262,3 +262,17 @@ begin
   return true;
 end $$;
 grant execute on function mb_game_report(text,text,boolean,int,boolean) to anon,authenticated;
+
+-- friends' game history (self or friends only)
+create or replace function mb_games_of(p_token text,p_user text) returns json
+language plpgsql security definer set search_path='public','extensions' as $$
+declare me bigint:=mb__session(p_token); ub bigint; nm text; av smallint; avi text;
+begin
+  if me is null then return null; end if;
+  select id,username,avatar,avatar_img into ub,nm,av,avi from accounts where username=lower(btrim(coalesce(p_user,'')));
+  if ub is null then return json_build_object('ok',false); end if;
+  if ub<>me and not mb__friend(me,ub) then return json_build_object('ok',false); end if;
+  return json_build_object('ok',true,'n',nm,'av',av,'avi',avi,
+    'rows',coalesce((select json_agg(x) from (select (extract(epoch from at)*1000)::bigint t,game g,win w,pts p,online o from mb_games where account=ub order by id desc limit 40) x),'[]'::json));
+end $$;
+grant execute on function mb_games_of(text,text) to anon,authenticated;
