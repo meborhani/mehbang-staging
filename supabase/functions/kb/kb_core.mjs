@@ -48,11 +48,12 @@ function advance(E,st,ctx,now){
   }
   return any;
 }
-function views(E,ctx){
-  const M=E.M,out={};
+function views(E,st,ctx,now){
+  const M=E.M,s=st.srv,out={};
+  const off=[],sub=[];for(let i=0;i<M.n;i++){off.push(s.dc[i]!=null);sub.push(!!s.sub[i]);}
   ctx.seats.forEach(q=>{
-    const v=E.kbView(q.seat);
-    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,x:v,rp:M.over?M.rp:undefined};
+    const v=E.kbView(q.seat);v.sb=sub;v.dcs=off;
+    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,x:v,sv:{dl:M.x.dl||0,off,sub,t:now},rp:M.over?M.rp:undefined};
   });
   return out;
 }
@@ -81,10 +82,10 @@ export function run(op,m,ctx,now){
     if(s.sub[seat]){E.M.ai[seat]=false;delete s.sub[seat];ch=true;}
     const who=E.M.turn;
     if(m&&typeof m==='object'&&E.kbAct(seat,'kb',m)){ch=true;if(E.M.turn!==who||E.M.over)E.kbArm();advance(E,st,ctx,now);}
-    else return {ok:false,why:'bad',changed:ch,st:ch?st:undefined,views:ch?views(E,ctx):undefined,status:'play',mine:null};
+    else return {ok:false,why:'bad',changed:ch,st:ch?st:undefined,views:ch?views(E,st,ctx,now):undefined,status:'play',mine:null};
   }
   let status='play',res;
   if(E.M.over){status='done';if(!s.done){s.done=true;res=results(E,st,ctx);ch=true;}}
-  const V=views(E,ctx);
+  const V=views(E,st,ctx,now);
   return {ok:true,changed:ch,st,views:V,status,res,mine:V[ctx.seat]};
 }
