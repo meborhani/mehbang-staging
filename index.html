@@ -1622,9 +1622,9 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 <div id="hub" hidden dir="rtl" lang="fa"></div>
 <div id="mini" hidden dir="rtl" lang="fa"></div>
 <div id="lobby" hidden><div class="intro-in" id="lobbyIn"></div></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="peerjs.min.js"></script>
 <script src="sb-config.js"></script>
-<script>window.Peer||document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>')</script>
 <script>
 (function(){
 'use strict';
@@ -8399,9 +8399,9 @@ function mgHost(code0,keepState){
 
 /* ---------- Jaliz server rooms: the game runs in the Edge Function «jz»; this adapter makes it look like a link ---------- */
 var JZS_OFF=0;
-function jzsPost(op,code,m){
+function jzsPost(fn,op,code,m){
   var c=window.MB_SB;
-  return fetch(c.url.replace(/\/$/,'')+'/functions/v1/jz',{method:'POST',headers:{'apikey':c.key,'Authorization':'Bearer '+c.key,'Content-Type':'application/json'},body:JSON.stringify({op:op,token:ACCT.token,code:code,m:m})}).then(function(r){return r.json();});
+  return fetch(c.url.replace(/\/$/,'')+'/functions/v1/'+fn,{method:'POST',headers:{'apikey':c.key,'Authorization':'Bearer '+c.key,'Content-Type':'application/json'},body:JSON.stringify({op:op,token:ACCT.token,code:code,m:m})}).then(function(r){return r.json();});
 }
 function jzsTmTxt(){
   var d=M&&M.svd;if(!d||M.over)return '';
@@ -8411,21 +8411,22 @@ function jzsTmTxt(){
 }
 var JZS_WHY={'خروج بازیکنان':'ناتمام — خروج بازیکنان','قطع سرور':'ناتمام — قطع سرور','host':'میزبان اتاق را بست','expired':'اتاق منقضی شد','server':'اتاق بسته شد'};
 function jzsT(cur){
+  var fn=cur.sv,ACT_T={jaliz:'jz',kahroba:'kb'}[cur.g.id]||'jz';
   return {join:function(code,onLink,onErr){
     var closed=false,ver=null,fails=0,lastTick=0,lastRec=0,pollT=0,lobKey='',iv=0,nm=cleanName(loadName())||'مهمان',av=myAvN();
     var link={onmessage:null,onclose:null,
       send:function(d){
         if(!d||closed)return;
-        if(d.t==='jz'&&d.m&&typeof d.m==='object')jzsPost('act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
-        else if(d.t==='svstart')jzsPost('start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
-        else if(d.t==='svn')srvCall('jz_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
+        if((d.t==='jz'||d.t==='kb')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
+        else if(d.t==='svstart')jzsPost(fn,'start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
+        else if(d.t==='svn')srvCall(fn+'_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
       },
       close:function(){stop();}};
     function stop(){closed=true;clearTimeout(pollT);clearInterval(iv);}
     function emit(m,v){if(closed||!link.onmessage)return;if(v!=null&&m.t==='st')ver=v;link.onmessage(m);}
     function loop(){
       clearTimeout(pollT);if(closed)return;
-      srvCall('jz_poll',{p_code:code,p_ver:ver}).then(function(r){
+      srvCall(fn+'_poll',{p_code:code,p_ver:ver}).then(function(r){
         if(closed)return;fails=0;
         if(!r||!r.ok){
           if(r&&r.why==='login'){stop();emit({t:'svx',why:'نشست حساب منقضی شده؛ دوباره وارد شو'});return;}
@@ -8439,13 +8440,13 @@ function jzsT(cur){
         if(r.status==='closed'){stop();emit({t:'svx',why:JZS_WHY[r.why]||'این اتاق بسته شده است'});return;}
         if(r.status==='wait'){
           var k=JSON.stringify([n,names,!!r.host,r.you]);
-          if(k!==lobKey){lobKey=k;emit({t:'lob',g:'jaliz',you:r.you,n:n,names:names,av:avs,host:!!r.host,tk:'sv'});}
+          if(k!==lobKey){lobKey=k;emit({t:'lob',g:cur.g.id,you:r.you,n:n,names:names,av:avs,host:!!r.host,tk:'sv'});}
         }else if(r.view){ver=r.ver;emit(r.view,r.ver);}
         if(r.status==='done'){stop();return;}
-        if(Date.now()-lastRec>20000){lastRec=Date.now();lsSet('mb_mgrj',{g:'jaliz',code:code,tk:'sv',t:Date.now(),sr:1});}
+        if(Date.now()-lastRec>20000){lastRec=Date.now();lsSet('mb_mgrj',{g:cur.g.id,code:code,tk:'sv',t:Date.now(),sr:1});}
         if(r.status==='play'&&Date.now()-lastTick>1300){
           lastTick=Date.now();
-          jzsPost('tick',code).then(function(q){if(q&&q.ok&&q.view&&q.ver!==ver)emit(q.view,q.ver);}).catch(function(){});
+          jzsPost(fn,'tick',code).then(function(q){if(q&&q.ok&&q.view&&q.ver!==ver)emit(q.view,q.ver);}).catch(function(){});
         }
         pollT=setTimeout(loop,1200);
       }).catch(function(){
@@ -8453,7 +8454,7 @@ function jzsT(cur){
         if(++fails>=3){stop();if(link.onclose)link.onclose();}else pollT=setTimeout(loop,1500);
       });
     }
-    srvCall('jz_join',{p_code:code,p_name:nm,p_av:typeof av==='number'?av:-1}).then(function(r){
+    srvCall(fn+'_join',{p_code:code,p_name:nm,p_av:typeof av==='number'?av:-1}).then(function(r){
       if(closed)return;
       onLink(link);
       if(!r||!r.ok){if(link.onmessage)link.onmessage({t:'no',why:(r&&r.why)||'ورود ممکن نیست'});return;}
@@ -8463,13 +8464,13 @@ function jzsT(cur){
     return {close:stop};
   }};
 }
-function jzsMk(){
-  var cur=M,nm=cleanName(loadName())||'میزبان',a=myAvN();
+function jzsMk(gid){
+  var cur=M,nm=cleanName(loadName())||'میزبان',a=myAvN(),fn={jaliz:'jz',kahroba:'kb'}[gid]||gid,dn={jaliz:4,kahroba:4}[gid]||4;
   cur.msg='در حال ساخت اتاق…';mgRender();
-  srvCall('jz_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:4}).then(function(r){
+  srvCall(fn+'_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn}).then(function(r){
     if(M!==cur)return;
     if(!r||!r.ok){cur.msg='ساخت اتاق ناموفق بود';mgRender();return;}
-    cur.sv=true;mgJoin(String(r.code));
+    cur.sv=fn;mgJoin(String(r.code));
   }).catch(function(){if(M===cur){cur.msg='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';mgRender();}});
 }
 function mgJoin(code,tk0){
@@ -8651,7 +8652,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv=true;mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
@@ -8693,8 +8694,8 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
-  else if(k==='mk'){if(M.g.type==='jaliz'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk();}else mgHost();}
-  else if(k==='join'){if(M.g.type==='jaliz'){if(!srvOk()){needAcct();return;}M.sv=true;}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
+  else if(k==='mk'){if(M.g.type==='jaliz'||M.g.type==='kahroba'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
+  else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
   else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
   else if(k==='roll')mgDo('rl');
   else if(k==='resign'){
@@ -8727,7 +8728,7 @@ refreshResume();
 if(recLoad()&&isReload())setTimeout(function(){try{resumeSaved();}finally{document.documentElement.classList.remove('pre-hub');}},50);else document.documentElement.classList.remove('pre-hub');
 /* a refresh is not a leave: the host of a Jaliz/Poker/... room goes straight back into the same room (a real leave clears the record) */
 try{var mhr=lsGet(MGH,null);if(!recLoad()&&isReload()&&mhr&&mgHostOk()&&Date.now()-(+mhr.t||0)<150000)setTimeout(function(){try{if(!M)mgHostRestore();}catch(e){}},400);}catch(e){}
-try{var rjs=lsGet('mb_mgrj',null);if(isReload()&&rjs&&rjs.sr&&mgrjOk())setTimeout(function(){try{if(!M&&srvOk()){mgOpen(rjs.g);M.sv=true;mgJoin(rjs.code,rjs.tk);}}catch(e){}},700);}catch(e){}
+try{var rjs=lsGet('mb_mgrj',null);if(isReload()&&rjs&&rjs.sr&&mgrjOk())setTimeout(function(){try{if(!M&&srvOk()){mgOpen(rjs.g);M.sv={jaliz:'jz',kahroba:'kb'}[rjs.g]||'jz';mgJoin(rjs.code,rjs.tk);}}catch(e){}},700);}catch(e){}
 window.__cosmic={resumeSaved:function(){resumeSaved();},showEnd:function(){showEnd();},render:function(k,t0,secs){var c=new OfflineAudioContext(1,44100*secs,44100),cm=compose(k,0);MUS.master=c.createGain();MUS.master.gain.value=.6;var cp=c.createDynamicsCompressor();MUS.master.connect(cp);cp.connect(c.destination);cm.ev.forEach(function(e){if(e[0]>=t0&&e[0]<t0+secs)mPlay(c,e,-t0);});return c.startRendering().then(function(b){var d=b.getChannelData(0),pk=0,sq=0;for(var i=0;i<d.length;i++){var v=Math.abs(d[i]);if(v>pk)pk=v;sq+=d[i]*d[i];}MUS.master=null;return {peak:+pk.toFixed(3),rms:+Math.sqrt(sq/d.length).toFixed(4)};});},compose:function(k,l){var r=compose(k,l||0);return {n:r.ev.length,dur:r.dur};},state:function(){if(S)S.me=MY;return S;},fx:function(k,t){if(t)applyTheme(t,true);playFx(k);},theme:function(t){applyTheme(t,true);}};
 })();
 </script>

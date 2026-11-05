@@ -53,7 +53,7 @@ function views(E,st,ctx,now){
   const off=[],sub=[];for(let i=0;i<M.n;i++){off.push(s.dc[i]!=null);sub.push(!!s.sub[i]);}
   ctx.seats.forEach(q=>{
     const v=E.kbView(q.seat);v.sb=sub;v.dcs=off;
-    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,x:v,sv:{dl:M.x.dl||0,off,sub,t:now},rp:M.over?M.rp:undefined};
+    out[q.seat]={t:'st',g:'kahroba',you:q.seat,n:M.n,names:M.names,av:M.av,wins:M.wins,ai:M.ai,rn:M.rn,turn:M.turn,over:M.over,res:M.res,line:[],b:[],x:v,sv:{dl:M.x.dl||0,off,sub,t:now},rp:M.over?M.rp:undefined};
   });
   return out;
 }
