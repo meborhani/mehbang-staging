@@ -66,23 +66,23 @@ $$;
 
 create or replace function mb_hub(p_token text) returns json
 language plpgsql security definer set search_path='public','extensions' as $$
-declare a bigint:=mb__session(p_token); xp bigint; l record; pr mb_prof; tot int; un int; bal int;
+declare me bigint:=mb__session(p_token); xp bigint; l record; pr mb_prof; tot int; un int; bal int;
 begin
-  if a is null then return null; end if;
-  insert into mb_prof(account) values(a) on conflict do nothing;
-  update accounts set last_seen=now() where id=a;
-  select coalesce(count(*),0)*10+coalesce(count(*) filter(where win),0)*20 into xp from mb_games where account=a;
+  if me is null then return null; end if;
+  insert into mb_prof(account) values(me) on conflict do nothing;
+  update accounts set last_seen=now() where id=me;
+  select coalesce(count(*),0)*10+coalesce(count(*) filter(where win),0)*20 into xp from mb_games where account=me;
   select * into l from mb__lv(xp);
-  select * into pr from mb_prof where account=a for update;
+  select * into pr from mb_prof where account=me for update;
   if pr.lvpaid<l.lv-1 then
     tot:=((l.lv-1)*l.lv)/2-(pr.lvpaid*(pr.lvpaid+1))/2;
-    update mb_prof set gems=gems+tot, lvpaid=l.lv-1 where account=a;
-    insert into mb_ntf(account,msg) values(a,'به مرحلهٔ '||l.lv||' رسیدی و '||tot||' گوهر گرفتی 💎');
+    update mb_prof set gems=gems+tot, lvpaid=l.lv-1 where account=me;
+    insert into mb_ntf(account,msg) values(me,'به مرحلهٔ '||l.lv||' رسیدی و '||tot||' گوهر گرفتی 💎');
     pr.gems:=pr.gems+tot;
   end if;
-  select count(*) into un from mb_ntf where account=a and not seen;
-  select count(*) into tot from mb_friends fq where fq.b=a and fq.st='p';
-  select balance into bal from accounts where id=a;
+  select count(*) into un from mb_ntf where account=me and not seen;
+  select count(*) into tot from mb_friends fq where fq.b=me and fq.st='p';
+  select balance into bal from accounts where id=me;
   return json_build_object('lv',l.lv,'xp',xp,'into',l.into_,'need',l.need,'gems',pr.gems,'unread',un,'req',tot,'bal',bal);
 end $$;
 
