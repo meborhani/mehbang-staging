@@ -1656,7 +1656,9 @@ var CARD={
 var NUMS=[2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12];
 var S=null, curSheet=null, chosenN=4;
 var MY=null, ROLE='solo', curDraw=null;
-var NET={restore:null,cli:null,rejoinT:null,linkOk:false,kicked:false,localPend:null,fxSeen:undefined,links:{},pending:new Map(),askId:0,syncT:null,hostLink:null,lobby:null,lv:null,started:false,onTradeResult:null,peer:null};
+var NET={restore:null,cli:null,rejoinT:null,linkOk:false,kicked:false,localPend:null,fxSeen:undefined,links:{},pending:new Map(),askId:0,syncT:null,hostLink:null,lobby:null,lv:null,started:false,onTradeResult:null,peer:null,
+  /* server-authoritative Catan room (new): srv is the jzsT().join() closer, srvLink is the live transport link */
+  srv:null,srvLink:null,catChatSeen:0,catPrompt:null,ptResultShown:false};
 var PT={};
 var FEEL={mus:true,snd:true,vib:true};
 try{var _f=JSON.parse(localStorage.getItem('datis_feel')||'null');if(_f){FEEL.mus=_f.mus!==false;FEEL.snd=_f.snd!==false;FEEL.vib=_f.vib!==false;}}catch(e){}
@@ -3130,8 +3132,30 @@ function runCmd(p,m){
   if(c==='ptradeWith'){ptradeExec(p,+m.id);return;}
 }
 function dispatchCmd(m){
+  if(NET.srvLink){ // server-authoritative room: translate the client's existing {cmd:...} shapes into the server's {a:...} action verbs; everything that built this `m` (openTrade/openPlayerTrade/openCards/#dock) is unchanged
+    if(m.cmd==='roll'||m.cmd==='end'){catSend({a:m.cmd});return;}
+    if(m.cmd==='bank'){catSend({a:'bank',give:m.give,get:m.get});return;}
+    if(m.cmd==='ptrade'){NET.ptResultShown=false;catSend({a:'ptrade',give:m.give,get:m.get});return;}
+    if(m.cmd==='ptradeWith'){catSend({a:'ptradeWith',id:m.id});return;}
+    if(m.cmd==='play'){catSend({a:'play',type:m.type});return;}
+    if(m.cmd==='build'){catDispatchBuild(m.kind);return;}
+    return;
+  }
   if(ROLE==='client'){if(NET.hostLink){var o={t:'cmd'};for(var k in m)o[k]=m[k];NET.hostLink.send(o);}}
   else runCmd(me(),m);
+}
+/* build still needs a board-position pick first (exactly like hBuild() does for solo/host games); the
+   only difference for a server room is that the final placement is sent to the server, not applied locally */
+function catDispatchBuild(kind){
+  var p=me();if(!p)return;
+  if(kind==='buy'){catSend({a:'build',k:'buy'});return;}
+  var keys=[],kk='vertex',hint='';
+  if(kind==='fil'){keys=filSpots(p);kk='edge';hint='مسیر کابل شبکه را انتخاب کن';}
+  else if(kind==='star'){keys=starSpots(p,false);hint='جای درایو را انتخاب کن';}
+  else if(kind==='gal'){S.bld.forEach(function(b,vk){if(b.o===p.id&&b.t==='star')keys.push(vk);});hint='کدام درایو به تابلو فرمان ارتقا یابد؟';}
+  else return;
+  if(!keys.length){toast('جای معتبری نیست');return;}
+  selectTarget(kk,keys,{cancel:true,hint:hint}).then(function(k){if(k)catSend({a:'build',k:kind,key:k});});
 }
 function openTrade(){
   var p=me(),give=-1,get=-1;
@@ -3294,6 +3318,7 @@ function sendChat(k,i,r){
   if(!S||MY==null)return;
   var now=Date.now();if(NET.chatAt&&now-NET.chatAt<900)return;NET.chatAt=now;
   var m={k:k,i:i|0,r:r|0};if(!chatValid(m))return;
+  if(NET.srvLink){catSend({a:'chat',k:m.k,i:m.i,r:m.r});return;}
   if(ROLE==='client'){if(NET.hostLink)NET.hostLink.send({t:'chat',k:m.k,i:m.i,r:m.r});}
   else emitChat(MY,m.k,m.i,m.r);
 }
@@ -3751,6 +3776,171 @@ function buildBoard(b){
   b.ports.forEach(function(pt){S.portAt.set(pt.a,pt.type);S.portAt.set(pt.b,pt.type);});
   S.vb=b.vb;S.cen=b.cen;S.bh=b.bh;
 }
+/* server-authoritative board: the server only sends {R,tiles,ports:[{a,b,type}],bh} (it has no
+   concept of SVG viewBox geometry), so unlike buildBoard() above (used for the old host-broadcast
+   P2P snapshot which already included vb/cen), this derives S.cen/S.vb locally with the exact same
+   formulas online.html's own initBoard() already uses, from the real tile/vertex coordinates addTile()
+   produces. Geometry only; no randomness, so every client reaches the same vb/cen from the same board. */
+function catApplyBoard(b){
+  S.R=b.R;S.tiles=new Map();S.verts=new Map();S.edges=new Map();
+  b.tiles.forEach(function(t){addTile(t[0],t[1],t[2],t[3]);});
+  S.bh=b.bh;
+  var sx=0,sy=0;
+  S.tiles.forEach(function(t){sx+=t.cx;sy+=t.cy;});
+  var cx=sx/S.tiles.size,cy=sy/S.tiles.size;
+  S.cen=[cx,cy];
+  S.ports=[];S.portAt=new Map();
+  b.ports.forEach(function(src){
+    var a=S.verts.get(src.a),bb=S.verts.get(src.b);
+    if(!a||!bb)return; // defensive: should never happen since ports always sit on real board edges
+    var mx=(a.x+bb.x)/2,my=(a.y+bb.y)/2,dx=mx-cx,dy=my-cy,d=Math.sqrt(dx*dx+dy*dy)||1;
+    var pt={a:src.a,b:src.b,type:src.type,mx:mx,my:my,ox:dx/d,oy:dy/d};
+    S.ports.push(pt);S.portAt.set(src.a,pt.type);S.portAt.set(src.b,pt.type);
+  });
+  var x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  S.verts.forEach(function(v){x0=Math.min(x0,v.x);x1=Math.max(x1,v.x);y0=Math.min(y0,v.y);y1=Math.max(y1,v.y);});
+  S.ports.forEach(function(pt){var bx=pt.mx+pt.ox*0.72,by=pt.my+pt.oy*0.72;x0=Math.min(x0,bx-0.45);x1=Math.max(x1,bx+0.45);y0=Math.min(y0,by-0.45);y1=Math.max(y1,by+0.45);});
+  S.vb=[x0-0.1,y0-0.1,x1-x0+0.2,y1-y0+0.2];
+}
+/* ================= server-authoritative Catan rooms =================
+   Mirrors jzsT/jzsPost/srvCall (already proven for jaliz/kahroba/poker) but drives Catan's OWN S
+   object + render() directly instead of joining the shared mg/M system: Catan's rules/UI are a
+   completely different shape from jaliz/kahroba/poker, so reusing S/render() as-is (and reusing
+   selectTarget/choose/pickResources/offerSheet/tradeOfferSheet exactly as they already are) is the
+   lower-risk path. The server is the only source of truth; every function below only reads the
+   server's view and sends the player's choice back -- it never mutates game state on its own. */
+function catSend(m){if(NET.srvLink)NET.srvLink.send({t:'cat',m:m});}
+function catFirstView(v){
+  var cfg=[];
+  for(var i=0;i<v.n;i++)cfg.push({name:v.names[i]||('بازیکن '+fa(i+1)),ai:!!v.ai[i],remote:i!==v.you});
+  S=newState(v.n,false,cfg);
+  S.players.forEach(function(p){if(!p.ai)p.hum=true;});
+  catApplyBoard(v.x);
+  MY=v.you;ROLE='client';S.n=v.n;
+  NET.catChatSeen=0;NET.catPrompt=null;NET.ptResultShown=false;
+  recSave({type:'svcat',code:NET.code}); // covers joining/reconnecting to a room that is already in 'play' (no 'lob' message is ever sent for that case)
+}
+function catApplyView(v){
+  if(!v||!v.x)return;
+  if(!S||S.n!==v.n)catFirstView(v);
+  var x=v.x;
+  S.round=x.round;S.cur=x.cur;S.phase=x.phase;S.dice=x.dice;S.rolling=false;S.hotNum=x.hotNum;S.bh=x.bh;
+  S.longest=x.longest;S.dark=x.dark;S.lens=x.lens||[];S.over=x.over;S.winner=x.winner;S.deck={length:x.deckN};
+  S.log=x.log||[];
+  S.bld=new Map(x.bld.map(function(e){return [e[0],{o:e[1],t:e[2]}];}));
+  S.fil=new Map(x.fil);
+  x.players.forEach(function(pv,i){
+    var p=S.players[i];if(!p)return;
+    p.res=pv.res;p.cards=pv.cards;p.fresh=pv.fresh||{};p.stats=pv.stats;p.played=pv.played;p.playedCard=pv.playedCard;
+  });
+  S.tEnd=x.tl?Date.now()+x.tl:0;S.setup=x.setup;S.sub=x.sub;
+  if(x.phase==='play'&&!x.over&&x.cur===MY)S.mode=x.sub==='roll'?'needRoll':(x.sub==='main'?'actions':'idle');
+  else S.mode='idle';
+  render();
+  catApplyChat(x.chat);
+  catHandlePending(x);
+}
+function catApplyChat(chat){
+  if(!chat||!chat.length)return;
+  chat.forEach(function(c){
+    if(c.id<=(NET.catChatSeen||0))return;
+    NET.catChatSeen=c.id;
+    if(c.from!==MY)showSay(c.from,c.k,c.i,c.r);
+  });
+}
+/* opens the one existing UI primitive this exact pending request needs, and sends my choice back once
+   it resolves. NET.catPrompt dedups so a prompt already open for the SAME pending request (identified
+   by its kind + a bit of its own progress) is never re-opened by the next poll. */
+function catHandlePending(x){
+  if(MY==null||x.over)return;
+  if(x.phase==='setup'&&x.cur===MY&&x.setup){
+    var st=x.setup,sk='setup:'+st.stage;
+    if(NET.catPrompt===sk)return;NET.catPrompt=sk;
+    var p=me();
+    if(st.stage!=='road'){
+      selectTarget('vertex',starSpots(p,true),{cancel:false,hint:'درایو را روی یکی از نقطه‌های روشن نصب کن'}).then(function(k){NET.catPrompt=null;if(k)catSend({a:'setup',key:k});});
+    }else{
+      selectTarget('edge',filSpots(p,st.houseV),{cancel:false,hint:'یک کابل شبکه کنار درایو بکش'}).then(function(k){NET.catPrompt=null;if(k)catSend({a:'setup',key:k});});
+    }
+    return;
+  }
+  if(x.sub==='discard'&&x.discard&&x.discard.need.indexOf(MY)>=0&&!x.discard.done[MY]){
+    if(NET.catPrompt==='discard')return;NET.catPrompt='discard';
+    var need=x.discard.amt[MY],lim=me().res.slice();
+    pickResources({title:'قطعی برق: '+fa(need)+' قطعه را کنار بگذار',n:need,limit:lim}).then(function(sel){NET.catPrompt=null;catSend({a:'pick',sel:sel});});
+    return;
+  }
+  if(x.sub==='cardTarget'&&x.cardTarget&&x.cardTarget.seat===MY){
+    var ct=x.cardTarget,ck='ct:'+ct.kind+':'+(ct.got||0);
+    if(NET.catPrompt===ck)return;NET.catPrompt=ck;
+    var p2=me();
+    if(ct.kind==='tile'){
+      var opts=Array.from(S.tiles.keys()).filter(function(k){return k!==S.bh;});
+      selectTarget('tile',opts,{cancel:false,hint:'خرابی را به کدام کاشی می‌بری؟'}).then(function(k){NET.catPrompt=null;if(k)catSend({a:'target',key:k});});
+    }else if(ct.kind==='edge'){
+      selectTarget('edge',filSpots(p2),{cancel:false,hint:'کابل رایگان '+fa((ct.got||0)+1)+' را انتخاب کن'}).then(function(k){NET.catPrompt=null;if(k)catSend({a:'target',key:k});});
+    }else if(ct.kind==='victim'){
+      choose('از چه کسی می‌دزدی؟',ct.opts.map(function(id){return {label:S.players[id].name,value:id};})).then(function(v){NET.catPrompt=null;catSend({a:'choose',value:v});});
+    }else if(ct.kind==='mono'){
+      choose('کدام قطعه را انحصاری می‌کنی؟',RN.map(function(nm,i){return {label:nm,value:i};})).then(function(v){NET.catPrompt=null;catSend({a:'choose',value:v});});
+    }else if(ct.kind==='pick2'){
+      pickResources({title:'برکت: دو قطعهٔ دلخواه بردار',n:2,limit:null}).then(function(sel){NET.catPrompt=null;catSend({a:'pick',sel:sel});});
+    }else NET.catPrompt=null;
+    return;
+  }
+  if(x.sub==='offerWait'&&x.offer&&x.offer.target===MY){
+    if(NET.catPrompt==='offer')return;NET.catPrompt='offer';
+    offerSheet({name:S.players[x.offer.ai].name,want:x.offer.want,give:x.offer.give}).then(function(ok){NET.catPrompt=null;catSend({a:'offerResp',ok:ok});});
+    return;
+  }
+  if(x.sub==='tradeWait'&&x.trade&&x.trade.pending.indexOf(MY)>=0){
+    if(NET.catPrompt==='tradeResp')return;NET.catPrompt='tradeResp';
+    tradeOfferSheet({from:S.players[x.trade.from].name,give:x.trade.give,get:x.trade.get}).then(function(ok){NET.catPrompt=null;catSend({a:'ptradeResp',ok:ok});});
+    return;
+  }
+  // my own proposal's results, shown once to whichever sheet is open and waiting (openPlayerTrade())
+  if(x.pt&&!x.trade&&!NET.ptResultShown&&NET.onTradeResult){
+    NET.ptResultShown=true;
+    NET.onTradeResult(Object.keys(x.pt.results).map(function(k){return {id:+k,ok:x.pt.results[k]};}));
+  }
+}
+function catLink(link){
+  NET.srvLink=link;
+  link.onmessage=function(d){
+    if(!d||typeof d!=='object')return;
+    if(d.t==='no'){toast('ورود ممکن نیست: '+String(d.why||'').slice(0,60));catLeaveServer();S=null;showIntro();return;}
+    if(d.t==='svx'){toast(String(d.why||'این اتاق بسته شده است').slice(0,60));catLeaveServer();S=null;showIntro();return;}
+    if(d.t==='lob'){
+      NET.lv={code:NET.code,names:d.names,n:d.n,isHost:!!d.host,ready:true,av:d.av};
+      recSave({type:'svcat',code:NET.code});
+      renderLobby();return;
+    }
+    if(d.t==='st'){
+      $('#intro').hidden=true;$('#lobby').hidden=true;$('#toasts').innerHTML='';
+      catApplyView(d);return;
+    }
+  };
+}
+function catJoinServer(code){
+  code=dg(code).replace(/[^0-9]/g,'');
+  if(code.length!==5){toast('کد اتاق ۵ رقم است');return;}
+  if(ROLE!=='solo'||NET.lobbyOn)leaveOnline();
+  S=null;MY=null;closeSheet();NET.lobbyOn=true;NET.started=false;
+  NET.code=code;if(!NET.lv)NET.lv={code:code,names:[],n:2,isHost:false,ready:false};else NET.lv.code=code;
+  showLobby();
+  NET.srv=jzsT({sv:'cat',g:{id:'catan'}}).join(code,function(link){catLink(link);},function(){
+    if(NET.lv){NET.lv.err='اتصال به اتاق ممکن نشد. اینترنت را بررسی کن و دوباره تلاش کن.';renderLobby();}
+  });
+}
+function catLeaveServer(){
+  if(NET.srv){try{NET.srv.close();}catch(e){}}
+  NET.srv=null;NET.srvLink=null;NET.catPrompt=null;
+}
+/* test hook, same shape/gating as the mg system's own window.__mg (search for it): only exists when
+   window.__TRANSPORT is set (i.e. only inside the jsdom test harness), never in a real browser. */
+if(window.__TRANSPORT)window.__cat={S:function(){return S;},MY:function(){return MY;},NET:function(){return NET;},ROLE:function(){return ROLE;},
+  dispatchCmd:dispatchCmd,sendChat:sendChat,hostLobby:hostLobby,joinRoom:joinRoom,leaveOnline:leaveOnline,resumeSaved:resumeSaved,render:render,me:me,
+  starSpots:starSpots,filSpots:filSpots,finishSel:finishSel};
 function restoreState(g){
   S=newState(g.n,false,g.players.map(function(p){return {name:p.name,ai:p.ai,remote:false};}));
   S.diff=g.diff;
@@ -3778,6 +3968,7 @@ function resumeSaved(){NET.paidOnce=true;
   }else if(r.type==='host')hostRestore(r);
   else if(r.type==='client')joinRoom(r.code,r.name,r.token);
   else if(r.type==='lobbyhost')hostLobby(r.name,r);
+  else if(r.type==='svcat')catJoinServer(r.code);
 }
 function hostRestore(r){
   if(ROLE!=='solo'||NET.lobbyOn)leaveOnline();
@@ -4428,6 +4619,7 @@ $('#endGame').addEventListener('click',function(){
 $('#btnBack').addEventListener('click',function(){if(VIEW==='session')showIntro();});
 $('#resume').addEventListener('click',function(){if(sessionKind())resumeSession();else resumeSaved();});
 function leaveOnline(){
+  catLeaveServer();
   if(ROLE==='host'){
     var cl=[];try{Object.keys(NET.links||{}).forEach(function(k){if(NET.links[k])cl.push(NET.links[k]);});
       if(NET.lobby)NET.lobby.players.forEach(function(e,i){if(i>0&&e.link)cl.push(e.link);});
@@ -4799,7 +4991,7 @@ function renderLobby(){
     '<div class="lobby-code">'+(L.code||'…')+'</div><div class="row"><button class="btn small" data-copy>کپی کد</button></div>'+
     '<div class="seats">'+seats+'</div>';
   if(L.isHost){
-    h+='<div class="sub">تعداد صندلی‌ها. جاهای خالی را هوش مصنوعی پر می‌کند.</div><div class="seg-n">'+[2,3,4,5,6].map(function(n){return '<button data-sn="'+n+'" class="'+(L.n===n?'on':'')+'" '+(n<L.names.length?'disabled':'')+'>'+fa(n)+'</button>';}).join('')+'</div>'+
+    h+='<div class="sub">تعداد صندلی‌ها. جاهای خالی را هوش مصنوعی پر می‌کند.</div><div class="seg-n">'+[2,3,4,5,6].map(function(n){var occ=L.names.filter(function(x){return !!x;}).length;return '<button data-sn="'+n+'" class="'+(L.n===n?'on':'')+'" '+(n<occ?'disabled':'')+'>'+fa(n)+'</button>';}).join('')+'</div>'+
       '<div class="sub">سختی هوش مصنوعی</div><div class="seg-d"><button data-d="0">آسان</button><button data-d="1">متوسط</button><button data-d="2">سخت</button></div><button class="btn primary" data-start '+(L.ready?'':'disabled')+'>'+(L.ready?'شروع بازی':'در حال ساخت اتاق…')+'</button>';
   }else h+='<p class="sub">منتظر شروع بازی توسط میزبان…</p>';
   if(L.err)h+='<p class="warn">'+L.err+'</p>';
@@ -4823,21 +5015,20 @@ function lobbyBroadcast(){
   renderLobby();
 }
 function hostLobby(name,old){
+  // server-authoritative Catan room: creates the room on the server, then joins it exactly like any
+  // guest (the server tells us we're the host via d.host in the 'lob' message). `old` (a saved P2P
+  // lobby record from before this room type existed) is intentionally ignored: that exact room can't
+  // be resumed as a server room, so this always starts a brand-new one, same as clicking "ساخت اتاق".
   if(ROLE!=='solo'||NET.lobbyOn)leaveOnline();
-  S=null;MY=null;closeSheet();NET.lobbyOn=true;
-  var code=old?old.code:genCode();
-  NET.code=code;NET.started=false;NET.links={};
-  NET.lobby={n:old?Math.max(old.n||2,2):Math.max(chosenN,2),diff:old&&old.diff!=null?old.diff:DIFF,players:[{name:name||'میزبان',link:null}]};
-  if(old&&old.diff!=null){DIFF=old.diff;}
-  NET.lv={code:code,names:[NET.lobby.players[0].name],n:NET.lobby.n,isHost:true,ready:false};
-  ROLE='host';lobbySave();
+  if(!ecoCan(feeOf('catan',true)))return;
+  S=null;MY=null;closeSheet();NET.lobbyOn=true;NET.started=false;
+  var nm=cleanName(name)||'میزبان',av=myAvN();
+  NET.lv={code:'',names:[nm],n:Math.max(chosenN,2),isHost:true,ready:false};
   showLobby();
-  NET.peer=transport().host(code,onJoin,function(){NET.lv.ready=true;renderLobby();},function(err){
-    if(err&&err.type==='unavailable-id'){
-      if(old&&(old.tries|0)<30&&NET.lobbyOn){NET.lv.err='در حال بازگرداندن اتاق…';renderLobby();var o2={code:old.code,n:old.n,diff:old.diff,tries:(old.tries|0)+1};setTimeout(function(){if(NET.lobbyOn&&ROLE==='host'&&!NET.started){try{NET.peer.close();}catch(e){}openLobbyAgain(name,o2);}},2000);return;}
-      hostLobby(name);return;}
-    NET.lv.err='ساخت اتاق ممکن نشد ('+((err&&err.type)||'خطا')+'). اینترنت را بررسی کن و دوباره تلاش کن.';renderLobby();
-  });
+  srvCall('cat_create',{p_name:nm,p_av:typeof av==='number'?av:-1,p_n:Math.max(chosenN,2)}).then(function(r){
+    if(!r||!r.ok){NET.lv.err='ساخت اتاق ناموفق بود';renderLobby();return;}
+    catJoinServer(String(r.code));
+  }).catch(function(){if(NET.lv){NET.lv.err='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';renderLobby();}});
 }
 function openLobbyAgain(name,old){
   var keep=NET.lobby;
@@ -4905,14 +5096,10 @@ function startOnline(){
   mainLoop(S).catch(function(e){console.error(e);});
 }
 function joinRoom(code,name,token){
-  code=dg(code).replace(/[^0-9]/g,'');
-  if(code.length!==5){toast('کد اتاق ۵ رقم است');return;}
-  if(ROLE!=='solo'||NET.lobbyOn)leaveOnline();
-  S=null;MY=null;closeSheet();NET.lobbyOn=true;
-  NET.started=false;NET.lv={code:code,names:[],n:2,isHost:false};
-  NET.cli={code:code,name:cleanName(name),token:token||null};
-  showLobby();
-  connectClient(true);
+  // server-authoritative Catan room: `name`/`token` (the old P2P hello handshake) are no longer used --
+  // the server identifies the seat by this account's own login token (ACCT.token), exactly like
+  // joining a jaliz/kahroba/poker server room. catJoinServer() itself calls leaveOnline() first if needed.
+  catJoinServer(code);
 }
 function connMsg(t){return t==='peer-unavailable'?'اتاقی با این کد پیدا نشد یا میزبان آن را بسته است. کد را بررسی کن و از میزبان بخواه صفحه را باز نگه دارد.':t==='network'||t==='server-error'||t==='socket-error'||t==='socket-closed'?'ارتباط با سرور اتصال برقرار نشد. اینترنتت را بررسی کن و دوباره تلاش کن.':t==='webrtc'||t==='closed'?'اتصال مستقیم برقرار نشد. دوباره تلاش کن یا اینترنت را عوض کن.':'اتصال برقرار نشد'+(t?' ('+t+')':'')+'. دوباره تلاش کن.';}
 function connectClient(first){
@@ -4948,8 +5135,14 @@ $('#lobby').addEventListener('click',function(e){
     return;
   }
   var sn=t.closest('[data-sn]');
-  if(sn&&NET.lobby&&!sn.disabled){NET.lobby.n=+sn.dataset.sn;chosenN=NET.lobby.n;lobbyBroadcast();return;}
-  if(t.closest('[data-start]')){startOnline();return;}
+  if(sn&&!sn.disabled){
+    if(NET.srv){if(NET.lv&&NET.lv.isHost){NET.lv.n=+sn.dataset.sn;chosenN=NET.lv.n;renderLobby();srvCall('cat_setn',{p_code:NET.code,p_n:+sn.dataset.sn}).catch(function(){});}return;}
+    if(NET.lobby){NET.lobby.n=+sn.dataset.sn;chosenN=NET.lobby.n;lobbyBroadcast();return;}
+  }
+  if(t.closest('[data-start]')){
+    if(NET.srv){if(NET.srvLink)NET.srvLink.send({t:'svstart'});return;}
+    startOnline();return;
+  }
   if(t.closest('[data-leave]')){leaveOnline();S=null;showIntro();}
 });
 /* ---------- Mehbang coins: shared balance, daily gift, entry fees ---------- */
@@ -8427,7 +8620,7 @@ function jzsT(cur){
     var link={onmessage:null,onclose:null,
       send:function(d){
         if(!d||closed)return;
-        if((d.t==='jz'||d.t==='kb'||d.t==='pk')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
+        if((d.t==='jz'||d.t==='kb'||d.t==='pk'||d.t==='cat')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
         else if(d.t==='svstart')jzsPost(fn,'start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
         else if(d.t==='svn')srvCall(fn+'_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
       },
