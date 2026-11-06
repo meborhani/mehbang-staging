@@ -8125,7 +8125,8 @@ function renderHub(){
   if(hr2)h+=rrow('mghost','mghostx','بازگشت به اتاق · '+esc2(MGS[hr2.g].name)+' ('+fa(hr2.code)+')');
   if(rj2)h+=rrow('mgrj','mgrjx','بازگشت به بازی · '+esc2(MGS[rj2.g].name)+' ('+fa(rj2.code)+')');
   h+='<div class="v3-mg" style="margin-top:12px">'+hubTile('catan',HUB_IMG.catan,'سیطره کتان','v3-g')+hubTile('jaliz',HUB_IMG.jaliz,'جالیز','v3-g')+hubTile('poker',HUB_IMG.poker,'پوکر','v3-g')+hubTile('kahroba',HUB_IMG.kahroba,'کهربا','v3-g')+hubTile('azul','games/azul/assets/hub-icon.webp','آزول','v3-g')+'</div>';
-  h+='<div class="v3-st">بازی‌های فرعی</div><div class="v3-ng">'+hubTile('manch',HUB_IMG.ludo,'منچ','v3-m')+hubTile('tavla',HUB_IMG.tavla,'تخته نرد','v3-m')+hubTile('ttt',HUB_IMG.ttt,'دوز','v3-m')+hubTile('c4',HUB_IMG.c4,'چهار در ردیف','v3-m')+'</div><button class="v3-ch" data-hg="chess">♞ شطرنج</button>';
+  var showSecondaryGames=false;
+  if(showSecondaryGames)h+='<div class="v3-st">بازی‌های فرعی</div><div class="v3-ng">'+hubTile('manch',HUB_IMG.ludo,'منچ','v3-m')+hubTile('tavla',HUB_IMG.tavla,'تخته نرد','v3-m')+hubTile('ttt',HUB_IMG.ttt,'دوز','v3-m')+hubTile('c4',HUB_IMG.c4,'چهار در ردیف','v3-m')+'</div><button class="v3-ch" data-hg="chess">♞ شطرنج</button>';
   h+='</div><nav class="v3-nav" aria-label="ناوبری"><button data-hg="ntf"><i>🔔</i>اعلان‌ها'+(req?'<em>'+fa(req)+'</em>':'')+'</button><button data-hg="lobby"><i>💬</i>تالار گفتگو</button><button data-hg="stats"><i>📊</i>آمار و سوابق</button><button data-hg="shop"><i>🛒</i>فروشگاه</button><button data-hg="gset"><i>⚙</i>تنظیمات</button></nav></div>';
   $('#hub').innerHTML=h;ecoPaint();gemPaint();hubFit();setTimeout(hubFit,60);setTimeout(hubFit,400);try{new ResizeObserver(function(){hubFit();}).observe($('#hub .v3'));}catch(e){}
 }
