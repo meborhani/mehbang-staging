@@ -1947,8 +1947,10 @@ function startGame(n,spectate){
 }
 
 /* ---------- rendering ---------- */
+var R_S=null;
 function render(){
   if(!S)return;
+  if(S!==R_S){R_CACHE={};R_S=S;}
   renderTop();renderPlayers();renderAwards();renderStatus();renderBoard();renderLog();renderDock();
   if(curDraw)curDraw();
   noteTurn();
@@ -1962,12 +1964,18 @@ function renderPlayers(){
   var m=me(),el=$('#players'),n=S.players.length;
   el.style.setProperty('--n',n);
   el.className='pls'+(n>4?' dense':'');
-  el.innerHTML=S.players.map(function(p){
+  setHtmlIfChanged(el,S.players.map(function(p){
     var pts=(m&&m.id===p.id)?totalPoints(p):publicPoints(p);
     return '<div class="pl '+(S.cur===p.id&&!S.over?'on':'')+'" style="--pc:'+PH[p.id]+'">'+
       '<div class="pl-top"><i class="dot"></i><span class="nm">'+p.name+'</span></div>'+
       '<div class="pl-pt">'+fa(pts)+'<small>امتیاز</small>'+(S.longest===p.id?'<em class="bd">'+awardIcon('road')+'</em>':'')+(S.dark===p.id?'<em class="bd">'+awardIcon('army')+'</em>':'')+'<span class="hc"><svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><rect x=".6" y=".6" width="6.8" height="8.8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>'+fa(sum(p.res))+'</span></div></div>';
-  }).join('');
+  }).join(''));
+}
+var R_CACHE={};
+function setHtmlIfChanged(sel,html){
+  var el=typeof sel==='string'?$(sel):sel,key=typeof sel==='string'?sel:(el&&el.id)||sel;
+  if(R_CACHE[key]===html)return false;
+  R_CACHE[key]=html;if(el)el.innerHTML=html;return true;
 }
 var PIPS={1:[[12,12]],2:[[7,7],[17,17]],3:[[7,7],[12,12],[17,17]],4:[[7,7],[17,7],[7,17],[17,17]],5:[[7,7],[17,7],[12,12],[7,17],[17,17]],6:[[7,6.5],[17,6.5],[7,12],[17,12],[7,17.5],[17,17.5]]};
 function dieFace(n,roll){
@@ -2019,7 +2027,7 @@ function renderStatus(){
   if(S.dice){
     dice=dieFace(S.dice[0],S.rolling)+dieFace(S.dice[1],S.rolling)+'<span class="dsum">'+(S.rolling?'':fa(S.dice[0]+S.dice[1]))+'</span>';
   }
-  $('#status').innerHTML='<div class="msg '+(S.sel?'hint':'')+'">'+msg+'</div>'+(cancel?'<button class="btn small" data-cancel>لغو</button>':'')+'<span class="tmr" id="tmr"></span><div class="dice">'+dice+'</div>';
+  setHtmlIfChanged('#status','<div class="msg '+(S.sel?'hint':'')+'">'+msg+'</div>'+(cancel?'<button class="btn small" data-cancel>لغو</button>':'')+'<span class="tmr" id="tmr"></span><div class="dice">'+dice+'</div>');
   tickTimer();
 }
 function pieceStarD(v,col){
@@ -2316,11 +2324,11 @@ function renderBoard(){
     });
   }
   s+='</svg>';
-  $('#board').innerHTML=s;
+  setHtmlIfChanged('#board',s);
 }
 function renderLog(){
   if(!S)return;
-  $('#log').innerHTML=S.log.slice(-2).map(function(l){return '<li>'+l+'</li>';}).join('');
+  setHtmlIfChanged('#log',S.log.slice(-2).map(function(l){return '<li>'+l+'</li>';}).join(''));
 }
 function renderDock(){
   var el=$('#dock'),m=me();
@@ -2340,7 +2348,7 @@ function renderDock(){
   var defs=[['fil','کابل شبکه'],['star','درایو'],['gal','تابلو فرمان'],['buy','کارت ('+fa(S.deck.length)+')']];
   h+='<div class="bld">'+defs.map(function(d){return '<button class="bb" data-act="'+d[0]+'" '+(ok[d[0]]?'':'disabled')+'><span>'+d[1]+'</span><span class="cost">'+costHTML(COST[d[0]],15)+'</span></button>';}).join('')+'</div>';
   h+='<div class="rowC"><button class="btn" data-act="trade" '+(can?'':'disabled')+'>برون‌سپاری</button><button class="btn" data-act="ptrade" '+(can?'':'disabled')+'>معامله</button><button class="btn" data-act="cards" '+((!mine||(!S.busy&&!S.sel))?'':'disabled')+'>کارت‌ها'+(ncards?' ('+fa(ncards)+')':'')+'</button><button class="btn" data-act="chat">گفتگو</button></div>';
-  el.innerHTML=h;
+  setHtmlIfChanged(el,h);
 }
 
 /* ---------- sheets ---------- */
@@ -3497,7 +3505,7 @@ function renderAwards(){
     return '<div class="aw '+kind+(h?' held':'')+(tie?' tie':'')+'"'+(h?' style="--pc:'+PH[h.id]+'"':'')+'>'+awardIcon(kind)+'<div class="aw-t"><small>'+label+'</small><b>'+
       (h?'<i class="dot"></i>'+h.name+' · '+fa(val):(tie?'مساوی ('+fa(best)+')':'هنوز کسی · حداقل '+fa(need)))+'</b></div></div>';
   }
-  el.innerHTML=chip('road',S.longest,S.longest!=null?lens[S.longest]:0,5,'طولانی‌ترین شبکه',mx)+chip('army',S.dark,S.dark!=null?S.players[S.dark].played:0,3,'بزرگ‌ترین ارتش',ma);
+  setHtmlIfChanged(el,chip('road',S.longest,S.longest!=null?lens[S.longest]:0,5,'طولانی‌ترین شبکه',mx)+chip('army',S.dark,S.dark!=null?S.players[S.dark].played:0,3,'بزرگ‌ترین ارتش',ma));
 }
 function haveStrip(){var m=me();if(!m)return '';return '<div class="hstrip">'+RS.map(function(n,i){return '<span class="hchip">'+ico(i,18)+'<b style="color:'+RH[i]+'">'+fa(m.res[i])+'</b></span>';}).join('')+'</div>';}
 function haveStr(){var m=me();return (m&&fmtRes(m.res))||'هیچ';}
@@ -8019,9 +8027,11 @@ function mgBoardHtml(){
   }
   return '<div class="mn-bd">'+h+'</div>';
 }
+var MG_LAST_HTML=null,MG_LAST_M=null;
 function mgRender(){
   try{mgWaitSave();}catch(e){}
   if(!M)return;
+  if(M!==MG_LAST_M){MG_LAST_HTML=null;MG_LAST_M=M;}
   var el=$('#mini'),h='',g=M.g,i;
   if(M.mode==='menu'&&!M.wait){
     h=mgShell('<div class="hb-s">'+g.sub+'</div>'+
@@ -8064,7 +8074,7 @@ function mgRender(){
       (M.over&&M.mode==='guest'&&!M.left?'<div class="hb-s" style="margin:0">منتظر شروع دوباره توسط میزبان…</div>':'')+'</div>'+
       (M.mode==='host'||M.mode==='guest'?'<div class="mg-r">'+MG_SAY.map(function(s,j){return '<button class="btn sm" data-say="'+j+'">'+s+'</button>';}).join('')+'</div>':''),g.type==='jaliz'?'gm jzg':'gm');
   }
-  el.innerHTML='';el.insertAdjacentHTML('beforeend',h);
+  if(MG_LAST_HTML!==h){MG_LAST_HTML=h;el.innerHTML=h;}
   var rotNow=!!(g.land||g.rot)&&M.mode!=='menu'&&!M.wait&&!M.glob;
   if(rotNow)el.insertAdjacentHTML('beforeend','<div class="rot"><b>↻</b><span>گوشی را بچرخان؛ این بازی فقط افقی است</span><button class="btn sm" data-mg="back">بازگشت</button></div>');
   if(M.over&&M.rp&&!M.left)el.insertAdjacentHTML('beforeend','<button class="btn sm rpb" data-mg="rp">📊 گزارش بازی</button>');
@@ -8423,7 +8433,7 @@ function jzsT(cur){
       },
       close:function(){stop();}};
     function stop(){closed=true;clearTimeout(pollT);clearInterval(iv);}
-    function emit(m,v){if(closed||!link.onmessage)return;if(v!=null&&m.t==='st')ver=v;link.onmessage(m);}
+    function emit(m,v){if(closed||!link.onmessage)return;if(v!=null&&m.t==='st'){if(ver!=null&&v<ver)return;ver=v;}link.onmessage(m);}
     function loop(){
       clearTimeout(pollT);if(closed)return;
       srvCall(fn+'_poll',{p_code:code,p_ver:ver}).then(function(r){
