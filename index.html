@@ -5430,6 +5430,7 @@ var MGS={
   poker:{id:'poker',type:'poker',name:'پوکر',sub:'تگزاس هولدم با سکه‌های مهبانگ',w:0,h:0,max:9,land:true},
   jaliz:{id:'jaliz',type:'jaliz',name:'جالیز',sub:'کشاورزی و معامله',w:0,h:0,max:7,rot:true},
   kahroba:{id:'kahroba',type:'kahroba',name:'کهربا',sub:'جواهر جمع کن، اشراف جذب کن',w:0,h:0,max:4},
+  azul:{id:'azul',type:'azul',name:'آزول',sub:'کاشی‌ها را بردار و دیوار سرامیکی‌ات را کامل کن',w:0,h:0,max:4},
   manch:{id:'manch',type:'manch',name:'منچ',sub:'تاس بریز و مهره‌ها را برسان',w:11,h:11,max:4}
 };
 var MG_SAY=['آفرین!','فکر کن، فکر 😏','بازی خوبی بود','یه دست دیگه؟','عجله نکن'];
@@ -8138,9 +8139,10 @@ function hubFit(){
 window.addEventListener('resize',function(){hubFit();});
 window.addEventListener('orientationchange',function(){setTimeout(hubFit,250);});
 if(window.visualViewport)window.visualViewport.addEventListener('resize',function(){hubFit();});
-function openAzul(){
+function azulHasSave(){try{var z=JSON.parse(localStorage.getItem('mahbang-azul-light-v4'));return !!(z&&z.n>=2&&z.n<=4&&z.players&&z.players.length===z.n);}catch(e){return false;}}
+function openAzul(opts){
   var old=document.getElementById('azulOverlay');if(old){old.hidden=false;return;}
-  var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),playerAvatar=(typeof myAv==='function'?myAv():0);wrap.innerHTML='<iframe title="آزول" src="games/azul/index.html?player='+playerName+'&avatar='+encodeURIComponent(playerAvatar)+'"></iframe>';
+  opts=opts||{};var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),playerAvatar=(typeof myAv==='function'?myAv():0);wrap.innerHTML='<iframe title="آزول" src="games/azul/index.html?player='+playerName+'&avatar='+encodeURIComponent(playerAvatar)+'&players='+encodeURIComponent(opts.players||2)+'&difficulty='+encodeURIComponent(opts.difficulty==null?1:opts.difficulty)+(opts.resume?'&resume=1':'&autostart=1')+'"></iframe>';
   document.body.appendChild(wrap);
 }
 window.addEventListener('message',function(e){if(e.data&&e.data.type==='azul:back'){var a=document.getElementById('azulOverlay');if(a)a.remove();if(!document.getElementById('hub').hidden)renderHub();}});
@@ -8238,8 +8240,10 @@ function mgRender(){
       (g.type==='poker'?pkCfgHtml():'')+(g.type==='tavla'?'<div class="mg-r"><span class="hb-s">مبلغ شرط هر دست (سکه)</span>'+[5,10,20,50].map(function(v){return '<button class="btn sm'+(M.stake===v?' primary':'')+'" data-tk="'+v+'">'+fa(v)+'</button>';}).join('')+'</div>'+pkBuyRow()+'<div class="hb-s">برنده شرط را از بازنده می‌گیرد؛ مارس ×۲ و مارس سنگین ×۳. هر نفر در کل این نشست بیشتر از سقف ورودی (و موجودی‌اش) نمی‌بازد.</div>':'')+
       '<div class="seg-d mgdf"><span class="hb-s">سختی هوش مصنوعی</span>'+['آسان','متوسط','سخت'].map(function(t,d){return '<button data-d="'+d+'"'+(DIFF===d?' class="on"':'')+'>'+t+'</button>';}).join('')+'</div>'+
       '<button class="btn primary big" data-mg="ai">بازی با هوش مصنوعی</button>'+
-      '<button class="btn big" data-mg="mk">ساخت اتاق آنلاین</button>'+
-      '<div class="mg-r"><input id="mgCode" class="inp code" maxlength="5" placeholder="کد اتاق ۵ رقمی" dir="ltr" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button class="btn" data-mg="join">ورود به اتاق</button></div>'+
+      (g.id==='azul'&&azulHasSave()?'<button class="btn big" data-mg="azulresume">ادامهٔ بازی ذخیره‌شده</button>':'')+
+      '<button class="btn big" data-mg="mk"'+(g.id==='azul'?' disabled aria-disabled="true"':'')+'>ساخت اتاق آنلاین</button>'+
+      '<div class="mg-r"><input id="mgCode" class="inp code" maxlength="5" placeholder="کد اتاق ۵ رقمی" dir="ltr" inputmode="numeric" pattern="[0-9]*" autocomplete="off"'+(g.id==='azul'?' disabled':'')+'><button class="btn" data-mg="join"'+(g.id==='azul'?' disabled aria-disabled="true"':'')+'>ورود به اتاق</button></div>'+
+      (g.id==='azul'?'<div class="mg-st">اتاق آنلاین آزول هنوز آماده نیست؛ ساخت و ورود با کد فعلاً غیرفعال است.</div>':'')+
       (M.msg?'<div class="mg-st">'+M.msg+'</div>':''),'');
   }else if(M.wait||M.glob){
     var seats='';
@@ -8864,7 +8868,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='azul'){openAzul();}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='azul'){mgOpen('azul');}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
@@ -8896,8 +8900,10 @@ $('#mini').addEventListener('click',function(e){
   var a=t.closest('[data-mg]');if(!a)return;
   var k=a.dataset.mg;
   if(k==='back'){if(!mgPark())mgClose();return;}
+  if(k==='azulresume'){mgClose();openAzul({resume:true});return;}
   if(k==='ai'){
     var g=M.g,n=g.max>2?M.pn:2;
+    if(g.id==='azul'){var azN=n,azD=DIFF;mgClose();openAzul({players:azN,difficulty:azD});return;}
     if(!mgEntry(true))return;
     var keepCfg=M.pkcfg,keepStake=M.stake;
     mgNew(g,'ai',n);M.pkcfg=keepCfg;M.stake=keepStake;M.me=0;M.names[0]=cleanName(loadName())||'تو';
@@ -8906,8 +8912,8 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
-  else if(k==='mk'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
-  else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
+  else if(k==='mk'){if(M.g.id==='azul'){M.msg='اتاق آنلاین آزول هنوز فعال نشده است؛ فعلاً با رایانه بازی کن.';mgRender();}else if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
+  else if(k==='join'){if(M.g.id==='azul'){M.msg='ورود با کد اتاق برای آزول هنوز فعال نشده است.';mgRender();return;}if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
   else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
   else if(k==='roll')mgDo('rl');
   else if(k==='resign'){
