@@ -39,7 +39,7 @@ function advance(E,st,ctx,now){
   for(let k=0;k<8&&!M.over;k++){
     let ch=presence(E,st,ctx,now);
     const who=M.turn;
-    if(E.kbTimers()){ch=true;if(s.sub[who])s.acted[who]=true;E.kbArm();}
+    if(E.kbTimers()){ch=true;if(s.sub[who])s.acted[who]=true;if(M.turn!==who||M.over)E.kbArm();}
     if(!M.over&&now>=s.nx){
       const nd=E.kbNeed();
       if(nd>=0){const who2=nd;E.kbAiStep(nd);s.nx=now+AI_GAP;ch=true;if(s.sub[who2])s.acted[who2]=true;if(M.turn!==who2||M.over)E.kbArm();}

@@ -214,6 +214,12 @@ function kbTimers(){
   if(x.ph==='disc'){
     x.lg='زمان تمام شد؛ مهرهٔ اضافه برگشت';var guard=12,i;
     while(x.ph==='disc'&&M.turn===s&&kbTot(p)>10&&guard-->0){var c=-1,mx=0;for(i=0;i<5;i++)if(p.t[i]>mx){mx=p.t[i];c=i;}if(c<0)c=5;if(!kbAct(s,'kb',{a:'dc',c:c}))break;}
+    /* forced discard can land on a multi-noble choice for the SAME turn (M.turn===s unchanged) --
+       resolve it immediately too, so a single timeout always finishes the turn in one shot, exactly
+       like the 'noble' branch below already guarantees on its own. Without this, the caller would see
+       kbTimers() return true with the turn unchanged and no legitimate reason to arm a new deadline,
+       leaving the player stuck in 'noble' phase with no timer at all. */
+    if(x.ph==='noble'&&M.turn===s)kbAct(s,'kb',{a:'nb',id:x.nc[0]});
   }else if(x.ph==='noble'){
     x.lg='زمان تمام شد؛ شاهزاده خودکار';kbAct(s,'kb',{a:'nb',id:x.nc[0]});
   }else{
