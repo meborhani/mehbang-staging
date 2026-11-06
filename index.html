@@ -1564,7 +1564,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .ntf{max-height:46vh;overflow-y:auto}#stBody.endbody{max-height:46vh;overflow-y:auto}
 .ntf{display:grid;gap:6px}.ntf>div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px}.ntf small{display:block;color:var(--ink-dim);font-size:11px}
 </style>
-</head>
+<style>#azulOverlay{position:fixed;inset:0;z-index:99999;background:#082b4f}#azulOverlay iframe{display:block;border:0;width:100%;height:100%;height:100dvh}</style></head>
 <body>
 
 <svg class="sprite" aria-hidden="true"><defs id="spriteDefs"></defs></svg>
@@ -8123,7 +8123,7 @@ function renderHub(){
   if(parkOn)h+=rrow('mgpark','mgparkx',(M.wait?'بازگشت به اتاق':'بازگشت به بازی')+' · '+esc2(M.g.name)+(M.code?' ('+fa(M.code)+')':''));
   if(hr2)h+=rrow('mghost','mghostx','بازگشت به اتاق · '+esc2(MGS[hr2.g].name)+' ('+fa(hr2.code)+')');
   if(rj2)h+=rrow('mgrj','mgrjx','بازگشت به بازی · '+esc2(MGS[rj2.g].name)+' ('+fa(rj2.code)+')');
-  h+='<div class="v3-mg" style="margin-top:12px">'+hubTile('catan',HUB_IMG.catan,'سیطره کتان','v3-g')+hubTile('jaliz',HUB_IMG.jaliz,'جالیز','v3-g')+hubTile('poker',HUB_IMG.poker,'پوکر','v3-g')+hubTile('kahroba',HUB_IMG.kahroba,'کهربا','v3-g')+'</div>';
+  h+='<div class="v3-mg" style="margin-top:12px">'+hubTile('catan',HUB_IMG.catan,'سیطره کتان','v3-g')+hubTile('jaliz',HUB_IMG.jaliz,'جالیز','v3-g')+hubTile('poker',HUB_IMG.poker,'پوکر','v3-g')+hubTile('kahroba',HUB_IMG.kahroba,'کهربا','v3-g')+hubTile('azul','games/azul/assets/background.webp','آزول','v3-g')+'</div>';
   h+='<div class="v3-st">بازی‌های فرعی</div><div class="v3-ng">'+hubTile('manch',HUB_IMG.ludo,'منچ','v3-m')+hubTile('tavla',HUB_IMG.tavla,'تخته نرد','v3-m')+hubTile('ttt',HUB_IMG.ttt,'دوز','v3-m')+hubTile('c4',HUB_IMG.c4,'چهار در ردیف','v3-m')+'</div><button class="v3-ch" data-hg="chess">♞ شطرنج</button>';
   h+='</div><nav class="v3-nav" aria-label="ناوبری"><button data-hg="ntf"><i>🔔</i>اعلان‌ها'+(req?'<em>'+fa(req)+'</em>':'')+'</button><button data-hg="lobby"><i>💬</i>تالار گفتگو</button><button data-hg="stats"><i>📊</i>آمار و سوابق</button><button data-hg="shop"><i>🛒</i>فروشگاه</button><button data-hg="gset"><i>⚙</i>تنظیمات</button></nav></div>';
   $('#hub').innerHTML=h;ecoPaint();gemPaint();hubFit();setTimeout(hubFit,60);setTimeout(hubFit,400);try{new ResizeObserver(function(){hubFit();}).observe($('#hub .v3'));}catch(e){}
@@ -8138,6 +8138,12 @@ function hubFit(){
 window.addEventListener('resize',function(){hubFit();});
 window.addEventListener('orientationchange',function(){setTimeout(hubFit,250);});
 if(window.visualViewport)window.visualViewport.addEventListener('resize',function(){hubFit();});
+function openAzul(){
+  var old=document.getElementById('azulOverlay');if(old){old.hidden=false;return;}
+  var wrap=document.createElement('div');wrap.id='azulOverlay';wrap.innerHTML='<iframe title="آزول" src="games/azul/index.html"></iframe>';
+  document.body.appendChild(wrap);
+}
+window.addEventListener('message',function(e){if(e.data&&e.data.type==='azul:back'){var a=document.getElementById('azulOverlay');if(a)a.remove();if(!document.getElementById('hub').hidden)renderHub();}});
 function mgOpen(k){
   var g=MGS[k];mgNew(g,'menu');
   $('#mini').hidden=false;presenceStart();mgRender();
@@ -8858,7 +8864,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='azul'){openAzul();}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
