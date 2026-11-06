@@ -62,9 +62,21 @@ function kbLegal(seat){
   return out;
 }
 function kbRefill(l,i){var x=M.x;x.rows[l][i]=x.deck[l].length?x.deck[l].pop():-1;}
+/* ready-made banter: this list and kbSay() are a verbatim mirror of online.html's own client-embedded
+   kb copy (kept there for local/offline play) -- extracted here so the SAME {a:'ct'} action the client
+   already sends in server rooms actually gets relayed (it was dropped during the original server
+   extraction, so every "say" click in a Kahroba server room silently no-opped). Chat is intentionally
+   allowed on any turn (no M.turn gate), matching Jaliz's and Poker's own server-side 'ct' handling. */
+var KB_CH=['این کارت رو از دست بدی، حسرتش می‌مونه!','گوهرهای بانک داره تموم می‌شه، عجله کن 😏','من که پیشاپیش شاهزاده رو برداشتم!','نوبتت رو زود بازی کن، خوابم برد 😴','با این تخفیف‌هات که نمی‌رسی!','کارت رزرو کردی؟ ترسیدی؟ 😂','امتیازت کجا بود؟ 🤔','این دور رو من می‌برم، ببین!','گوهر طلا رو بده من، تو که بلد نیستی!','تو فقط کارت‌های ارزون می‌خری 😅','شاهزاده مال منه، دست نزن!','آفرین، حرکت خوبی بود 👏','بازی رو جدی بگیر، رقیب قدرتمندی داری!','اگه ببازی، شام با تو! 🍽️','کی گفته گوهر سیاه بی‌ارزشه؟','همین الان تخفیف سبز رو کامل می‌کنم!','قشنگ بود، ولی من جلوترم 😎','کهربا مال کسیه که صبر کنه!','این بازی رو از همین حالا بردم 🏆','یه حرکت خفن در راهه، منتظر باش!','نگران نباش، باخت هم درس خوبیه 😉','بازی عالی! ادامه بده 👌','حواست به پشته‌های سطح ۳ باشه!','تو بخر، من برنده می‌شم 😄'];
+function kbSay(seat,i){var x=M.x;x.cn=(x.cn|0)+1;x.ch={s:seat,i:i,n:x.cn};}
 function kbAct(seat,kind,m){return kbAct0(seat,kind,m);}
 function kbAct0(seat,kind,m){
   var x=M.x;
+  if(kind==='kb'&&m&&typeof m==='object'&&m.a==='ct'&&!M.over&&!M.wait){
+    var ci=m.i;if(ci%1!==0||ci<0||ci>=KB_CH.length)return false;
+    var nwt=kbNow();x.cl=x.cl||{};if(x.cl[seat]&&nwt-x.cl[seat]<1500)return false;x.cl[seat]=nwt;
+    kbSay(seat,ci);return true;
+  }
   if(kind!=='kb'||!m||typeof m!=='object'||M.over||M.wait||seat!==M.turn)return false;
   var p=x.pl[seat],a=m.a,ok=false,nm=M.names[seat];
   if(x.ph==='disc'){

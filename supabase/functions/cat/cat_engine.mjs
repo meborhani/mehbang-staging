@@ -246,6 +246,7 @@ function catInit(){
   x.longest=null;x.dark=null;x.lens=x.players.map(function(){return 0;});
   x.log=[];x.over=false;x.winner=null;x.order=null;x.setup=null;x.dl=0;
   x.discard=null;x.offer=null;x.trade=null;x.pt=null;x.cardTarget=null;
+  x.chat=[];x.chatSeq=0; // small ephemeral emote/chat relay, kept server-side so it survives a refresh/reconnect
   M.x=x;
   M.turn=0;
   runOrderPhase();
@@ -597,6 +598,14 @@ function doPtradeExec(seat,withSeat){
   x.pt=null;
   return true;
 }
+function doChat(seat,k,i,r){
+  var x=X();
+  if(['t','m','w','h','o'].indexOf(k)<0)return false;
+  i=i|0;r=r|0;if(i<0||i>20||r<0||r>4)return false;
+  x.chatSeq++;x.chat.push({from:seat,k:k,i:i,r:r,id:x.chatSeq});
+  if(x.chat.length>30)x.chat.shift();
+  return true;
+}
 function doOfferRespond(seat,ok){
   var x=X(),o=x.offer;
   if(!o||o.target!==seat)return false;
@@ -630,6 +639,7 @@ function catAct(seat,kind,m){
   if(a==='ptradeResp')return doPtradeRespond(seat,m.ok);
   if(a==='ptradeWith')return doPtradeExec(seat,+m.id);
   if(a==='offerResp')return doOfferRespond(seat,m.ok);
+  if(a==='chat')return doChat(seat,m.k,m.i,m.r);
   return false;
 }
 
@@ -841,9 +851,10 @@ function catTimers(){
   if(!x||M.over||!M.tmr)return false;
   var ch=false;
   if(x.discard&&x.discard.dl&&now()>=x.discard.dl){
-    x.discard.need.forEach(function(s){
-      if(x.discard.done[s])return;
-      var p=x.players[s],need=x.discard.amt[s],sel=[0,0,0,0,0],left=need,tmp=p.res.slice();
+    var d0=x.discard;
+    d0.need.forEach(function(s){
+      if(!x.discard||d0.done[s])return; // x.discard may already have been cleared by an earlier iteration
+      var p=x.players[s],need=d0.amt[s],sel=[0,0,0,0,0],left=need,tmp=p.res.slice();
       while(left>0){var i=argmax(tmp);if(tmp[i]<=0)break;tmp[i]--;sel[i]++;left--;}
       doDiscard(s,sel);
     });
@@ -882,7 +893,7 @@ function catView(seat){
   return {
     round:x.round,cur:x.cur,phase:x.phase,sub:x.sub,dice:x.dice,hotNum:x.hotNum,bh:x.bh,R:x.R,
     longest:x.longest,dark:x.dark,lens:x.lens,over:x.over,winner:x.winner,deckN:x.deck.length,
-    log:x.log.slice(-6),
+    log:x.log.slice(-6),chat:x.chat.slice(-8),
     tiles:Object.keys(x.tiles).map(function(k){var t=x.tiles[k];return [t.q,t.r,t.slot,t.num];}),
     ports:x.ports,
     bld:Object.keys(x.bld).map(function(k){return [k,x.bld[k].o,x.bld[k].t];}),

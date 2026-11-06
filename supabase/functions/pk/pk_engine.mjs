@@ -483,7 +483,11 @@ function mgReport(){
   var dur=pkNow()-(st.t0||pkNow());
   return {v:1,id:g.id,g:g.name,t:pkNow(),dur:dur,n:n,names:M.names.slice(0,n),ai:M.ai.slice(0,n),res:res,rows:rows,sum:sum,rn:M.rn};
 }
-function pkActWrap(seat,kind,m){if(m&&m.a==='ct')return false;var ok=pkAct0(seat,kind,m);stAct(seat,m,ok);return ok;}
+/* chat/banter ({a:'ct'}) bypasses the stat-tracking wrapper below -- exactly like online.html's own
+   client-embedded pkAct() does -- instead of being hard-blocked: returning false here unconditionally
+   (as this used to) meant every "say" click in a Poker server room silently no-opped, since pk_core.mjs
+   calls this exact function as its public pkAct. */
+function pkActWrap(seat,kind,m){if(m&&m.a==='ct')return pkAct0(seat,kind,m);var ok=pkAct0(seat,kind,m);stAct(seat,m,ok);return ok;}
 return {get M(){return M;},set M(v){M=v;},ENG:ENG,pkInit:pkInit,pkAct:pkActWrap,pkAiAct:function(seat){if(DIFF>=1)pkAiAct2(seat);else pkAiAct(seat);},
   pkStartHand:pkStartHand,pkView:pkView,pkLive:pkLive,pkPersonas:pkPersonas,pkArm:pkArm,pkTimers:pkTimers,
   mgReport:typeof mgReport==='function'?mgReport:null,stInit:stInit,setClock:function(f){pkClock=f;},setDiff:function(d){DIFF=d;}};
