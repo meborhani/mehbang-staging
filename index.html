@@ -7946,7 +7946,7 @@ function mgPark(){
   if(M.mode==='guest'&&!M.glob&&!M.link)return false;
   PARK=M;$('#mini').hidden=true;renderHub();return true;
 }
-function mgParkDrop(){if(PARK&&M===PARK){mgClose();}PARK=null;}
+function mgParkDrop(){if(PARK&&M===PARK){if(M.g.id==='azul'){var a=document.getElementById('azulOverlay');if(a)a.remove();}mgClose();}PARK=null;}
 function showHub(){
   if(PARK&&M===PARK){$('#mini').hidden=true;}else{mgClose();PARK=null;}
   VIEW='hub';mgOrient(false);
@@ -8151,6 +8151,7 @@ function azulStateOk(z,n){
   try{return JSON.stringify(z).length<60000;}catch(e){return false;}
 }
 function azulFrame(){var w=document.getElementById('azulOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
+function azulConnection(state,seat,until){var f=azulFrame();if(f)f.postMessage({type:'azul:connection',state:state,seat:seat,until:until||0},location.origin);}
 function azulInitFrame(){if(!M||M.g.id!=='azul'||(M.mode!=='host'&&M.mode!=='guest')||M.wait||M.glob)return;var f=azulFrame();if(!f)return;var urls=[];for(var i=0;i<M.n;i++){var a=mgAv(i);urls.push(typeof a==='number'&&a>=0?avUrl(a):null);}f.postMessage({type:'azul:online-init',role:M.mode,seat:M.me,n:M.n,names:M.names,ai:M.ai,avatars:urls,state:M.x},location.origin);}
 function azulUpdateFrame(){var f=azulFrame();if(f&&M&&M.g.id==='azul')f.postMessage({type:'azul:seat-update',names:M.names,ai:M.ai},location.origin);}
 function openAzul(opts){
@@ -8158,9 +8159,9 @@ function openAzul(opts){
   opts=opts||{};var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),rawAvatar=(typeof myAv==='function'?myAv():0),playerAvatar=typeof rawAvatar==='string'&&rawAvatar.indexOf('data:image/')===0?rawAvatar:avUrl(Number(rawAvatar)>=0?Number(rawAvatar):0),cpuAvatars=[1,6,3].map(function(i){return avUrl(i)}),online=!!opts.online;wrap.innerHTML='<iframe title="آزول" style="visibility:hidden" src="games/azul/index.html?player='+playerName+'&avatar=0&players='+encodeURIComponent(opts.players||2)+'&difficulty='+encodeURIComponent(opts.difficulty==null?1:opts.difficulty)+(online?'&online=1':(opts.resume?'&resume=1':'&autostart=1&fresh=1'))+'"></iframe>';var azFrameEl=wrap.querySelector('iframe');azFrameEl.addEventListener('load',function(){azFrameEl.contentWindow.postMessage({type:'azul:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);if(online)setTimeout(azulInitFrame,50);});
   document.body.appendChild(wrap);
 }
-window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=azulFrame();if(d.type==='azul:avatars-ready'){if(f&&e.source===f){var a=document.getElementById('azulOverlay');if(a)f.frameElement.style.visibility='visible';}return;}if(d.type==='azul:back'){if(f&&e.source===f){if(M&&(M.mode==='host'||M.mode==='guest')){if(M.over)mgClose();else mgPark();}var a=document.getElementById('azulOverlay');if(a)a.remove();if(!document.getElementById('hub').hidden)renderHub();}return;}if(!f||e.source!==f||!M||M.g.id!=='azul')return;
+window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=azulFrame();if(d.type==='azul:avatars-ready'){if(f&&e.source===f){var a=document.getElementById('azulOverlay');if(a)f.frameElement.style.visibility='visible';}return;}if(d.type==='azul:back'){if(f&&e.source===f){var keepAzul=false;if(M&&(M.mode==='host'||M.mode==='guest')){if(M.over)mgClose();else keepAzul=mgPark();}var a=document.getElementById('azulOverlay');if(a){if(keepAzul){a.style.visibility='hidden';a.style.pointerEvents='none';a.dataset.parked='true';}else a.remove();}if(!document.getElementById('hub').hidden)renderHub();}return;}if(!f||e.source!==f||!M||M.g.id!=='azul')return;
   if(d.type==='azul:state'&&M.mode==='host'&&azulStateOk(d.state,M.n)){M.x=d.state;M.turn=d.state.turn;M.over=d.state.over;M.res=d.state.ended?'ended':null;if(M.over)M.line=[];mgAfter();return;}
-  if(d.type==='azul:action'&&M.mode==='guest'&&M.link&&d.action&&typeof d.action==='object'){M.link.send({t:'az',m:d.action});return;}
+  if(d.type==='azul:action'&&M.mode==='guest'&&M.link&&!M.rec&&d.action&&typeof d.action==='object'){M.link.send({t:'az',m:d.action});return;}
   if(d.type==='azul:end-request'){if(M.mode==='guest'){if(M.link)M.link.send({t:'azend'});return;}if(M.mode==='host'&&M.x){M.x=JSON.parse(JSON.stringify(M.x));M.x.over=true;M.x.ended=true;M.x.turn=-1;M.x.last='بازی توسط بازیکن پایان یافت';M.over=true;M.res='ended';M.turn=-1;mgAfter();}
   }
 });
@@ -8179,6 +8180,8 @@ function mgMark(j){
   return '<i class="mg-dot" style="background:'+MN_COL[mnCorner(j)]+'"></i>';
 }
 function mgStatus(){
+  if(M.g.type==='azul'&&M.mode==='guest'&&M.rec)return 'ارتباط با میزبان قطع شد؛ تا ۳ دقیقه تلاش برای اتصال مجدد ادامه دارد…';
+  if(M.g.type==='azul'&&M.mode==='host'&&M.gone!=null&&!M.over)return 'مهمان قطع شد؛ تا ۷۵ ثانیه برای بازگشت صبر می‌کنیم…';
   if(M.gone!=null&&!M.over)return 'حریف قطع شد؛ منتظر بازگشتش…';
   if(M.over){
     if(M.res==='draw')return 'مساوی شد';
@@ -8554,6 +8557,7 @@ function mgBegin(){
 function mgForfeit2(){
   if(!M||M.over)return;
   if(M.g.type==='tavla'&&M.mode==='host'){M.x.pts=M.x.pts;M.over=true;M.res=0;M.wins[0]++;tvSettle(0);mgAfter();return;}
+  if(M.g.type==='azul'&&M.mode==='host')azulConnection('guest-forfeit');
   M.over=true;M.res='left';mgAfter();
 }
 function mgLeaveSeat(seat,link){
@@ -8565,12 +8569,14 @@ function mgLeaveSeat(seat,link){
   if(M.g.type==='kahroba'){M.miss[seat]=M.miss[seat]|0;toast((M.names[seat]||'بازیکن')+' قطع شد');mgAfter();return;}
   if(M.n===2){
     /* a 2-player game waits for the opponent to come back before it counts as a forfeit */
-    if(window.__TRANSPORT){mgForfeit2();return;}
+    if(window.__TRANSPORT&&M.g.type!=='azul'){mgForfeit2();return;}
     var cur=M;M.gone=seat;clearTimeout(M.goneT);
     M.goneT=setTimeout(function(){if(M!==cur||cur.gone!==seat)return;cur.gone=null;mgForfeit2();},75000);
+    if(M.g.type==='azul'&&M.mode==='host')azulConnection('guest-wait',seat,Date.now()+75000);
     mgRender();return;
   }
   if(M.names[seat].indexOf(' (رایانه)')<0){M.ai[seat]=true;M.names[seat]+=' (رایانه)';}
+  if(M.g.type==='azul')toast((M.names[seat]||'مهمان')+' قطع شد؛ رایانه بازی او را ادامه می‌دهد');
   if(M.g.type==='azul')azulUpdateFrame();
   mgAfter();
 }
@@ -8586,6 +8592,7 @@ function mgReclaim(s,link,d){
   if(cur.g.type==='kahroba'){cur.sub[s]=false;cur.miss[s]=0;delete cur.rcl[s];}
   var a=avI(d.av);if(a!==-1)cur.av[s]=a;
   if(cur.g.type==='azul')azulUpdateFrame();
+  if(cur.g.type==='azul')azulConnection('connected',s);
   clearTimeout(cur.goneT);cur.goneT=null;cur.gone=null;
   link.onclose=function(){if(M===cur)mgLeaveSeat(s,link);};
   toast(cur.names[s]+' به بازی برگشت');
@@ -8722,6 +8729,7 @@ function mgJoin(code,tk0){
   function fail(t){if(M===cur){cur.msg=t;cur.mode='menu';cur.glob=false;cur.link=null;mgRender();}}
   function giveUp(){
     cur.rec=false;
+    if(cur.g.id==='azul')azulConnection('lost');
     if(cur.over)cur.left=true;else{
       if(cur.g.id==='tavla'&&ECO_ON){ECO.b+=cur.stake||10;ecoSave();ecoPaint();}
       cur.over=true;cur.res='left';cur.left=true;cur.glob=false;mgRecord();}
@@ -8730,6 +8738,7 @@ function mgJoin(code,tk0){
   function recon(){
     if(cur.rec)return;
     cur.rec=true;cur.rcn=0;toast('اتصال قطع شد؛ دوباره وصل می‌شوم…');
+    if(cur.g.id==='azul')azulConnection('reconnecting');
     (function again(){
       if(M!==cur||cur.over||!cur.rec)return;
       if(++cur.rcn>60){giveUp();return;}
@@ -8760,7 +8769,7 @@ function mgJoin(code,tk0){
       var you=+d.you;if(!(you>=(cur.sv?0:1)&&you<n))return;
       if(d.t==='lob'){
         if(typeof d.tk==='string'&&d.tk.length<=24){cur.tk=d.tk;lsSet('mb_mgrj',{g:cur.g.id,code:code,tk:d.tk,t:Date.now(),sr:cur.sv?1:0});}
-        if(cur.rec){cur.rec=false;clearTimeout(cur.rt);toast('دوباره وصل شدی ✅');}
+        if(cur.rec){cur.rec=false;clearTimeout(cur.rt);toast('دوباره وصل شدی ✅');if(cur.g.id==='azul')azulConnection('connected');}
         if(cur.sv){cur.svh=!!d.host;cur.code=code;}
         got=true;cur.n=n;cur.me=you;cur.mode='guest';cur.glob=true;cur.wait=false;
         cur.names=d.names.map(function(x){return cleanName(x);});cur.av=Array.isArray(d.av)&&d.av.length===n?d.av.map(avI):[];cur.wins=cur.names.map(function(){return 0;});cur.ai=cur.names.map(function(){return false;});
@@ -8892,7 +8901,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mghost'){mgHostRestore();return;}
   if(k==='mghostx'){var hx=lsGet(MGH,null);lsSet(MGH,null);if(hx&&hx.code&&ACCT&&sbOk())sbCall('mb_room_drop',{p_token:ACCT.token,p_code:String(hx.code)}).catch(function(){});renderHub();return;}
   if(k==='mgrjx'){lsSet('mb_mgrj',null);renderHub();return;}
-  if(k==='mgpark'){if(PARK&&M===PARK){$('#mini').hidden=false;mgRender();if(M.g.id==='azul'&&!document.getElementById('azulOverlay'))openAzul({online:true,players:M.n,difficulty:DIFF});}else{PARK=null;renderHub();}return;}
+  if(k==='mgpark'){if(PARK&&M===PARK){$('#mini').hidden=false;mgRender();if(M.g.id==='azul'){var za=document.getElementById('azulOverlay');if(za){za.style.visibility='visible';za.style.pointerEvents='auto';delete za.dataset.parked;}else openAzul({online:true,players:M.n,difficulty:DIFF});}}else{PARK=null;renderHub();}return;}
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}

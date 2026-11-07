@@ -74,6 +74,12 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     }
     await hf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });
 
+    await hf.locator('#azul-back').click();
+    await host.locator('#azulOverlay iframe').waitFor({ state: 'attached' });
+    assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'hidden', 'parking an online Azul game should hide but retain its live game frame');
+    await host.locator('[data-hg="mgpark"]').click();
+    assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'visible', 'resuming a parked Azul room should restore the same game frame');
+
     await gf.locator('#settings').click();
     await gf.getByRole('button', { name: 'اتمام بازی' }).click();
     await gf.getByRole('button', { name: 'بله، اتمام بازی' }).click();
