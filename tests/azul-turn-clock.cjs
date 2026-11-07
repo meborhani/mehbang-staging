@@ -12,10 +12,13 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await page.addInitScript(() => {
       window.__vibrations = [];
       Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { window.__vibrations.push(pattern); return true; } });
+      const nativeRandom = Math.random.bind(Math);
+      Math.random = () => Number.isFinite(window.__azulRandomValue) ? window.__azulRandomValue : nativeRandom();
     });
     await page.goto('http://127.0.0.1:8776/games/azul/index.html?fresh=1');
+    await page.evaluate(() => { window.__azulRandomValue = 0.01; });
     await page.locator('[data-new="4"]').click();
-    assert.match(await page.locator('#timer').innerText(), /01:00/, 'each turn should start with one minute');
+    assert.equal(await page.locator('#timer').innerText(), '۶۰', 'each turn should start at 60 seconds');
     assert.doesNotMatch(await page.locator('#timer').innerText(), /⌛/, 'the digital countdown should not include an hourglass');
     assert.ok(await page.locator('.player-area').evaluate(e => e.classList.contains('azul-my-turn')), 'the player board should be marked active for their turn');
     assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').animationName), 'azul-turn-border-sweep', 'the active board should have a rotating red frame');
@@ -28,16 +31,27 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.ok(ghostStyle.opacity >= 0.35, 'faded wall tiles should remain clearly visible');
     assert.ok(await page.evaluate(() => window.__vibrations.length > 0), 'the active player turn should vibrate the phone');
     assert.equal(await page.locator('#azul-back').evaluate(e => getComputedStyle(e, '::after').content), '"←"', 'back control should use a clear back arrow glyph');
+    const factoryNumberStyle = await page.locator('.factory .fnum').first().evaluate(e => ({ image: getComputedStyle(e).backgroundImage, border: getComputedStyle(e).borderTopColor, radius: getComputedStyle(e).borderRadius, rect: e.getBoundingClientRect().toJSON(), factory: e.parentElement.getBoundingClientRect().toJSON() }));
+    assert.ok(!factoryNumberStyle.image.includes('url('), 'factory numbers should not use a baked image frame');
+    assert.equal(factoryNumberStyle.border, 'rgb(242, 213, 140)', 'factory numbers should have a responsive gold CSS frame');
+    assert.match(factoryNumberStyle.radius, /50%/, 'factory numbers should stay circular');
+    assert.ok(Math.abs((factoryNumberStyle.rect.left+factoryNumberStyle.rect.right)/2-(factoryNumberStyle.factory.left+factoryNumberStyle.factory.right)/2)<0.5, 'factory number medallions should stay centered on the factory at every viewport size');
+    assert.match(await page.locator('.app').evaluate(e => getComputedStyle(e).backgroundImage), /patterns\/lapis_mobile_/, 'the supplied Persian pattern should cover the game background');
+    await page.waitForTimeout(1100);
+    assert.equal(await page.locator('#timer').innerText(), '۵۹', 'the visible countdown should decrease in seconds');
 
-    for (const viewport of [{width:320,height:640},{width:360,height:740},{width:390,height:844},{width:430,height:932}]) {
+    for (const viewport of [{width:320,height:640},{width:360,height:740},{width:360,height:880},{width:390,height:844},{width:430,height:932}]) {
       await page.setViewportSize(viewport);
       const geometry = await page.evaluate(() => {
-        const rect=e=>e.getBoundingClientRect(),factories=[...document.querySelectorAll('.factory')].map(rect),tiles=[...document.querySelectorAll('.factory .tile')].map(rect),opponents=rect(document.querySelector('.opponents')),player=rect(document.querySelector('.player-area')),pattern=rect(document.querySelector('#patterns')),wall=rect(document.querySelector('#wall'));
+        const rect=e=>e.getBoundingClientRect(),factories=[...document.querySelectorAll('.factory')].map(rect),tiles=[...document.querySelectorAll('.factory .tile')].map(rect),badges=[...document.querySelectorAll('.factory .fnum')].map(rect),opponents=rect(document.querySelector('.opponents')),player=rect(document.querySelector('.player-area')),pattern=rect(document.querySelector('#patterns')),wall=rect(document.querySelector('#wall'));
         const circleOverlap=factories.some((a,i)=>factories.some((b,j)=>{if(i>=j)return false;return Math.hypot((a.left+a.right-b.left-b.right)/2,(a.top+a.bottom-b.top-b.bottom)/2)<(a.width+b.width)/2-1}));
         const tileOverlap=tiles.some((a,i)=>tiles.some((b,j)=>i<j&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top));
-        return {scroll:document.documentElement.scrollWidth!==innerWidth||document.documentElement.scrollHeight!==innerHeight,circleOverlap,tileOverlap,topClear:[0,2,3].every(i=>factories[i].top>=opponents.bottom-1),bottomClear:[4,7].every(i=>factories[i].bottom<=player.top+1),boardInside:pattern.left>=player.left&&wall.right<=player.right&&pattern.top>=player.top&&wall.bottom<=player.bottom};
+        const badgeCentered=badges.every((b,i)=>Math.abs((b.left+b.right-factories[i].left-factories[i].right)/2)<.5);
+        return {scroll:document.documentElement.scrollWidth!==innerWidth||document.documentElement.scrollHeight!==innerHeight,circleOverlap,tileOverlap,badgeCentered,topClear:[0,2,3].every(i=>factories[i].top>=opponents.bottom-1),bottomClear:[4,7].every(i=>factories[i].bottom<=player.top+1),boardInside:pattern.left>=player.left&&wall.right<=player.right&&pattern.top>=player.top&&wall.bottom<=player.bottom};
       });
-      assert.deepEqual(geometry,{scroll:false,circleOverlap:false,tileOverlap:false,topClear:true,bottomClear:true,boardInside:true},`iPhone layout should stay clear at ${viewport.width}×${viewport.height}`);
+      assert.deepEqual(geometry,{scroll:false,circleOverlap:false,tileOverlap:false,badgeCentered:true,topClear:true,bottomClear:true,boardInside:true},`iPhone layout should stay clear at ${viewport.width}×${viewport.height}`);
+      const patternImage=await page.locator('.app').evaluate(e=>getComputedStyle(e).backgroundImage);
+      assert.match(patternImage,viewport.height/viewport.width>=2.38? /lapis_mobile_1080x2640/ : viewport.width>=430? /lapis_mobile_1440x3200/ : /lapis_mobile_1080x2400/,`the closest supplied pattern aspect should be used at ${viewport.width}×${viewport.height}`);
     }
     await page.setViewportSize({width:390,height:844});
 
@@ -48,7 +62,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
       const state = JSON.parse(localStorage.getItem('mahbang-azul-light-v4'));
       return state.turn === 0 && state.last.startsWith('رایانه');
     }, undefined, { timeout: 5000 });
-    assert.match(await page.locator('#timer').innerText(), /01:00|00:59/, 'the one-minute clock should reset when the turn returns after the CPU move');
+    assert.match(await page.locator('#timer').innerText(), /۶۰|۵۹|60|59/, 'the one-minute clock should reset when the turn returns after the CPU move');
     assert.ok(await page.evaluate(() => window.__vibrations.length > 1), 'the phone should vibrate again when the player gets another turn');
 
     const before = await page.evaluate(() => {
@@ -82,6 +96,15 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.equal(await page.locator('.opponent').first().locator('.mini-slot.filled').count(), 15, 'all of the opponent’s stacked pattern tiles should be rendered');
     const visiblePlaced = await page.locator('.opponent').first().locator('.mini-slot.filled').evaluateAll(es => es.every(e => getComputedStyle(e).backgroundImage.includes('tile-')));
     assert.ok(visiblePlaced, 'rivals’ placed triangular tiles should display instead of the faded empty-slot texture');
+
+    const randomPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await randomPage.addInitScript(() => { Math.random = () => 0.99; });
+    await randomPage.goto('http://127.0.0.1:8776/games/azul/index.html?fresh=1');
+    await randomPage.locator('[data-new="4"]').click();
+    const started = await randomPage.evaluate(() => JSON.parse(localStorage.getItem('mahbang-azul-light-v4')));
+    assert.equal(started.starter, 3, 'the starting seat should be selected randomly, not fixed to the room creator');
+    assert.equal(started.turn, started.starter, 'the first turn should match the randomly chosen starting seat');
+    await randomPage.close();
     console.log('Azul one-minute turn timer, timeout takeover, vibration, and back icon: PASS');
   } finally {
     await browser.close();
