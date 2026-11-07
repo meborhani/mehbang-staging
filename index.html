@@ -7922,6 +7922,7 @@ function mgReset(){
   else if(g.type==='poker'){M.b=[];M.rzo=false;pkInit();}
   else if(g.type==='tavla'){M.b=[];tvInit();}
   else if(g.type==='kahroba'){M.b=[];kbInit();}
+  else if(g.type==='azul'){M.b=[];M.x=null;M.turn=0;}
   else{M.b=[];M.x={tok:[],die:0,ph:'roll',tries:0};for(i=0;i<M.n;i++)M.x.tok.push([-1,-1,-1,-1]);M.turn=M.rn%M.n;}
 }
 function mgClose(){
@@ -8141,12 +8142,28 @@ window.addEventListener('resize',function(){hubFit();});
 window.addEventListener('orientationchange',function(){setTimeout(hubFit,250);});
 if(window.visualViewport)window.visualViewport.addEventListener('resize',function(){hubFit();});
 function azulHasSave(){try{var z=JSON.parse(localStorage.getItem('mahbang-azul-light-v4'));return !!(z&&z.n>=2&&z.n<=4&&z.players&&z.players.length===z.n);}catch(e){return false;}}
+function azulStateOk(z,n){
+  if(!z||z.n!==n||!Array.isArray(z.players)||z.players.length!==n||!Array.isArray(z.factories)||z.factories.length!==2*n+1||!Array.isArray(z.center)||z.center.length>80||!Array.isArray(z.bag)||z.bag.length>100||!z.bag.every(function(v){return Number.isInteger(v)&&v>=0&&v<5;})||!Array.isArray(z.discard)||z.discard.length>100||!z.discard.every(function(v){return Number.isInteger(v)&&v>=0&&v<5;}))return false;
+  if(!z.factories.every(function(a){return Array.isArray(a)&&a.length<=4&&a.every(function(v){return Number.isInteger(v)&&v>=0&&v<5;});})||!z.center.every(function(v){return Number.isInteger(v)&&v>=0&&v<5;}))return false;
+  if(!z.players.every(function(p){return p&&Array.isArray(p.lines)&&p.lines.length===5&&p.lines.every(function(a,r){return Array.isArray(a)&&a.length<=r+1&&a.every(function(v){return Number.isInteger(v)&&v>=0&&v<5;});})&&Array.isArray(p.wall)&&p.wall.length===5&&p.wall.every(function(a){return Array.isArray(a)&&a.length===5&&a.every(function(v){return v===null||(Number.isInteger(v)&&v>=0&&v<5);});})&&Array.isArray(p.floor)&&p.floor.length<=80&&p.floor.every(function(v){return v==='first'||(Number.isInteger(v)&&v>=0&&v<5);})&&Number.isFinite(p.score)&&p.score>=0&&p.score<100000;}))return false;
+  if(!Number.isInteger(z.turn)||z.turn< -1||z.turn>=n||!Number.isInteger(z.round)||z.round<1||z.round>1000||!Number.isInteger(z.starter)||z.starter<0||z.starter>=n||!(z.nextStarter===null||(Number.isInteger(z.nextStarter)&&z.nextStarter>=0&&z.nextStarter<n))||typeof z.over!=='boolean')return false;
+  if(z.pending!==null){var p=z.pending;if(!p||!['f','c'].includes(p.source)||!Number.isInteger(p.index)||p.index< -1||p.index>=z.factories.length||!Number.isInteger(p.color)||p.color<0||p.color>4||!Number.isInteger(p.count)||p.count<1||p.count>20||!Number.isInteger(p.remaining)||p.remaining<1||p.remaining>p.count||typeof p.started!=='boolean')return false;}
+  try{return JSON.stringify(z).length<60000;}catch(e){return false;}
+}
+function azulFrame(){var w=document.getElementById('azulOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
+function azulInitFrame(){if(!M||M.g.id!=='azul'||(M.mode!=='host'&&M.mode!=='guest')||M.wait||M.glob)return;var f=azulFrame();if(!f)return;var urls=[];for(var i=0;i<M.n;i++){var a=mgAv(i);urls.push(typeof a==='number'&&a>=0?avUrl(a):null);}f.postMessage({type:'azul:online-init',role:M.mode,seat:M.me,n:M.n,names:M.names,ai:M.ai,avatars:urls,state:M.x},location.origin);}
+function azulUpdateFrame(){var f=azulFrame();if(f&&M&&M.g.id==='azul')f.postMessage({type:'azul:seat-update',names:M.names,ai:M.ai},location.origin);}
 function openAzul(opts){
   var old=document.getElementById('azulOverlay');if(old){old.hidden=false;return;}
-  opts=opts||{};var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),rawAvatar=(typeof myAv==='function'?myAv():0),playerAvatar=typeof rawAvatar==='string'&&rawAvatar.indexOf('data:image/')===0?rawAvatar:avUrl(Number(rawAvatar)>=0?Number(rawAvatar):0),cpuAvatars=[1,6,3].map(function(i){return avUrl(i)});wrap.innerHTML='<iframe title="آزول" style="visibility:hidden" src="games/azul/index.html?player='+playerName+'&avatar=0&players='+encodeURIComponent(opts.players||2)+'&difficulty='+encodeURIComponent(opts.difficulty==null?1:opts.difficulty)+(opts.resume?'&resume=1':'&autostart=1&fresh=1')+'"></iframe>';var azFrame=wrap.querySelector('iframe');azFrame.addEventListener('load',function(){azFrame.contentWindow.postMessage({type:'azul:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);});
+  opts=opts||{};var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),rawAvatar=(typeof myAv==='function'?myAv():0),playerAvatar=typeof rawAvatar==='string'&&rawAvatar.indexOf('data:image/')===0?rawAvatar:avUrl(Number(rawAvatar)>=0?Number(rawAvatar):0),cpuAvatars=[1,6,3].map(function(i){return avUrl(i)}),online=!!opts.online;wrap.innerHTML='<iframe title="آزول" style="visibility:hidden" src="games/azul/index.html?player='+playerName+'&avatar=0&players='+encodeURIComponent(opts.players||2)+'&difficulty='+encodeURIComponent(opts.difficulty==null?1:opts.difficulty)+(online?'&online=1':(opts.resume?'&resume=1':'&autostart=1&fresh=1'))+'"></iframe>';var azFrameEl=wrap.querySelector('iframe');azFrameEl.addEventListener('load',function(){azFrameEl.contentWindow.postMessage({type:'azul:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);if(online)setTimeout(azulInitFrame,50);});
   document.body.appendChild(wrap);
 }
-window.addEventListener('message',function(e){if(e.origin!==location.origin)return;if(e.data&&e.data.type==='azul:avatars-ready'){var a=document.getElementById('azulOverlay'),f=a&&a.querySelector('iframe');if(f&&e.source===f.contentWindow)f.style.visibility='visible';return;}if(e.data&&e.data.type==='azul:back'){var a=document.getElementById('azulOverlay');if(a)a.remove();if(!document.getElementById('hub').hidden)renderHub();}});
+window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=azulFrame();if(d.type==='azul:avatars-ready'){if(f&&e.source===f){var a=document.getElementById('azulOverlay');if(a)f.frameElement.style.visibility='visible';}return;}if(d.type==='azul:back'){if(f&&e.source===f){if(M&&(M.mode==='host'||M.mode==='guest')){if(M.over)mgClose();else mgPark();}var a=document.getElementById('azulOverlay');if(a)a.remove();if(!document.getElementById('hub').hidden)renderHub();}return;}if(!f||e.source!==f||!M||M.g.id!=='azul')return;
+  if(d.type==='azul:state'&&M.mode==='host'&&azulStateOk(d.state,M.n)){M.x=d.state;M.turn=d.state.turn;M.over=d.state.over;M.res=d.state.ended?'ended':null;if(M.over)M.line=[];mgAfter();return;}
+  if(d.type==='azul:action'&&M.mode==='guest'&&M.link&&d.action&&typeof d.action==='object'){M.link.send({t:'az',m:d.action});return;}
+  if(d.type==='azul:end-request'){if(M.mode==='guest'){if(M.link)M.link.send({t:'azend'});return;}if(M.mode==='host'&&M.x){M.x=JSON.parse(JSON.stringify(M.x));M.x.over=true;M.x.ended=true;M.x.turn=-1;M.x.last='بازی توسط بازیکن پایان یافت';M.over=true;M.res='ended';M.turn=-1;mgAfter();}
+  }
+});
 function mgOpen(k){
   var g=MGS[k];mgNew(g,'menu');
   $('#mini').hidden=false;presenceStart();mgRender();
@@ -8242,9 +8259,8 @@ function mgRender(){
       '<div class="seg-d mgdf"><span class="hb-s">سختی هوش مصنوعی</span>'+['آسان','متوسط','سخت'].map(function(t,d){return '<button data-d="'+d+'"'+(DIFF===d?' class="on"':'')+'>'+t+'</button>';}).join('')+'</div>'+
       '<button class="btn primary big" data-mg="ai">بازی با هوش مصنوعی</button>'+
       (g.id==='azul'&&azulHasSave()?'<button class="btn big" data-mg="azulresume">ادامهٔ بازی ذخیره‌شده</button>':'')+
-      '<button class="btn big" data-mg="mk"'+(g.id==='azul'?' disabled aria-disabled="true"':'')+'>ساخت اتاق آنلاین</button>'+
-      '<div class="mg-r"><input id="mgCode" class="inp code" maxlength="5" placeholder="کد اتاق ۵ رقمی" dir="ltr" inputmode="numeric" pattern="[0-9]*" autocomplete="off"'+(g.id==='azul'?' disabled':'')+'><button class="btn" data-mg="join"'+(g.id==='azul'?' disabled aria-disabled="true"':'')+'>ورود به اتاق</button></div>'+
-      (g.id==='azul'?'<div class="mg-st">اتاق آنلاین آزول هنوز آماده نیست؛ ساخت و ورود با کد فعلاً غیرفعال است.</div>':'')+
+      '<button class="btn big" data-mg="mk">ساخت اتاق آنلاین</button>'+
+      '<div class="mg-r"><input id="mgCode" class="inp code" maxlength="5" placeholder="کد اتاق ۵ رقمی" dir="ltr" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button class="btn" data-mg="join">ورود به اتاق</button></div>'+
       (M.msg?'<div class="mg-st">'+M.msg+'</div>':''),'');
   }else if(M.wait||M.glob){
     var seats='';
@@ -8255,6 +8271,8 @@ function mgRender(){
       (host&&g.type==='poker'?pkCfgHtml():'')+(host&&g.max>2?'<div class="hb-s">تعداد بازیکنان (جاهای خالی را رایانه پر می‌کند)</div><div class="mg-r">'+[2,3,4,5,6,7,8,9].filter(function(n){return n<=g.max&&(g.type!=='jaliz'||n>=3);}).map(function(n){return '<button class="btn'+(M.n===n?' primary':'')+'" data-ln="'+n+'">'+fa(n)+'</button>';}).join('')+'</div><button class="btn primary big" data-mg="start">شروع بازی</button>':'')+
       (host?'<div class="mg-r"><button class="btn" data-mg="copy">کپی کد</button><button class="btn" data-mg="inv">دعوت دوستان</button></div>':'')+
       (M.msg?'<div class="mg-st">'+M.msg+'</div>':''),'');
+  }else if(g.type==='azul'){
+    h='';
   }else{
     var pls='';
     if(g.type==='manch'){
@@ -8423,6 +8441,7 @@ function mgHostRestore(){
   mgHost(r.code,true);
   cur.wait=false;
   mgAfter();
+  if(cur.g.type==='azul'&&!cur.over)openAzul({online:true,players:cur.n,difficulty:DIFF});
   /* seats whose human has not reconnected yet: grace period, then a bot takes over (2-player games forfeit after their own timer) */
   var s;for(s=1;s<cur.n;s++)(function(seat){if(cur.ai[seat]||cur.g.type==='kahroba')return;
     if(cur.n===2){cur.gone=seat;cur.goneT=setTimeout(function(){if(M!==cur||cur.gone!==seat)return;cur.gone=null;mgForfeit2();},75000);return;}
@@ -8505,6 +8524,7 @@ function mgDo(kind,m){
   mgAct(M.me,kind,m);
 }
 function mgAuto(){
+  if(M&&M.g.type==='azul')return;
   if(M&&!M.over&&!M.wait&&M.g.type==='jaliz'){jzSchedule();return;}
   if(M&&!M.over&&!M.wait&&M.g.type==='poker'){pkSchedule();return;}
   if(M&&!M.over&&!M.wait&&M.g.type==='tavla'){tvSchedule();return;}
@@ -8529,7 +8549,7 @@ function mgBegin(){
   mgAiNames(0,M.n);
   if(M.g.type==='poker')pkNameAi();
   if(M.g.type==='kahroba')kbNameAi();
-  mgReset();mgAfter();
+  mgReset();mgAfter();if(M.g.type==='azul')openAzul({online:true,players:M.n,difficulty:DIFF});
 }
 function mgForfeit2(){
   if(!M||M.over)return;
@@ -8551,6 +8571,7 @@ function mgLeaveSeat(seat,link){
     mgRender();return;
   }
   if(M.names[seat].indexOf(' (رایانه)')<0){M.ai[seat]=true;M.names[seat]+=' (رایانه)';}
+  if(M.g.type==='azul')azulUpdateFrame();
   mgAfter();
 }
 function mgReclaim(s,link,d){
@@ -8564,6 +8585,7 @@ function mgReclaim(s,link,d){
   cur.links[s]=link;cur.ai[s]=false;cur.names[s]=String(cur.names[s]||'').replace(/ \(رایانه\)$/,'');
   if(cur.g.type==='kahroba'){cur.sub[s]=false;cur.miss[s]=0;delete cur.rcl[s];}
   var a=avI(d.av);if(a!==-1)cur.av[s]=a;
+  if(cur.g.type==='azul')azulUpdateFrame();
   clearTimeout(cur.goneT);cur.goneT=null;cur.gone=null;
   link.onclose=function(){if(M===cur)mgLeaveSeat(s,link);};
   toast(cur.names[s]+' به بازی برگشت');
@@ -8594,6 +8616,9 @@ function mgHost(code0,keepState){
         link.onclose=function(){if(M===cur)mgLeaveSeat(s,link);};
         mgLob();
         if(cur.g.max===2)mgBegin();else mgRender();
+      }else if(seat>0&&d.t==='az'&&cur.g.type==='azul'&&!cur.ai[seat]&&!cur.over&&cur.turn===seat&&d.m&&typeof d.m==='object'){
+        var azw=azulFrame();if(azw)azw.postMessage({type:'azul:remote-action',seat:seat,action:d.m},location.origin);
+      }else if(seat>0&&d.t==='azend'&&cur.g.type==='azul'&&!cur.over){var azf=azulFrame();if(azf)azf.postMessage({type:'azul:end-request',seat:seat},location.origin);
       }else if(seat>0&&(d.t==='mv'||d.t==='rl'||d.t==='jz'||d.t==='pk'||d.t==='tv'||d.t==='kb')){
         mgAct(seat,d.t,d.m);
       }else if(seat>0&&d.t==='rs'){
@@ -8745,7 +8770,9 @@ function mgJoin(code,tk0){
       if(d.t!=='st')return;
       if(!Array.isArray(d.b)||!Array.isArray(d.wins)||d.wins.length!==n||!Array.isArray(d.ai)||d.ai.length!==n||!Array.isArray(d.line))return;
       var g=cur.g,x=null,bl;
-      if(g.type==='grid'){
+      if(g.type==='azul'){
+        if(!azulStateOk(d.x,n))return;x=d.x;
+      }else if(g.type==='grid'){
         if(d.b.length!==g.w*g.h||d.b.some(function(v){return v!==-1&&v!==0&&v!==1;}))return;
       }else if(g.type==='chess'){
         if(d.b.length!==64||d.b.some(function(v){return !(v%1===0&&v>=-6&&v<=6);}))return;
@@ -8822,7 +8849,7 @@ function mgJoin(code,tk0){
       if(cur.g.id==='tavla'&&ECO_ON&&d.over&&x&&x.dl&&cur.tvPaid!==cur.rn){cur.tvPaid=cur.rn;ECO.b=Math.max(0,ECO.b+x.dl[you]);ecoSave();ecoPaint();}
       if(cur.g.type==='poker'&&ECO_ON&&x&&x.st0){if(cur.pkBaseRn!==cur.rn){cur.pkBaseRn=cur.rn;cur.pkBase=Math.max(0,ECO.b-x.st0[you]);}if(x.st==='show'||x.st==='end'){ECO.b=Math.max(0,cur.pkBase+(x.ch[you]|0));ecoSave();ecoPaint();}}
       var u1=cleanUid(d.uid);if(u1)addRecent([{uid:u1,name:cur.names[0]}]);
-      mgRender();mgRecord();
+      mgRender();mgRecord();if(g.type==='azul'){if(!document.getElementById('azulOverlay'))openAzul({online:true,players:n,difficulty:DIFF});else azulInitFrame();}
     };
     link.send({t:'hi',g:cur.g.id,name:nm,uid:PROF.id,av:myAv(),bal:ECO_ON?ECO.b:100,tk:cur.tk||undefined});
   },function(e){if(cur.rec||(got&&!cur.over))return;fail(connMsg(e&&e.type));});
@@ -8865,7 +8892,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mghost'){mgHostRestore();return;}
   if(k==='mghostx'){var hx=lsGet(MGH,null);lsSet(MGH,null);if(hx&&hx.code&&ACCT&&sbOk())sbCall('mb_room_drop',{p_token:ACCT.token,p_code:String(hx.code)}).catch(function(){});renderHub();return;}
   if(k==='mgrjx'){lsSet('mb_mgrj',null);renderHub();return;}
-  if(k==='mgpark'){if(PARK&&M===PARK){$('#mini').hidden=false;mgRender();}else{PARK=null;renderHub();}return;}
+  if(k==='mgpark'){if(PARK&&M===PARK){$('#mini').hidden=false;mgRender();if(M.g.id==='azul'&&!document.getElementById('azulOverlay'))openAzul({online:true,players:M.n,difficulty:DIFF});}else{PARK=null;renderHub();}return;}
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
@@ -8913,8 +8940,8 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
-  else if(k==='mk'){if(M.g.id==='azul'){M.msg='اتاق آنلاین آزول هنوز فعال نشده است؛ فعلاً با رایانه بازی کن.';mgRender();}else if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
-  else if(k==='join'){if(M.g.id==='azul'){M.msg='ورود با کد اتاق برای آزول هنوز فعال نشده است.';mgRender();return;}if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
+  else if(k==='mk'){if(M.g.id==='azul'){M.n=M.pn;M.names.length=M.n;M.wins.length=M.n;M.ai.length=M.n;M.av.length=M.n;while(M.names.length<M.n){M.names.push('');M.wins.push(0);M.ai.push(false);}}if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
+  else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
   else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
   else if(k==='roll')mgDo('rl');
   else if(k==='resign'){
