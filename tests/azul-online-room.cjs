@@ -34,8 +34,9 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
       };`;
     const host = await context.newPage();
     const guest = await context.newPage();
-    const playOnlineTurn = async (frame, page) => {
+    const playOnlineTurn = async (frame, page, afterSelect) => {
       await frame.locator('[data-source]:not([disabled])').first().click();
+      if (afterSelect) await afterSelect();
       await frame.locator('.pattern-row.available').first().click();
       for (let i = 0; i < 8; i++) {
         await page.waitForTimeout(160);
@@ -70,7 +71,12 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await hf.locator('#status').waitFor(); await gf.locator('#status').waitFor();
     assert.equal(await hf.locator('#status').innerText(), 'بازیکن ۱ در حال بازی…', 'the random opening seat should be allowed to belong to the guest, not the room creator');
     await gf.getByText('● نوبت شماست').waitFor({ timeout: 3000 });
-    await playOnlineTurn(gf, guest);
+    await playOnlineTurn(gf, guest, async () => {
+      await host.waitForTimeout(180);
+      assert.equal(await hf.locator('.pattern-row.available').count(), 0, 'a guest’s pending selection must not highlight the host’s pattern rows');
+      assert.equal(await hf.locator('.tile.selected').count(), 0, 'a guest’s pending selection must not highlight tiles in the host’s view');
+      assert.ok(await gf.locator('.pattern-row.available').count() > 0, 'the player who selected a tile should see their legal rows');
+    });
     await hf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });
     await playOnlineTurn(hf, host);
     await gf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });

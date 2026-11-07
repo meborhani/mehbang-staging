@@ -21,7 +21,11 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.equal(await page.locator('#timer').innerText(), '۶۰', 'each turn should start at 60 seconds');
     assert.doesNotMatch(await page.locator('#timer').innerText(), /⌛/, 'the digital countdown should not include an hourglass');
     assert.ok(await page.locator('.player-area').evaluate(e => e.classList.contains('azul-my-turn')), 'the player board should be marked active for their turn');
-    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').animationName), 'azul-turn-border-sweep', 'the active board should have a rotating red frame');
+    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').animationName), 'azul-turn-light-orbit', 'the active board should have a rotating player-colored glow');
+    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e).getPropertyValue('--player-tone').trim()), '#8EBFBA', 'the first player board should use misty turquoise');
+    assert.deepEqual(await page.locator('.opponent').evaluateAll(es => es.map(e => [e.dataset.seat,getComputedStyle(e).getPropertyValue('--player-tone').trim()])), [['1','#D8BE91'],['2','#D6A5A4'],['3','#B7A8CE']], 'opponent boards should each use their assigned seat color');
+    await page.locator('.opponent').first().evaluate(e => e.classList.add('active'));
+    assert.equal(await page.locator('.opponent').first().evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-turn-light-orbit', 'the active opponent frame should use the same rotating glow');
     const frameSizes = await page.evaluate(() => ['#azul-back', '#timer'].map(selector => { const r=document.querySelector(selector).getBoundingClientRect(); return [r.width,r.height,getComputedStyle(document.querySelector(selector)).borderRadius]; }));
     assert.deepEqual(frameSizes[0].slice(0,2), frameSizes[1].slice(0,2), 'the timer and back control should be equally sized circles');
     assert.match(frameSizes[1][2], /50%/, 'the timer should use the same circular frame shape as the back control');
@@ -87,7 +91,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
 
     await page.evaluate(() => {
       const key='mahbang-azul-light-v4',state=JSON.parse(localStorage.getItem(key));
-      state.turn=0;state.turnDeadline=Date.now()+60000;state.players[1].lines=[[0],[1,1],[2,2,2],[3,3,3,3],[4,4,4,4,4]];
+      state.turn=1;state.turnDeadline=Date.now()+60000;state.players[0].lines=[[],[],[],[],[]];state.players[0].wall=Array.from({length:5},()=>Array(5).fill(null));state.players[1].lines=[[0],[1,1],[2,2,2],[3,3,3,3],[4,4,4,4,4]];state.factories[0]=[1,1,2,3];state.pending={source:'f',index:0,color:1,count:2,remaining:2,started:false};
       localStorage.setItem(key,JSON.stringify(state));
     });
     await page.goto('http://127.0.0.1:8776/games/azul/index.html?resume=1');
@@ -96,6 +100,9 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.equal(await page.locator('.opponent').first().locator('.mini-slot.filled').count(), 15, 'all of the opponent’s stacked pattern tiles should be rendered');
     const visiblePlaced = await page.locator('.opponent').first().locator('.mini-slot.filled').evaluateAll(es => es.every(e => getComputedStyle(e).backgroundImage.includes('tile-')));
     assert.ok(visiblePlaced, 'rivals’ placed triangular tiles should display instead of the faded empty-slot texture');
+    assert.equal(await page.locator('.pattern-row.available').count(), 0, 'an opponent’s pending tile selection must not turn the local player’s pattern rows green');
+    assert.equal(await page.locator('.tile.selected').count(), 0, 'an opponent’s pending tile selection must not highlight tiles in the local view');
+    assert.equal(await page.locator('.opponent[data-seat="1"]').evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-turn-light-orbit', 'the opponent whose turn it is should receive their own colored frame glow');
 
     const randomPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await randomPage.addInitScript(() => { Math.random = () => 0.99; });
