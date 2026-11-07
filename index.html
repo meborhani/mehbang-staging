@@ -4318,13 +4318,24 @@ function histPull(){
     if(add){h.sort(function(x,y){return x.t-y.t;});h=h.slice(-80);try{lsSet(histKey(),h);}catch(x){}}
   }).catch(function(){});
 }
+function histOutcome(e){
+  if(e&&e.g==='آزول'&&e.rp&&Array.isArray(e.rp.rows)){
+    var final=e.rp.rows.find(function(r){return r&&r.l==='امتیاز نهایی';});
+    if(final&&Array.isArray(final.v)&&final.v.length){
+      var high=Math.max.apply(null,final.v.map(Number)),w=final.v.map(function(v,i){return Number(v)===high?i:-1;}).filter(function(i){return i>=0;});
+      if(w.length>1)return 'd';
+      return w[0]===(Number(e.s)||0)?'w':'l';
+    }
+  }
+  return e&&e.r;
+}
 function histOpen(){
   var h=lsGet(histKey(),[]).slice().reverse(),w=0,l=0,d=0,un=0,net=0,rows='';
   function idxOf(e){return h.indexOf(e);}
-  h.forEach(function(e){if(e.r==='w')w++;else if(e.r==='l')l++;else if(e.r==='u')un++;else d++;if(typeof e.net==='number')net+=e.net;});
+  h.forEach(function(e){var outcome=histOutcome(e);if(outcome==='w')w++;else if(outcome==='l')l++;else if(outcome==='u')un++;else d++;if(typeof e.net==='number')net+=e.net;});
   h.slice(0,40).forEach(function(e){
     var dt='';try{dt=new Date(e.t).toLocaleString('fa-IR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(x){}
-    var rc=e.r==='w'?'#3fbf6a':(e.r==='l'?'#e0524d':(e.r==='u'?'#7d7d7d':'#c9a227')),rt=e.r==='w'?'برد':(e.r==='l'?'باخت':(e.r==='u'?'ناتمام':'مساوی'));
+    var outcome=histOutcome(e),rc=outcome==='w'?'#3fbf6a':(outcome==='l'?'#e0524d':(outcome==='u'?'#7d7d7d':'#c9a227')),rt=outcome==='w'?'برد':(outcome==='l'?'باخت':(outcome==='u'?'ناتمام':'مساوی'));
     var ops=(e.ops||[]).slice(0,4).map(function(x){return esc2(String(x).slice(0,12));}).join('، ');
     rows+='<div class="hrow'+(e.rp?' hrp':'')+'" '+(e.rp?'data-hi="'+idxOf(e)+'" ':'')+'style="'+(e.rp?'cursor:pointer;':'')+'display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">'+
       '<b style="min-width:42px;text-align:center;color:#fff;background:'+rc+';border-radius:8px;padding:2px 6px;font-size:12px">'+rt+'</b>'+

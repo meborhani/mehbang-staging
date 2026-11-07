@@ -6,6 +6,14 @@ try { ({ chromium } = require('playwright')); }
 catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')); }
 
 const azulHtml = fs.readFileSync('games/azul/index.html', 'utf8');
+const hubHtml = fs.readFileSync('index.html', 'utf8');
+const outcomeStart = hubHtml.indexOf('function histOutcome(e){');
+const outcomeEnd = hubHtml.indexOf('\nfunction histOpen(){', outcomeStart);
+assert.ok(outcomeStart >= 0 && outcomeEnd > outcomeStart, 'history should have a report-based Azul outcome resolver');
+const histOutcome = new Function(`return (${hubHtml.slice(outcomeStart, outcomeEnd)})`)();
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[100,12] }] } }), 'w', 'legacy Azul history should use final reported scores instead of a stale loss marker');
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[12,100] }] } }), 'l', 'history should still show a loss when another player has the higher score');
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[12,12] }] } }), 'd', 'equal final scores should be a draw');
 const finishStart = azulHtml.indexOf('function finishRound(){');
 let scan = finishStart + 'function finishRound'.length, depth = 0, finishEnd = -1;
 for (; scan < azulHtml.length; scan++) { if (azulHtml[scan] === '{') depth++; else if (azulHtml[scan] === '}' && --depth === 0) { finishEnd = scan + 1; break; } }
