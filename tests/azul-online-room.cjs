@@ -138,8 +138,12 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     const layoutContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const three = await layoutContext.newPage();
     await three.goto('http://127.0.0.1:8765/games/azul/index.html?autostart=1&players=3&fresh=1');
-    const threeLayout = await three.evaluate(() => { const r=e=>e.getBoundingClientRect(); return { rivalBottom: r(document.querySelector('.opponents')).bottom, topFactory: r(document.querySelector('#factories .factory')).top }; });
-    assert.ok(threeLayout.topFactory > threeLayout.rivalBottom, 'three-player upper factories must clear the rivals’ panels');
+    await three.locator('#factories .factory').last().waitFor();
+    for (const viewport of [{width:320,height:740},{width:360,height:780},{width:390,height:844},{width:412,height:915},{width:430,height:932}]) {
+      await three.setViewportSize(viewport);
+      const threeLayout = await three.evaluate(() => { const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom+r.height*.08};}, fs=[...document.querySelectorAll('#factories .factory')].map(rect), rival=rect(document.querySelector('.opponents')), center=rect(document.querySelector('.center-row')), hit=(a,b)=>!(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top); return {upperClear:[0,2,3].every(i=>fs[i].top>rival.bottom), factoriesClear:fs.every((a,i)=>fs.every((b,j)=>i>=j||!hit(a,b))), centerClear:fs.every(a=>!hit(a,center))}; });
+      assert.ok(threeLayout.upperClear && threeLayout.factoriesClear && threeLayout.centerClear, `three-player stations must clear rivals, center table and each other at ${viewport.width}px`);
+    }
     const two = await layoutContext.newPage();
     await two.goto('http://127.0.0.1:8765/games/azul/index.html?autostart=1&players=2&fresh=1');
     const twoLayout = await two.evaluate(() => { const r=e=>e.getBoundingClientRect(),c=r(document.querySelector('.center-row')),b=r(document.querySelector('#put-floor')); return { centerBottom:c.bottom,burnTop:b.top,centerX:c.x+c.width/2,burnX:b.x+b.width/2,reserve:getComputedStyle(document.querySelector('.reserve-row')).display,floorSlots:document.querySelector('.opp-floor').querySelectorAll('.opp-floor-item').length }; });
