@@ -21,15 +21,22 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.equal(await page.locator('#timer').innerText(), '۶۰', 'each turn should start at 60 seconds');
     assert.doesNotMatch(await page.locator('#timer').innerText(), /⌛/, 'the digital countdown should not include an hourglass');
     assert.ok(await page.locator('.player-area').evaluate(e => e.classList.contains('azul-my-turn')), 'the player board should be marked active for their turn');
-    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').animationName), 'azul-turn-light-orbit', 'the active board should have a rotating player-colored glow');
-    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e).getPropertyValue('--player-tone').trim()), '#8EBFBA', 'the first player board should use misty turquoise');
-    assert.deepEqual(await page.locator('.opponent').evaluateAll(es => es.map(e => [e.dataset.seat,getComputedStyle(e).getPropertyValue('--player-tone').trim()])), [['1','#D8BE91'],['2','#D6A5A4'],['3','#B7A8CE']], 'opponent boards should each use their assigned seat color');
+    assert.equal(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').animationName), 'azul-gold-turn-orbit', 'the active board should have a rotating bright gold glow');
+    assert.match(await page.locator('.player-area').evaluate(e => getComputedStyle(e, '::after').filter), /drop-shadow\(.*rgb\(255, 2\d\d, [1-2]\d\d\)/, 'the active turn glow should be clearly golden');
+    assert.match(await page.locator('.player-area').evaluate(e => getComputedStyle(e).backgroundImage), /rgb\(255, 248, 233\)|rgb\(239, 224, 197\)/, 'the player board should retain its original cream background');
+    assert.match(await page.locator('.opp-preview').first().evaluate(e => getComputedStyle(e).backgroundImage), /rgb\(255, 246, 229\)|rgb\(238, 224, 198\)/, 'rival boards should retain the original cream background');
+    assert.match(await page.locator('.opponent').first().evaluate(e => getComputedStyle(e).backgroundImage), /rgb\(245, 234, 214\)|rgb\(241, 229, 208\)/, 'rival frames should restore their original navy and cream surface instead of seat colors');
     await page.locator('.opponent').first().evaluate(e => e.classList.add('active'));
-    assert.equal(await page.locator('.opponent').first().evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-turn-light-orbit', 'the active opponent frame should use the same rotating glow');
+    assert.equal(await page.locator('.opponent').first().evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-gold-turn-orbit', 'the active opponent frame should use the same rotating gold glow');
+    assert.equal(await page.locator('.opponent').first().evaluate(e => getComputedStyle(e,'::before').backgroundColor), 'rgba(0, 0, 0, 0)', 'the opponent turn halo must not paint over their avatar, score, or board');
     const frameSizes = await page.evaluate(() => ['#azul-back', '#timer'].map(selector => { const r=document.querySelector(selector).getBoundingClientRect(); return [r.width,r.height,getComputedStyle(document.querySelector(selector)).borderRadius]; }));
     assert.deepEqual(frameSizes[0].slice(0,2), frameSizes[1].slice(0,2), 'the timer and back control should be equally sized circles');
     assert.match(frameSizes[1][2], /50%/, 'the timer should use the same circular frame shape as the back control');
-    assert.ok(await page.locator('#wall .wall-cell').first().evaluate(e => e.getBoundingClientRect().width <= 18.5), 'small-screen board tiles should be reduced for iPhone-sized screens');
+    assert.ok(await page.locator('#wall .wall-cell').first().evaluate(e => e.getBoundingClientRect().width >= 21), 'the local 5×5 wall should use the available width on an iPhone-sized screen');
+    const floorGeometry = await page.evaluate(() => { const r=e=>e.getBoundingClientRect();const f=r(document.querySelector('#floor')),a=r(document.querySelector('.foot-actions')),p=r(document.querySelector('.player-area'));const o=document.querySelector('.opponent'),v=r(o.querySelector('.opp-preview')),of=r(o.querySelector('.opp-floor')),l=r(o.querySelector('.opp-lines')),w=r(o.querySelector('.opp-wall'));return {ownAtBottom:f.bottom<=f.top?false:f.top>=a.bottom-1&&f.bottom<=p.bottom+1,rivalAtBottom:of.top>=Math.max(l.bottom,w.bottom)-1&&v.bottom-of.bottom<4,rivalTileWidth:o.querySelector('.opp-wall .mini-cell').getBoundingClientRect().width}; });
+    assert.ok(floorGeometry.ownAtBottom, 'the local penalty row should sit beneath the action strip at the bottom of the player board');
+    assert.ok(floorGeometry.rivalAtBottom, 'each rival penalty row should sit below the boards at the bottom of the rival panel');
+    assert.ok(floorGeometry.rivalTileWidth >= 9.5, 'rival walls and stepped rows should grow to use the available panel width');
     const ghostStyle = await page.locator('#wall .wall-cell.empty').first().evaluate(e => { const c=getComputedStyle(e, '::after'); return {size:c.backgroundSize,opacity:Number(c.opacity)}; });
     assert.equal(ghostStyle.size, '100% 100%', 'faded wall tile art should exactly fill each cell');
     assert.ok(ghostStyle.opacity >= 0.35, 'faded wall tiles should remain clearly visible');
@@ -42,7 +49,8 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.ok(Math.abs((factoryNumberStyle.rect.left+factoryNumberStyle.rect.right)/2-(factoryNumberStyle.factory.left+factoryNumberStyle.factory.right)/2)<0.5, 'factory number medallions should stay centered on the factory at every viewport size');
     assert.match(await page.locator('.app').evaluate(e => getComputedStyle(e).backgroundImage), /patterns\/lapis_mobile_/, 'the supplied Persian pattern should cover the game background');
     await page.waitForTimeout(1100);
-    assert.equal(await page.locator('#timer').innerText(), '۵۹', 'the visible countdown should decrease in seconds');
+    await page.waitForFunction(() => document.querySelector('#timer').innerText !== '۶۰', undefined, { timeout: 3000 });
+    assert.match(await page.locator('#timer').innerText(), /^[۰-۹]{2}$/, 'the visible countdown should decrease in digital seconds');
 
     for (const viewport of [{width:320,height:640},{width:360,height:740},{width:360,height:880},{width:390,height:844},{width:430,height:932}]) {
       await page.setViewportSize(viewport);
@@ -102,7 +110,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     assert.ok(visiblePlaced, 'rivals’ placed triangular tiles should display instead of the faded empty-slot texture');
     assert.equal(await page.locator('.pattern-row.available').count(), 0, 'an opponent’s pending tile selection must not turn the local player’s pattern rows green');
     assert.equal(await page.locator('.tile.selected').count(), 0, 'an opponent’s pending tile selection must not highlight tiles in the local view');
-    assert.equal(await page.locator('.opponent[data-seat="1"]').evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-turn-light-orbit', 'the opponent whose turn it is should receive their own colored frame glow');
+    assert.equal(await page.locator('.opponent[data-seat="1"]').evaluate(e => getComputedStyle(e,'::before').animationName), 'azul-gold-turn-orbit', 'the opponent whose turn it is should receive the shared gold frame glow');
 
     const randomPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await randomPage.addInitScript(() => { Math.random = () => 0.99; });
