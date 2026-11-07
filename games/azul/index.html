@@ -191,6 +191,29 @@ body{background:#082b4f url("assets/background.webp") center/100% 100% fixed no-
 @media(max-width:410px){.app{grid-template-rows:43px clamp(90px,14vh,118px) minmax(0,1fr) clamp(158px,29vh,245px) clamp(26px,5vh,44px)!important;gap:3px!important}.factory{width:min(16vw,10.8dvh,70px)!important}.opp-name{font-size:clamp(7px,2.35vw,10px)!important}.player-area{grid-template-columns:minmax(0,18%) minmax(0,82%)!important}.player-head strong{top:50%!important}.player-score{top:68%!important}}
 @media(max-height:700px){.app{grid-template-rows:40px clamp(84px,14vh,100px) minmax(0,1fr) clamp(154px,25vh,190px) clamp(24px,6vh,46px)!important}.opp-head{height:30px!important;min-height:30px!important}.factory{width:min(19vw,10dvh,70px)!important}.player-avatar-wrap{top:10%!important;height:33%!important}.player-head strong{top:49%!important}.player-score{top:67%!important}}
 
+/* Keep factory tile wells proportional when a factory spans two grid columns. */
+.factory{padding:clamp(8px,3.2vw,20px) clamp(8px,3.2vw,20px) clamp(12px,4.2vw,26px)!important;box-sizing:border-box!important;overflow:visible!important}
+.factory .tile{min-width:0!important;min-height:0!important;object-fit:contain!important}
+/* Keep both boards and the penalty track comfortably inside the player frame. */
+.player-area{overflow:hidden!important}
+.board-main{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.pattern-side{min-width:0!important;overflow:hidden!important;padding-right:1px!important}
+.wall-side{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.floor{max-width:100%!important;min-width:0!important;overflow:hidden!important;transform:none!important;padding:0 2px!important;box-sizing:border-box!important}
+.floor-item{min-width:0!important}.floor-item .slot{max-width:100%!important}
+.opp-preview{min-width:0!important;overflow:hidden!important}
+.mini-slot,.mini-cell{width:clamp(6px,2.5vw,15px)!important;height:clamp(6px,2.5vw,15px)!important}
+.opp-wall{grid-template-columns:repeat(5,clamp(6px,2.5vw,15px))!important;grid-template-rows:repeat(5,clamp(6px,2.5vw,15px))!important;max-width:100%!important}
+@media(max-width:410px){
+  :root{--tile:clamp(15px,min(5.1vw,2.9dvh),22px)!important;--gap:clamp(1px,.35vw,2px)!important}
+  .factory{width:min(16vw,10.8dvh,70px)!important;padding:clamp(6px,2.5vw,10px)!important}
+  #factories.count-5 .factory:nth-child(5),#factories.count-7 .factory:nth-child(7){padding:clamp(6px,2.5vw,10px)!important}
+  .floor{gap:1px!important}.floor-item .slot{width:clamp(14px,4vw,17px)!important;height:clamp(16px,4vw,19px)!important}
+}
+@media(min-width:411px){
+  :root{--tile:clamp(20px,min(5.2vw,3.05dvh),32px)!important;--gap:clamp(2px,.45vw,3px)!important}
+}
+
 .reserve-row{position:absolute;z-index:3;left:6%;bottom:6%;display:flex;gap:2px;direction:ltr}
 .reserve-row i{display:block;width:clamp(17px,4vw,27px);height:clamp(17px,4vw,27px);background:url('assets/cell-flower.webp') center/100% 100% no-repeat}
 #put-floor{position:absolute!important;z-index:6;right:4%!important;bottom:6%!important;height:clamp(29px,5vw,44px)!important;min-height:0!important;width:clamp(92px,24vw,148px)!important;padding:3px 8px!important;border:0!important;background:url('assets/action-button.webp') center/100% 100% no-repeat!important;color:#fff6dc!important;text-shadow:0 1px 2px #083!important;font-size:clamp(9px,2.6vw,15px)!important}
