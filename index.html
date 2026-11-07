@@ -4210,6 +4210,22 @@ function mgReport(){
     row('سود و زیان',all(function(i){return x2.ch[i]-x2.st0[i];}),1);
     row('وضعیت',all(function(i){return x2.out&&x2.out[i]?'حذف شد':'در بازی';}));
     sum.push(fa(x2.hn)+' دست بازی شد');
+  }else if(g.type==='azul'){
+    var ax=M.x||{},azp=Array.isArray(ax.players)?ax.players:[],azRounds=Array.isArray(ax.roundHistory)?ax.roundHistory:[];
+    function azComplete(p){
+      var w=p&&p.wall?p.wall:[],colors=0,cols=0,fullRows=0;
+      for(var ac=0;ac<5;ac++)if(w.length===5&&w.every(function(r){return r.indexOf(ac)!==-1;}))colors++;
+      for(var ar=0;ar<5;ar++)if(w[ar]&&w[ar].every(function(v){return v!==null;}))fullRows++;
+      for(var cc=0;cc<5;cc++)if(w.length===5&&w.every(function(r){return r[cc]!==null;}))cols++;
+      return {colors:colors,rows:fullRows,cols:cols};
+    }
+    sec('آزول');
+    row('تکمیل رنگ',all(function(i){return azComplete(azp[i]).colors;}));
+    row('تکمیل سطر',all(function(i){return azComplete(azp[i]).rows;}));
+    row('تکمیل ستون',all(function(i){return azComplete(azp[i]).cols;}));
+    azRounds.forEach(function(hand){row('امتیاز دست '+fa(hand.round),all(function(i){return Number(hand.scores&&hand.scores[i])||0;}));});
+    row('امتیاز نهایی',all(function(i){return azp[i]?Number(azp[i].score)||0:0;}),1);
+    sum.push('پاداش تکمیل رنگ ۱۰، سطر ۲، ستون ۷ امتیاز است');
   }else if(g.type==='kahroba'){
     var kxx=M.x;
     sec('کهربا');
@@ -8159,7 +8175,7 @@ function openAzul(opts){
   opts=opts||{};var wrap=document.createElement('div');wrap.id='azulOverlay';var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'شما'),rawAvatar=(typeof myAv==='function'?myAv():0),playerAvatar=typeof rawAvatar==='string'&&rawAvatar.indexOf('data:image/')===0?rawAvatar:avUrl(Number(rawAvatar)>=0?Number(rawAvatar):0),cpuAvatars=[1,6,3].map(function(i){return avUrl(i)}),online=!!opts.online;wrap.innerHTML='<iframe title="آزول" style="visibility:hidden" src="games/azul/index.html?player='+playerName+'&avatar=0&players='+encodeURIComponent(opts.players||2)+'&difficulty='+encodeURIComponent(opts.difficulty==null?1:opts.difficulty)+(online?'&online=1':(opts.resume?'&resume=1':'&autostart=1&fresh=1'))+'"></iframe>';var azFrameEl=wrap.querySelector('iframe');azFrameEl.addEventListener('load',function(){azFrameEl.contentWindow.postMessage({type:'azul:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);if(online)setTimeout(azulInitFrame,50);});
   document.body.appendChild(wrap);
 }
-window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=azulFrame();if(d.type==='azul:avatars-ready'){if(f&&e.source===f){var a=document.getElementById('azulOverlay');if(a)f.frameElement.style.visibility='visible';}return;}if(d.type==='azul:back'){if(f&&e.source===f){var keepAzul=false;if(M&&(M.mode==='host'||M.mode==='guest')){if(M.over)mgClose();else keepAzul=mgPark();}var a=document.getElementById('azulOverlay');if(a){if(keepAzul){a.style.visibility='hidden';a.style.pointerEvents='none';a.dataset.parked='true';}else a.remove();}if(!document.getElementById('hub').hidden)renderHub();}return;}if(!f||e.source!==f||!M||M.g.id!=='azul')return;
+window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=azulFrame();if(d.type==='azul:avatars-ready'){if(f&&e.source===f){var a=document.getElementById('azulOverlay');if(a)f.frameElement.style.visibility='visible';}return;}if(d.type==='azul:back'){if(f&&e.source===f){var keepAzul=false;if(M&&(M.mode==='host'||M.mode==='guest')){if(M.over)mgClose();else keepAzul=mgPark();}var a=document.getElementById('azulOverlay');if(a){if(keepAzul){a.style.visibility='hidden';a.style.pointerEvents='none';a.dataset.parked='true';}else a.remove();}if(!document.getElementById('hub').hidden)renderHub();}return;}if(d.type==='azul:report'){if(!f||e.source!==f||!d.report||d.report.id!=='azul')return;if(M&&M.g&&M.g.id==='azul'&&(M.mode==='host'||M.mode==='guest'))return;var azRp=d.report,azHist=lsGet(histKey(),[]);if(azRp.gid&&azHist.some(function(x){return x&&x.rp&&x.rp.gid===azRp.gid;}))return;var azResult=azRp.res==='draw'?'d':azRp.res===0?'w':'l';histAdd({rp:azRp,s:0,t:azRp.t||Date.now(),g:'آزول',r:azResult,n:azRp.n,o:0,ops:(azRp.names||[]).slice(1)});return;}if(!f||e.source!==f||!M||M.g.id!=='azul')return;
   if(d.type==='azul:state'&&M.mode==='host'&&azulStateOk(d.state,M.n)){M.x=d.state;M.turn=d.state.turn;M.over=d.state.over;M.res=d.state.ended?'ended':null;if(M.over)M.line=[];mgAfter();return;}
   if(d.type==='azul:action'&&M.mode==='guest'&&M.link&&!M.rec&&d.action&&typeof d.action==='object'){M.link.send({t:'az',m:d.action});return;}
   if(d.type==='azul:end-request'){if(M.mode==='guest'){if(M.link)M.link.send({t:'azend'});return;}if(M.mode==='host'&&M.x){M.x=JSON.parse(JSON.stringify(M.x));M.x.over=true;M.x.ended=true;M.x.turn=-1;M.x.last='بازی توسط بازیکن پایان یافت';M.over=true;M.res='ended';M.turn=-1;mgAfter();}

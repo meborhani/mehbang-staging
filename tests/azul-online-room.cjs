@@ -85,6 +85,10 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await gf.getByRole('button', { name: 'بله، اتمام بازی' }).click();
     await hf.getByText(/این بازی به درخواست بازیکن پایان یافت/).waitFor({ timeout: 6000 });
     await gf.getByText(/این بازی به درخواست بازیکن پایان یافت/).waitFor({ timeout: 6000 });
+    const hostHistory = await host.evaluate(() => JSON.parse(localStorage.getItem('mb_hist') || '[]'));
+    const azulRecord = hostHistory.findLast(e => e.g === 'آزول');
+    assert.ok(azulRecord && azulRecord.rp, 'online Azul report should be saved in host history');
+    for (const label of ['تکمیل رنگ','تکمیل سطر','تکمیل ستون','امتیاز نهایی']) assert.ok(azulRecord.rp.rows.some(r => r.l === label), `online report should include ${label}`);
     await gf.locator('[data-azul-back]').click();
     await guest.locator('[data-hg="azul"]').waitFor({ state: 'visible' });
     await guest.locator('#azulOverlay iframe').waitFor({ state: 'detached' });
