@@ -77,6 +77,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
 
     await hf.locator('#azul-back').click();
     await host.locator('#azulOverlay iframe').waitFor({ state: 'attached' });
+    await host.waitForFunction(() => document.querySelector('#azulOverlay')?.style.visibility === 'hidden', null, { timeout: 3000 });
     assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'hidden', 'parking an online Azul game should hide but retain its live game frame');
     await host.locator('[data-hg="mgpark"]').click();
     assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'visible', 'resuming a parked Azul room should restore the same game frame');
