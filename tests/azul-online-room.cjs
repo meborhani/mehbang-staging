@@ -104,6 +104,10 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     const fourFrame = four.frameLocator('#azulOverlay iframe');
     await fourFrame.locator('.opponent').first().waitFor({ timeout: 6000 });
     assert.equal(await fourFrame.locator('.opponent').count(), 3, 'four-player Azul must show three opponents');
+    assert.deepEqual(await fourFrame.locator('.opp-floor').evaluateAll(rows => rows.map(e => e.querySelectorAll('.opp-floor-item').length)), [7, 7, 7], 'each rival board must show the same seven penalty spaces');
+    const wStations = await fourFrame.locator('#factories .factory').evaluateAll(es => es.map(e => { const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; }));
+    assert.equal(wStations.length, 9, 'four-player Azul must use nine factories');
+    assert.ok(wStations[0].y < wStations[1].y && wStations[1].y > wStations[2].y && wStations[2].y < wStations[5].y && wStations[5].y > wStations[3].y, 'the five upper factories should form a W');
     await fourFrame.locator('[data-source]:not([disabled])').first().click();
     await fourFrame.locator('.pattern-row.available').first().click();
     for (let i = 0; i < 8; i++) {
@@ -130,6 +134,19 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await local.getByRole('button', { name: 'بله، اتمام بازی' }).click();
     await local.getByText(/این بازی به درخواست بازیکن پایان یافت/).waitFor();
     await solo.close();
+
+    const layoutContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const three = await layoutContext.newPage();
+    await three.goto('http://127.0.0.1:8765/games/azul/index.html?autostart=1&players=3&fresh=1');
+    const threeLayout = await three.evaluate(() => { const r=e=>e.getBoundingClientRect(); return { rivalBottom: r(document.querySelector('.opponents')).bottom, topFactory: r(document.querySelector('#factories .factory')).top }; });
+    assert.ok(threeLayout.topFactory > threeLayout.rivalBottom, 'three-player upper factories must clear the rivals’ panels');
+    const two = await layoutContext.newPage();
+    await two.goto('http://127.0.0.1:8765/games/azul/index.html?autostart=1&players=2&fresh=1');
+    const twoLayout = await two.evaluate(() => { const r=e=>e.getBoundingClientRect(),c=r(document.querySelector('.center-row')),b=r(document.querySelector('#put-floor')); return { centerBottom:c.bottom,burnTop:b.top,centerX:c.x+c.width/2,burnX:b.x+b.width/2,reserve:getComputedStyle(document.querySelector('.reserve-row')).display,floorSlots:document.querySelector('.opp-floor').querySelectorAll('.opp-floor-item').length }; });
+    assert.ok(twoLayout.burnTop >= twoLayout.centerBottom && Math.abs(twoLayout.centerX-twoLayout.burnX)<2, 'two-player burn control should be centered below the table');
+    assert.equal(twoLayout.reserve, 'none', 'hide the unrelated five-cell reserve row in two-player mode');
+    assert.equal(twoLayout.floorSlots, 7, 'opponent penalty row should match the player’s seven floor spaces');
+    await layoutContext.close();
     console.log('Azul online rooms (2 and 4 players), synced turns, AI fill, and online/offline end-game: PASS');
   } finally {
     await browser.close();
