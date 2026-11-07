@@ -48,6 +48,7 @@ assert.deepEqual(roundState.roundHistory, [{ round:1, scores:[1,0] }], 'complete
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('mb_hist') || '[]'));
     const game = stored.findLast(e => e.g === 'آزول');
     assert.ok(game && game.rp, 'Azul report should be saved in game history');
+    assert.equal(game.r, 'w', 'the highest-scoring local player must be recorded as the winner');
     assert.deepEqual(game.rp.rows.find(r => r.l === 'امتیاز دست ۱').v, [5, 2]);
     assert.deepEqual(game.rp.rows.find(r => r.l === 'امتیاز دست ۲').v, [7, 3]);
     assert.deepEqual(game.rp.rows.find(r => r.l === 'تکمیل رنگ').v, [5, 0]);
