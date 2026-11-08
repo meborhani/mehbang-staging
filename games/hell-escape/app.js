@@ -20,6 +20,22 @@
   function safeRead(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch(e){return null;}}
   function persist(){if(!g)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:1,game:g,difficulty:difficulty,avatarNames:g.players.map(function(p){return p.name;}),roundReveals:roundReveals}));}catch(e){toast('ذخیرهٔ بازی در این دستگاه ممکن نشد');}}
   function validSave(){var s=safeRead(SAVE_KEY);return !!(s&&s.version===1&&E.validate(s.game)&&!s.game.gameOver);}
+  function normalizeSave(s){
+    var game=s.game,logged=Array.isArray(s.roundReveals)?s.roundReveals:[],safeTotal=logged.reduce(function(sum,r){return sum+(r.kind==='coal'?(+r.value||0):0);},0);
+    if(!Array.isArray(game.pactOffers))game.pactOffers=game.pactOffer==null?[]:[game.pactOffer];
+    game.players.forEach(function(p,i){
+      var rows=logged.filter(function(r){return r.seat===i;});
+      if(!Array.isArray(p.reveals))p.reveals=rows.map(function(r,index){return {id:index,kind:r.kind,value:r.value,round:game.round};});
+      if(rows.length){p.haul=rows.reduce(function(sum,r){return sum+(r.kind==='coal'?(+r.value||0):0);},0);p.coalCount=rows.filter(function(r){return r.kind==='coal';}).length;p.foundDevil=rows.some(function(r){return r.kind==='devil';});p.busted=p.foundDevil;}
+    });
+    if(!Number.isFinite(game.totalSafeHaul))game.totalSafeHaul=safeTotal||game.players.reduce(function(sum,p){return sum+(p.haul||0);},0);
+    if(game.settled&&!Number.isFinite(game.settled.totalSafeHaul))game.settled.totalSafeHaul=safeTotal||game.players.reduce(function(sum,p){return sum+(p.haul||0);},0);
+    if(game.settled){
+      var summary=game.settled;
+      (summary.players||[]).forEach(function(row,i){var wager=+row.wager||0,success=typeof row.success==='boolean'?row.success:wager<=summary.totalSafeHaul,doubled=typeof row.doubled==='boolean'?row.doubled:(success&&wager===summary.bestWager);row.success=success;row.doubled=doubled;if(!Number.isFinite(row.payout))row.payout=success?wager*(doubled?2:1):0;if(!Number.isFinite(row.burned))row.burned=success?0:wager;});
+    }
+    return s;
+  }
   function readHistory(){var h=safeRead(HISTORY_KEY);return Array.isArray(h)?h:[];}
   function storeHistory(rec){var h=readHistory();if(!h.some(function(x){return x.id===rec.id;})){h.push(rec);try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h.slice(-30)));}catch(e){}}}
   function getNames(n){var a=[profileName];for(var i=1;i<n;i++)a.push(CPU_NAMES[(i-1)%CPU_NAMES.length]+' (رایانه)');return a;}
@@ -34,7 +50,7 @@
     roundStartedAt=Date.now();
     showGame();render();
   }
-  function resumeGame(){var s=safeRead(SAVE_KEY);if(!s||!E.validate(s.game)){toast('ذخیرهٔ قابل ادامه پیدا نشد');return;}g=s.game;roundReveals=Array.isArray(s.roundReveals)?s.roundReveals:[];difficulty=s.difficulty|0;reportSent=!!g.reportSent;showGame();render();if(g.phase==='play')scheduleAI();}
+  function resumeGame(){var s=safeRead(SAVE_KEY);if(!s||!E.validate(s.game)){toast('ذخیرهٔ قابل ادامه پیدا نشد');return;}s=normalizeSave(s);g=s.game;roundReveals=Array.isArray(s.roundReveals)?s.roundReveals:[];difficulty=s.difficulty|0;reportSent=!!g.reportSent;persist();showGame();render();if(g.phase==='play')scheduleAI();else if(g.phase==='settlement'){if(!g.settled)maybeSettle();else maybeCpuPact();}}
   function chipSvg(v){return '<img src="assets/chip-'+v+'.svg" alt="چیپ '+v+'" draggable="false">';}
   function chipCounts(amount){var left=Math.max(0,Math.floor(amount)),out=[];CHIP_VALUES.slice().reverse().forEach(function(v){var n=Math.floor(left/v);if(n){out.push({v:v,n:n});left-=n*v;}});return out;}
   function playerChipRow(){
@@ -44,8 +60,9 @@
     return html;
   }
   function wagerRow(){var p=g.players[0],counts=chipCounts(p.wager),html='';counts.forEach(function(c){for(var i=0;i<Math.min(c.n,8);i++)html+='<img class="bet-chip-icon" src="assets/chip-'+c.v+'.svg" alt="'+c.v+'">';});return html||'<span class="bet-empty">هنوز شرطی نگذاشتی</span>';}
-  function opponentCard(i){var p=g.players[i],active=g.phase==='play'&&g.turn===i;var bet=p.wagerHidden?'شرط: مخفی':('شرط: '+fa(p.wager));var st=p.locked?'شرط بسته شد':(g.phase==='bet'?'در حال شرط‌بندی':'');
-    return '<article class="opponent'+(active?' is-active':'')+'" id="seat-'+i+'" data-seat="'+i+'"><span class="active-flames" aria-hidden="true"><i></i><i></i></span><img src="'+esc(avatarFor(i))+'" alt=""><span class="op-name">'+esc(p.name)+'</span><span class="op-meta">'+bet+' · '+fa(p.wealth)+' چیپ</span><span class="seat-status">'+(p.busted?'سوخته':p.pact?'پیمان‌دار':st)+'</span></article>';
+  function playerRevealRow(p){return (p.reveals||[]).map(function(r){return '<span class="coal-reveal-badge'+(r.kind==='devil'?' devil-reveal':'')+'" data-player-reveal aria-label="'+(r.kind==='devil'?'شیطان':fa(r.value))+'"><img src="'+(r.kind==='devil'?'assets/devil.svg':'assets/coal.svg')+'" alt=""><small>'+(r.kind==='devil'?'♆':fa(r.value))+'</small></span>';}).join('');}
+  function opponentCard(i){var p=g.players[i],active=g.phase==='play'&&g.turn===i;var bet=p.wagerHidden?'شرط: مخفی':('شرط: '+fa(p.wager));
+    return '<article class="opponent'+(active?' is-active':'')+'" id="seat-'+i+'" data-seat="'+i+'"><span class="active-flames" aria-hidden="true"><i></i><i></i></span><img src="'+esc(avatarFor(i))+'" alt=""><span class="op-name">'+esc(p.name)+(p.pact?'<em class="pact-mark" title="هم‌پیمان شیطان">♆ پیمان</em>':'')+'</span><span class="op-meta">'+bet+' · '+fa(p.wealth)+(p.busted?' · شیطان':'')+'</span><div class="op-reveals" aria-label="زغال‌های رو شدهٔ '+esc(p.name)+'">'+playerRevealRow(p)+'</div></article>';
   }
   function renderOpponents(){var o=$('#opponents');o.style.gridTemplateColumns='repeat('+Math.max(1,g.players.length-1)+',minmax(0,1fr))';o.innerHTML=g.players.slice(1).map(function(p,j){return opponentCard(j+1);}).join('');}
   function polyPoint(pos,seat,count){
@@ -76,12 +93,12 @@
   function activeStep(){var step=g.phase==='bet'?'bet':g.phase==='play'?'coal':g.phase==='settlement'?'settle':'move';$$('[data-step]').forEach(function(el){el.classList.toggle('active',el.dataset.step===step);});}
   function renderDock(){var p=g.players[0],mine=g.phase==='play'&&g.turn===0&&!p.turnDone;
     var dock=$('#seat-0');dock.classList.toggle('is-active',mine);dock.classList.toggle('show-bet',g.phase==='play'||g.phase==='settlement'||g.phase==='game-over');
-    $('#myAvatar').src=avatarFor(0);$('#myName').textContent=p.name;$('#myWealth').textContent=fa(p.wealth);$('#myHaul').textContent=fa(p.haul);$('#myWager').textContent=p.wager?fa(p.wager):'۰';$('#chips').innerHTML=playerChipRow();$('#myBetChips').innerHTML=wagerRow();
+    $('#myAvatar').src=avatarFor(0);$('#myName').textContent=p.name;$('#myWealth').textContent=fa(p.wealth);$('#myHaul').textContent=fa(p.haul);$('#myWager').textContent=p.wager?fa(p.wager):'۰';$('#chips').innerHTML=playerChipRow();$('#myBetChips').innerHTML=wagerRow();$('#myReveals').innerHTML=playerRevealRow(p);$('#myReveals').classList.toggle('has-reveals',!!(p.reveals&&p.reveals.length));$('#myPact').hidden=!p.pact;
     var lock=$('[data-lock]'),end=$('[data-end-turn]'),next=$('[data-next]'),undo=$('[data-undo]');
     lock.hidden=g.phase!=='bet'||p.locked;lock.disabled=!p.wager||p.locked;
     undo.style.display=g.phase==='bet'&&!p.locked&&p.wager?'block':'none';
     end.hidden=!mine;end.disabled=!mine;
-    next.hidden=g.phase!=='settlement'&&g.phase!=='game-over';next.textContent=g.gameOver?'بازی تمام شد':'دست بعد';next.disabled=g.gameOver||g.pactOffer===0;
+    next.hidden=g.phase!=='settlement'&&g.phase!=='game-over';next.textContent=g.gameOver?'بازی تمام شد':'دست بعد';next.disabled=g.gameOver||!!(g.pactOffers&&g.pactOffers.length);
     $('#bankValue').textContent=fa(g.bank);
   }
   function statusText(){
@@ -95,17 +112,17 @@
   function render(){if(!g)return;document.body.dataset.phase=g.phase;$('#app').dataset.phase=g.phase;$('#roundLabel').textContent='دست '+fa(g.round);$('#statusText').textContent=statusText();renderOpponents();renderLabels();renderPawns();renderCoals();renderDock();renderRevealLog();activeStep();persist();
     if(g.phase==='play'){var key=g.round+':'+g.turnIndex;if(key!==lastTurnKey){lastTurnKey=key;if(g.turn===0){if($('#revealModal').open){clearTimeout(revealCloseTimer);revealCloseTimer=setTimeout(function(){if($('#revealModal').open)$('#revealModal').close();},1600);}if(vibrationEnabled)try{navigator.vibrate&&navigator.vibrate([100,45,100]);}catch(e){}}}}
   }
-  function maybeSettle(){if(g.phase!=='settlement')return;var summary=E.settle(g);if(summary){render();if(g.gameOver)finishGame();else maybeCpuPact();if(E.offerPact(g)===0)showPact();}}
-  function showPact(){var d=$('#pactModal');if(!d.open){$('#pactText').textContent='تو در این دست کمترین چیپ را داری و می‌توانی برای دست بعد پیمان ببندی.';d.showModal();}}
-  function maybeCpuPact(){var s=E.offerPact(g);if(s!=null&&s>0){var current=g;setTimeout(function(){if(g!==current||E.offerPact(g)!==s)return;var take=Math.random()<(difficulty===0?.3:difficulty===1?.55:.78);if(take)E.acceptPact(g,s);else E.declinePact(g,s);render();},700);}}
-  function renderSummary(){var content=$('#summaryContent'),html='';if(g.settled){var s=g.settled;html+='<div class="summary-note">بیشترین شرط: '+fa(s.bestWager)+' · بیشترین برداشت امن: '+fa(s.maxHaul)+' زغال</div><table class="summary-table"><tr><th>بازیکن</th><th>شرط</th><th>برداشت</th><th>موجودی</th></tr>'+s.players.map(function(p){return '<tr><td>'+esc(p.name)+'</td><td>'+fa(p.wager)+'</td><td>'+fa(p.haul)+(p.busted?' · سوخت':'')+'</td><td>'+fa(p.wealth)+'</td></tr>';}).join('')+'</table>';if(s.transfers.length)html+='<div class="summary-note">انتقال پیمان: '+s.transfers.map(function(x){return esc(g.players[x.from].name)+' ← '+fa(x.amount)+' → '+esc(g.players[x.to].name);}).join('، ')+'</div>';if(s.highHaulPlayers.length)html+='<div class="summary-note">پاداش بیشترین برداشت: '+s.highHaulPlayers.map(function(i){return esc(g.players[i].name);}).join('، ')+' · هر نفر ۵۰ چیپ</div>';}
+  function maybeSettle(){if(g.phase!=='settlement')return;var summary=E.settle(g);if(summary){render();if(g.gameOver)finishGame();else maybeCpuPact();}}
+  function showPact(){var d=$('#pactModal');if(!d.open){$('#pactText').textContent='تو در کمترین موجودی این دست هستی و می‌توانی برای دست بعد پیمان ببندی.';d.showModal();}}
+  function maybeCpuPact(){var s=E.offerPact(g);if(s===0){showPact();return;}if(s!=null&&s>0){var current=g;setTimeout(function(){if(g!==current||E.offerPact(g)!==s)return;var take=Math.random()<(difficulty===0?.3:difficulty===1?.55:.78);if(take)E.acceptPact(g,s);else E.declinePact(g,s);render();maybeCpuPact();},700);}}
+  function renderSummary(){var content=$('#summaryContent'),html='';if(g.settled){var s=g.settled;html+='<div class="summary-note">مجموع زغال امن کل دست: '+fa(s.totalSafeHaul)+' · بیشترین برداشت امن یک بازیکن: '+fa(s.maxHaul)+' · بیشترین شرط: '+fa(s.bestWager)+'</div><table class="summary-table"><tr><th>بازیکن</th><th>شرط</th><th>برداشت امن</th><th>تسویه</th><th>موجودی</th></tr>'+s.players.map(function(p){return '<tr><td>'+esc(p.name)+(p.busted?' · شیطان':'')+'</td><td>'+fa(p.wager)+'</td><td>'+fa(p.haul)+'</td><td>'+(p.success?(p.doubled?'دوبرابر +'+fa(p.payout):'موفق +'+fa(p.payout)):'سوخت '+fa(p.burned))+'</td><td>'+fa(p.wealth)+'</td></tr>';}).join('')+'</table>';if(s.transfers.length)html+='<div class="summary-note">انتقال پیمان: '+s.transfers.map(function(x){return esc(g.players[x.from].name)+' ← '+fa(x.amount)+' → '+esc(g.players[x.to].name);}).join('، ')+'</div>';if(s.highHaulPlayers.length)html+='<div class="summary-note">پاداش بیشترین برداشت امن: '+s.highHaulPlayers.map(function(i){return esc(g.players[i].name);}).join('، ')+' · هر نفر ۵۰ چیپ</div>';}
     if(g.gameOver)html+='<div class="summary-note">برنده: '+g.winners.map(function(i){return esc(g.players[i].name)+' ('+fa(g.players[i].wealth)+')';}).join('، ')+'</div>';
     if(!html)html='<div class="summary-note">هنوز دستی تسویه نشده است.</div>';
     content.innerHTML=html;
   }
   function summaryOpen(){renderSummary();$('#summaryModal').showModal();}
   function historyOpen(){var hist=readHistory(),html=hist.length?hist.slice().reverse().map(function(rec){return '<article class="history-round"><b>'+esc(rec.when||'بازی')+'</b> · '+(rec.won?'برد':'باخت')+' · '+fa(rec.rounds.length)+' دست · موجودی نهایی '+fa(rec.finalWealth||0)+'<br><small>'+esc(rec.names.join('، '))+'</small></article>';}).join(''):'هنوز بازی کاملی ثبت نشده است.';$('#historyContent').innerHTML=html;$('#summaryModal').close();$('#historyModal').showModal();}
-  function makeReport(){var n=g.players.length,rowsReport=[{l:'امتیاز نهایی',v:g.players.map(function(p){return p.wealth;}),h:1}];g.history.forEach(function(r){rowsReport.push({l:'دست '+r.round+' · شرط',v:r.players.map(function(p){return p.wager;})});rowsReport.push({l:'دست '+r.round+' · زغال امن',v:r.players.map(function(p){return p.haul;})});});var winners=g.winners||[],res=winners.length===1?winners[0]:'draw';return {id:'hell',gid:g.gameId,g:'فرار از جهنم',t:Date.now(),dur:Date.now()-(g.startedAt||Date.now()),n:n,names:g.players.map(function(p){return p.name;}),ai:g.players.map(function(p){return !!p.isAI;}),res:res,rows:rowsReport,sum:['موجودی بانک: '+fa(g.bank)],rounds:g.history};}
+  function makeReport(){var n=g.players.length,rowsReport=[{l:'امتیاز نهایی',v:g.players.map(function(p){return p.wealth;}),h:1}];g.history.forEach(function(r){rowsReport.push({l:'دست '+r.round+' · شرط',v:r.players.map(function(p){return p.wager;})});rowsReport.push({l:'دست '+r.round+' · برداشت امن بازیکن',v:r.players.map(function(p){return p.haul;})});});var winners=g.winners||[],res=winners.length===1?winners[0]:'draw';return {id:'hell',gid:g.gameId,g:'فرار از جهنم',t:Date.now(),dur:Date.now()-(g.startedAt||Date.now()),n:n,names:g.players.map(function(p){return p.name;}),ai:g.players.map(function(p){return !!p.isAI;}),res:res,rows:rowsReport,sum:['موجودی بانک: '+fa(g.bank),'مجموع زغال امن دست آخر: '+fa(g.settled?g.settled.totalSafeHaul:0)],rounds:g.history};}
   function finishGame(){if(reportSent)return;reportSent=true;g.reportSent=true;var report=makeReport(),winner=g.winners.indexOf(0)>=0,rec={id:g.gameId,when:new Date().toLocaleDateString('fa-IR'),won:winner,rounds:g.history,names:g.players.map(function(p){return p.name;}),finalWealth:g.players[0].wealth,report:report};storeHistory(rec);persist();msgParent({type:'hell:report',report:report,result:winner?'w':'l',gameId:g.gameId,opponents:g.players.slice(1).map(function(p){return p.name;})});renderSummary();$('#summaryModal').showModal();}
   function reveal(id){if(!g||g.phase!=='play'||g.turn!==0)return;var ok=E.revealCoal(g,0,+id);if(!ok){toast('این زغال دیگر در دسترس نیست');return;}recordReveal(0,g.coals[+id]);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}}
   function scheduleAI(){clearTimeout(autoTimer);if(!g||g.phase!=='play'||g.turn<=0)return;var seat=g.turn,round=g.round;autoTimer=setTimeout(function(){if(!g||g.phase!=='play'||g.turn!==seat||g.round!==round)return;var p=g.players[seat],available=g.available.slice();if(!available.length){E.endTurn(g,seat);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}return;}var stopAfter=difficulty===0?1:(difficulty===1?2:3);var wantStop=p.coalCount>=stopAfter&&Math.random()<(difficulty===0?.65:difficulty===1?.45:.28),revealedToken=null;if(wantStop){E.endTurn(g,seat);toast(p.name+' نوبتش را تمام کرد');}else{var id=available[Math.floor(Math.random()*available.length)];revealedToken=g.coals[id];E.revealCoal(g,seat,id);}
@@ -114,7 +131,7 @@
   function endUserTurn(){if(!g||!E.endTurn(g,0))return;toast('نوبتت تمام شد');if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}}
   function lockUser(){if(!g||!E.lockBet(g,0)){toast('برای بستن شرط دست‌کم ۱۰ چیپ انتخاب کن');return;}if(g.phase==='bet-reveal'){E.startRound(g);roundStartedAt=Date.now();toast('شرط‌ها آشکار شد · آغازگر '+g.players[g.turn].name);render();scheduleAI();}else{toast('شرطت قفل شد؛ منتظر رایانه بمان');render();}}
   function beginNextRound(){if(!g||!E.nextRound(g))return;roundReveals=[];clearTimeout(revealCloseTimer);if($('#revealModal').open)$('#revealModal').close();for(var i=1;i<g.players.length;i++)E.addNpcWager(g,i,Math.random,100+difficulty*50);g.players[0].wager=0;g.players[0].locked=false;g.players[0].wagerHidden=true;g.phase='bet';lastTurnKey='';roundStartedAt=Date.now();render();toast('دست '+fa(g.round)+' شروع شد؛ شرط خودت را ببند');}
-  function choosePact(take){if(!g)return;var ok=take?E.acceptPact(g,0):E.declinePact(g,0);if(ok){$('#pactModal').close();render();}}
+  function choosePact(take){if(!g)return;var ok=take?E.acceptPact(g,0):E.declinePact(g,0);if(ok){$('#pactModal').close();render();maybeCpuPact();}}
   function events(){
     $$('[data-count]').forEach(function(b){b.addEventListener('click',function(){$$('[data-count]').forEach(function(x){x.classList.toggle('selected',x===b);});});});
     $$('[data-difficulty]').forEach(function(b){b.addEventListener('click',function(){$$('[data-difficulty]').forEach(function(x){x.classList.toggle('selected',x===b);});difficulty=+b.dataset.difficulty;});});

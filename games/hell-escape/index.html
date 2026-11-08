@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#160d0b">
   <title>فرار از جهنم | مهبانگ گیم</title>
+  <link rel="preload" href="assets/vazirmatn-arabic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <script defer src="engine.js"></script>
   <script defer src="app.js"></script>
@@ -19,12 +20,13 @@
       <div class="setup-block"><b>سختی رایانه</b><div class="choice-row"><button data-difficulty="0">آسان</button><button data-difficulty="1" class="selected">متوسط</button><button data-difficulty="2">سخت</button></div></div>
       <button class="primary-button" data-start>شروع بازی با رایانه</button>
       <button class="secondary-button" data-resume hidden>ادامهٔ بازی ذخیره‌شده</button>
-      <div class="setup-rules">۴۸ زغال · ۹ شیطان · شرط پنهان · برداشت مستقیم از کوره</div>
+      <div class="setup-rules">۴۸ مهره در کوره · ۹ شیطان · تا کمتر از ۲۴ زغالِ رو‌نشده، کوره تازه نمی‌شود</div>
+      <button class="secondary-button setup-coal-info" data-coal-info>ترکیب زغال‌های هر کیسه</button>
     </section>
 
     <section id="game" hidden>
       <header class="topbar">
-        <button class="icon-button" data-back aria-label="بازگشت">←</button>
+        <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
         <div class="round-title"><strong>فرار از جهنم</strong><small id="roundLabel">دست ۱</small></div>
         <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
       </header>
@@ -38,20 +40,21 @@
           <g id="trackLabels" aria-hidden="true"></g><g id="pawns"></g><g id="coals"></g>
         </svg>
       </section>
-      <section id="drawNotice" class="draw-notice" data-kind="empty" aria-live="polite">
-        <span class="draw-mark" aria-hidden="true">♨</span><b>آخرین برداشت</b><span id="drawNoticeText">هنوز زغالی رو نشده</span>
-        <button class="draw-history-button" data-reveals>برداشت‌ها <span id="revealCount">۰</span></button>
+      <section class="draw-panel" aria-label="تاریخچه زغال‌های رو شده">
+        <button id="drawNotice" class="draw-history-button" data-kind="empty" data-reveals aria-live="polite"><span class="draw-mark" aria-hidden="true">♨</span><b>رو شده‌ها</b><span id="drawNoticeText">برای دیدن برداشت‌ها بزن</span><span class="draw-count" id="revealCount">۰</span></button>
+        <div id="drawStrip" class="draw-strip" aria-label="ترتیب زغال‌های رو شده"></div>
       </section>
       <section class="round-status">
         <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b></span>
         <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
+        <button class="coal-info-button" data-coal-info>کوره <b id="coalCount">۴۸</b></button>
         <button class="summary-chip" data-summary>خلاصه بازی ▤</button>
       </section>
       <section class="player-dock" id="seat-0">
         <span class="active-flames" aria-hidden="true"><i></i><i></i></span>
         <div class="player-identity">
           <img id="myAvatar" alt="آواتار بازیکن">
-          <div><b id="myName">بازیکن</b><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small>برداشت امن <strong id="myHaul">۰</strong></small></div>
+          <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small>برداشت امن <strong id="myHaul">۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small><div id="myReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></div></div>
         </div>
         <div class="chip-bank" id="chipBank"><span class="dock-label">چیپ‌های من</span><div class="chip-row" id="chips"></div></div>
         <div class="bet-tray"><span class="dock-label">شرط این دست <b id="myWager">۰</b></span><div id="myBetChips" class="bet-chips"></div></div>
@@ -85,6 +88,10 @@
       <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تنظیمات بازی</h2>
       <div class="dialog-content"><button class="secondary-button setting-toggle" data-vibration>لرزش نوبت: روشن</button><p class="summary-note">برای برگشت به هاب از دکمهٔ ← استفاده کن. بازی روی همین دستگاه ذخیره می‌شود.</p></div>
       <button class="primary-button" data-close>بستن</button>
+    </dialog>
+    <dialog id="coalInfoModal" class="dialog coal-info-dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button><h2>مهره‌های کوره</h2>
+      <div class="dialog-content"><p class="summary-note">هر کیسه ۴۸ مهره دارد: ۳۹ زغال امن و ۹ شیطان.</p><ul class="coal-breakdown"><li>۹ زغالِ ۱۰ امتیازی</li><li>۹ زغالِ ۲۰ امتیازی</li><li>۹ زغالِ ۲۵ امتیازی</li><li>۷ زغالِ ۵۰ امتیازی</li><li>۳ زغالِ ۷۵ امتیازی</li><li>۲ زغالِ ۱۰۰ امتیازی</li><li class="devil-count">۹ مهرهٔ شیطان</li></ul><p>زغال‌های رو‌نشده در کوره می‌مانند و بازی با همان‌ها ادامه دارد. کیسه فقط وقتی تازه می‌شود که کمتر از ۲۴ زغالِ رو‌نشده باقی مانده باشد.</p><p>رو‌نشده در این کیسه: <b id="coalInfoRemaining">۴۸</b></p></div><button class="primary-button" data-close>متوجه شدم</button>
     </dialog>
     <dialog id="pactModal" class="dialog pact-dialog">
       <h2>پیمان با شیطان</h2><p id="pactText"></p><p>اگر بازیکنی شیطان را رو کند، ۵۰ چیپ به تو می‌پردازد.</p>

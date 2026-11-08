@@ -9,6 +9,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   const failed=[];page.on('requestfailed',r=>failed.push(r.url()));
   await page.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  assert.ok(await page.evaluate(()=>getComputedStyle(document.body).fontFamily.includes('Vazirmatn')),'the game screen uses the bundled Vazirmatn font');
   await page.locator('[data-count="2"]').click();
   await page.locator('[data-start]').click();
   await page.locator('[data-chip="200"]').click();
@@ -18,11 +19,14 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(await page.locator('#seat-0').evaluate(e=>e.classList.contains('is-active')),'human seat is visibly active at first after highest wager');
   assert.equal(await page.locator('.op-chips').count(),0,'opponent cards do not show wager chips over their bet text');
   assert.equal(await page.locator('#seat-0 .active-flames').count(),1,'the active seat has the flame border overlay');
+  assert.equal(await page.locator('#seat-0 .player-reveal-row').count(),1,'the human has a persistent revealed-coal row in their own panel');
+  assert.equal(await page.locator('#seat-1 .op-reveals').count(),1,'each opponent has a revealed-coal row in their card');
   assert.ok(await page.locator('#seat-0 .active-flames').evaluate(e=>getComputedStyle(e,':before').backgroundImage.includes('flame.svg')),'turn highlight uses the flame asset');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
   await first.click();
   await page.waitForFunction(id=>document.querySelector(`[data-coal-id="${id}"]`).classList.contains('is-revealed'),before);
+  await page.waitForFunction(()=>document.querySelectorAll('#seat-0 [data-player-reveal]').length===1);
   await page.waitForFunction(()=>document.querySelector('#drawNotice').textContent.match(/زغال|شیطان/));
   assert.equal(await page.locator('#revealList .reveal-entry').count(),1,'the drawn piece is logged for both human and AI turns');
   await page.locator('[data-reveals]').click();
@@ -39,6 +43,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   if(await page.locator('#seat-0').evaluate(e=>e.classList.contains('is-active')))await page.locator('[data-end-turn]').click();
   const aiStart=await page.evaluate(()=>performance.now());
   await page.waitForFunction(()=>document.querySelectorAll('.coal-token.is-revealed').length>=2,{timeout:6500});
+  await page.waitForFunction(()=>document.querySelectorAll('#seat-1 [data-player-reveal]').length>=1,{timeout:1500});
   await page.waitForFunction(()=>document.querySelector('#revealModal').open&&document.querySelectorAll('#revealList .reveal-entry').length>=2,{timeout:1500});
   assert.ok((await page.locator('#drawNotice').innerText()).includes('رها')||(await page.locator('#drawNotice').innerText()).includes('سارا')||(await page.locator('#drawNotice').innerText()).includes('کاوه'),'the latest CPU draw is announced with its player name');
   const aiDelay=await page.evaluate(start=>performance.now()-start,aiStart);
@@ -58,6 +63,30 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
     const fit=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&document.documentElement.scrollHeight<=innerHeight+1);
     assert.ok(fit,`${count}-player portrait layout fits without scrolling`);await p.close();
   }
+  const pactPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await pactPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  await pactPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(3,['ابراهیم','رها','سارا'],()=>0.5);
+    game.phase='settlement';game.turn=-1;game.players[0].wealth=100;game.players[1].wealth=100;game.players[2].wealth=200;
+    game.pactOffers=[0,1];game.pactOffer=0;game.settled={round:1,bestWager:100,maxHaul:80,highHaulPlayers:[2],transfers:[],players:game.players.map(p=>({name:p.name,wager:50,haul:40,busted:false,success:true,doubled:false,wealth:p.wealth}))};
+    game.players.forEach(p=>delete p.reveals);delete game.totalSafeHaul;
+    const roundReveals=[{seat:0,name:'ابراهیم',kind:'coal',value:80},{seat:1,name:'رها',kind:'coal',value:50}];
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,roundReveals}));
+  });
+  await pactPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  await pactPage.waitForFunction(()=>document.querySelector('#pactModal').open,'',{timeout:1500});
+  assert.ok(await pactPage.locator('[data-next]').isDisabled(),'the next hand stays blocked while tied-last pact offers are pending');
+  await pactPage.locator('[data-pact="yes"]').click();
+  await pactPage.waitForFunction(()=>{const s=JSON.parse(localStorage.getItem('mb-hell-escape-save-v1'));return s.game.pactOffers.length===0;},{timeout:3000});
+  const pactSave=await pactPage.evaluate(()=>JSON.parse(localStorage.getItem('mb-hell-escape-save-v1')).game);
+  assert.equal(pactSave.players[0].pact,true,'the human can accept their own tied-last pact offer');
+  assert.equal(await pactPage.locator('#myPact').evaluate(e=>e.hidden),false,'the active pact is shown on the human panel');
+  assert.equal(await pactPage.locator('#seat-0 [data-player-reveal]').count(),1,'legacy saves reconstruct the human coal row from their current-hand reveals');
+  assert.equal(await pactPage.locator('#seat-1 [data-player-reveal]').count(),1,'legacy saves reconstruct opponent coal rows from their current-hand reveals');
+  await pactPage.locator('[data-summary]').click();
+  assert.ok((await pactPage.locator('#summaryContent').innerText()).includes('مجموع زغال امن کل دست: ۱۳۰'),'the settlement modal displays the whole-hand safe total');
+  assert.ok((await pactPage.locator('#summaryContent').innerText()).includes('موفق +۵۰'),'the settlement modal shows the payout amount');
+  await pactPage.close();
   assert.deepEqual(failed,[],'all UI and asset requests succeed');
   console.log('hell escape UI: 2–4 seats, lock, exact coal pick, CPU delay, summary and mobile fit passed');
  }finally{await browser.close();server.kill();}
