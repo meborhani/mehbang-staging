@@ -42,12 +42,14 @@
     g.turnIndex=0;g.turn=g.turnOrder[0];g.phase='play';return true;
   }
   function advance(g){
+    if(g.available.length===0)g.players.forEach(function(p){if(!p.turnDone&&p.coalCount<1)p.turnDone=true;});
     for(var step=1;step<=g.turnOrder.length;step++){
       var ix=(g.turnIndex+step)%g.turnOrder.length,seat=g.turnOrder[ix];
       if(!g.players[seat].turnDone){g.turnIndex=ix;g.turn=seat;return;}
     }
     g.turn=-1;g.phase='settlement';
   }
+  function forcePassEmpty(g){if(!g||g.phase!=='play'||g.available.length!==0)return false;g.players.forEach(function(p){if(!p.turnDone&&p.coalCount<1)p.turnDone=true;});advance(g);return true;}
   function revealCoal(g,s,id){
     if(!validSeat(g,s)||g.phase!=='play'||g.turn!==s)return false;
     var token=g.coals.find(function(c){return c.id===id;});
@@ -62,7 +64,7 @@
   }
   function endTurn(g,s){
     if(!validSeat(g,s)||g.phase!=='play'||g.turn!==s)return false;
-    if(g.players[s].coalCount<1&&g.available.length>0)return false;
+    if(g.players[s].coalCount<1)return false;
     g.players[s].turnDone=true;advance(g);return true;
   }
   function finishIfWon(g){
@@ -119,5 +121,5 @@
     if(g.players.some(function(p){return !p||!Number.isFinite(p.wealth)||!Number.isFinite(p.wager)||p.wager<0||p.haul<0||p.haul>1270||(p.reveals!==undefined&&!Array.isArray(p.reveals));}))return false;
     return ['bet','bet-reveal','play','settlement','game-over'].includes(g.phase);
   }
-  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
+  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,forcePassEmpty:forcePassEmpty,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
 });

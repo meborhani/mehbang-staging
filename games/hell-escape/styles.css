@@ -60,6 +60,57 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent>:not(.active-flames),.player-dock>:not(.active-flames){position:relative;z-index:2}
 @keyframes flame-wave{from{transform:scaleY(.83) skewX(-2deg)}to{transform:scaleY(1.12) skewX(2deg)}}
 @keyframes flame-side{from{filter:drop-shadow(0 0 3px #ff5412);opacity:.82}to{filter:drop-shadow(0 0 8px #ffc244);opacity:1}}
+.back-button svg{width:25px;height:25px;display:block;overflow:visible}
+.back-button svg path{fill:none;stroke:#ffdc78;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px #9c4e07)}
+.opponent{grid-template-columns:34px minmax(0,1fr);grid-template-rows:18px 16px 16px 22px;gap:0 5px;padding:3px 5px}
+.opponent>img{grid-column:1;grid-row:1/5;width:31px;height:31px}
+.opponent .op-name{grid-column:2;grid-row:1;font-size:clamp(9px,2.7vw,12px)}
+.opponent .op-meta{grid-column:2;grid-row:2;font:700 clamp(7px,2.1vw,9px)/1 Vazirmatn,Tahoma,sans-serif;color:#fff0be}
+.opponent .op-reveals{grid-column:2;grid-row:4;height:22px;mask-image:none}
+.opponent-pawn-key{grid-column:2;grid-row:3;justify-self:start;font:700 8px/1 Vazirmatn,Tahoma,sans-serif;color:#f7d9a0;white-space:nowrap}
+.pawn-key i,.pawn-dot{display:inline-block;width:9px;height:9px;border:1px solid #ffe9a6;border-radius:50%;vertical-align:-1px;box-shadow:0 0 4px #000}
+.player-identity .pawn-key{display:block;width:100%;font:700 8px/1.2 Vazirmatn,Tahoma,sans-serif;color:#ffe7ad}
+.pawn-piece image{filter:drop-shadow(0 2px 2px #000)}
+.coal-reveal-badge{flex-basis:27px;width:27px;height:25px;border:1.5px solid #ffcf67;background:linear-gradient(145deg,#773d1c,#25120a);box-shadow:inset 0 0 4px #000,0 0 4px rgba(255,193,82,.45)}
+.coal-reveal-badge img{inset:0!important;width:24px!important;height:22px!important;opacity:1!important;filter:drop-shadow(0 1px 2px #000)}
+.coal-reveal-badge small{font:900 9px/1 Vazirmatn,Tahoma,sans-serif;color:#fff9dd;text-shadow:0 1px 2px #000,0 0 3px #000}
+.player-identity #myReveals .coal-reveal-badge{flex-basis:23px;width:23px;height:22px}
+.player-identity #myReveals .coal-reveal-badge img{width:20px!important;height:19px!important;opacity:1!important}
+.coal-token.not-available{opacity:.55}
+.coal-token .coal-value,.track-marker{font-family:Vazirmatn,Tahoma,sans-serif}
+.draw-panel{flex:0 0 auto;min-height:34px;display:flex;flex-direction:column;gap:2px}
+.draw-notice{width:100%;height:30px;flex:0 0 30px;justify-content:flex-start}
+.draw-history-button>b{font-size:9px}
+.draw-strip{height:0;display:flex;align-items:center;gap:3px;overflow-x:auto;overflow-y:hidden;direction:rtl;scrollbar-width:none}
+.draw-strip:not(:empty){height:23px}
+.draw-seq-item{flex:0 0 auto;min-width:35px;height:20px;display:flex;align-items:center;gap:3px;padding:1px 4px;border:1px solid #d7ab62;border-radius:7px;background:linear-gradient(135deg,#173b4c,#3a1b0c);font:800 8px/1 Vazirmatn,Tahoma,sans-serif;color:#fff0c7}
+.draw-seq-item small{max-width:25px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f1d08d}
+.draw-seq-item.is-devil{border-color:#ff6945;background:linear-gradient(#71140b,#270806);color:#ffb187}
+.summary-section-title{margin:9px 0 4px;color:#ffdf94;font-size:13px}
+.summary-draws{display:grid;gap:4px}
+.summary-player-draw{display:grid;grid-template-columns:minmax(78px,35%) 1fr;align-items:center;gap:5px;padding:5px;border:1px solid rgba(221,171,87,.42);border-radius:8px;background:rgba(12,43,57,.48);font-size:10px}
+.summary-player-draw>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ffdfa0}
+.summary-player-draw>span{text-align:left;direction:rtl;color:#fff3d6;overflow-wrap:anywhere}
+.pawn-dot{width:10px;height:10px;margin-inline-end:4px}.pawn-0{background:#f2c95b}.pawn-1{background:#ef4944}.pawn-2{background:#35c9dc}.pawn-3{background:#4ccc70}
+.player-dock{grid-template-rows:46px minmax(52px,1fr) 32px 34px;gap:3px 7px}
+.player-identity{grid-row:1/5}
+.player-dock.show-bet .chip-bank{grid-column:2;grid-row:1}
+.player-dock.show-bet .bet-tray{grid-column:2;grid-row:2/4;display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:3px 6px}
+.player-dock.show-bet .bet-tray .dock-label{margin:0}
+.player-dock.show-bet .bet-chips{height:auto;max-width:58%;overflow-x:auto}
+.player-dock.show-bet .bet-chip-icon{width:25px;height:25px}
+.dock-actions,.player-dock.show-bet .dock-actions{position:static;grid-column:2;grid-row:4;display:flex;justify-content:center;align-self:center;width:100%;gap:6px}
+.dock-actions:empty{display:none}
+.dock-actions .primary-button,.dock-actions .secondary-button,.dock-actions .end-turn,.dock-actions .next-round{min-height:29px;flex:0 1 auto}
+.opponent.is-active,.player-dock.is-active{animation:none;filter:none}
+.opponent.is-active,.opponent.is-active:before,.opponent.is-active:after,.player-dock.is-active:before,.player-dock.is-active:after{box-shadow:none;animation:none;filter:none}
+.opponent.is-active:before,.opponent.is-active:after,.player-dock.is-active:before,.player-dock.is-active:after{content:none!important;display:none!important}
+.active-flames{z-index:4;overflow:visible}
+.active-flames:before{top:-18px;left:6%;right:6%;height:35px;background-size:22px 34px;background-repeat:repeat-x;filter:drop-shadow(0 0 5px #ff5a12)}
+.active-flames i{top:-4px;bottom:48%;width:20px;background-size:18px 29px;background-repeat:repeat-y;filter:drop-shadow(0 0 4px #ff5a12)}
+.is-active .active-flames:before{animation:flame-wave .38s ease-in-out infinite alternate}
+.is-active .active-flames i{animation:flame-side .42s ease-in-out infinite alternate}
+@media(max-width:360px){.player-dock{grid-template-rows:42px minmax(48px,1fr) 30px 32px}.player-dock.show-bet .bet-chip-icon{width:21px;height:21px}.dock-actions .primary-button,.dock-actions .end-turn,.dock-actions .next-round{min-width:62px}}
 .draw-notice{min-width:0;height:34px;flex:0 0 34px;display:flex;align-items:center;gap:6px;padding:3px 7px;border:1px solid #a96c25;border-radius:10px;background:linear-gradient(90deg,#29140c,#092c42 52%,#2c150c);box-shadow:inset 0 0 0 1px rgba(255,218,133,.18),0 2px 5px #000;font-size:clamp(9px,2.6vw,11px);color:#ffe7b1;overflow:hidden}
 .draw-notice .draw-mark{font-size:18px;color:#f8b94c;text-shadow:0 0 7px #fb6018}
 .draw-notice>b{white-space:nowrap;color:#f9d58e}

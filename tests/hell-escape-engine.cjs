@@ -65,6 +65,28 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
 }
 {
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
+  betAndStart(g,[50,20]);
+  g.available=[];
+  assert.equal(E.endTurn(g,g.turn),false,'an empty bag never allows a player to skip without revealing a coal first');
+}
+{
+  const g=E.createGame(3,['تو','الف','ب'],()=>0.5);
+  betAndStart(g,[50,20,10]);
+  const first=g.turn;E.revealCoal(g,first,coalWith(g,c=>c.kind==='coal').id);E.endTurn(g,first);
+  g.available=[];
+  assert.equal(E.forcePassEmpty(g),true,'players with no remaining coal are automatically passed only after the bag is empty');
+  assert.notEqual(g.turn,g.turnOrder[1],'an empty-bag forced pass advances automatically');
+}
+{
+  const g=E.createGame(3,['تو','الف','ب'],()=>0.5);
+  betAndStart(g,[50,20,10]);
+  const first=g.turn,token=coalWith(g,c=>c.kind==='coal');g.available=[token.id];
+  E.revealCoal(g,first,token.id);assert.equal(E.endTurn(g,first),true);
+  assert.equal(g.phase,'settlement','the last revealed coal settles after already-drawn players finish');
+  assert(g.players.every(p=>p.turnDone),'players with no coal left are auto-passed instead of being offered a skip button');
+}
+{
+  const g=E.createGame(2,['تو','رایانه'],()=>0.5);
   betAndStart(g,[100,50]);
   g.phase='settlement';g.players[0].haul=0;g.players[1].haul=0;
   const bank=g.bank,wealth=g.players.map(p=>p.wealth);
