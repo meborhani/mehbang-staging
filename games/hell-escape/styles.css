@@ -111,6 +111,45 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .is-active .active-flames:before{animation:flame-wave .38s ease-in-out infinite alternate}
 .is-active .active-flames i{animation:flame-side .42s ease-in-out infinite alternate}
 @media(max-width:360px){.player-dock{grid-template-rows:42px minmax(48px,1fr) 30px 32px}.player-dock.show-bet .bet-chip-icon{width:21px;height:21px}.dock-actions .primary-button,.dock-actions .end-turn,.dock-actions .next-round{min-width:62px}}
+.opponents{margin-bottom:4px}
+.board-zone{padding:10px 0 4px}
+.player-dock{flex:0 0 clamp(158px,22vh,190px);min-height:158px;grid-template-rows:40px minmax(40px,1fr) 34px 35px}
+.player-dock.show-bet .chip-bank{grid-column:2;grid-row:1}
+.player-dock.show-bet .bet-tray{display:grid;grid-column:2;grid-row:2/4;grid-template-columns:minmax(85px,1fr) minmax(0,62%);grid-template-rows:1fr;align-items:center;gap:4px;direction:rtl;padding:3px 6px}
+.player-dock.show-bet .bet-tray .dock-label{grid-column:1;justify-self:stretch;text-align:right;white-space:nowrap;line-height:1.25;font-size:9px}
+.player-dock.show-bet .bet-chips{grid-column:2;justify-self:stretch;width:100%;max-width:none;height:auto;justify-content:flex-start;overflow-x:auto;direction:ltr}
+.player-dock.show-bet .bet-chip-icon{width:25px;height:25px}
+.dock-actions,.player-dock.show-bet .dock-actions{position:static;grid-column:2;grid-row:4;display:flex;justify-content:center;align-self:center;width:100%;gap:8px}
+.dock-actions .primary-button,.dock-actions .secondary-button,.dock-actions .end-turn,.dock-actions .next-round{flex:1 1 0;max-width:150px;min-height:32px;padding:6px 14px;font-size:11px;white-space:nowrap}
+.active-flames{display:none!important}
+.opponent.is-active,.player-dock.is-active{animation:none;filter:none;box-shadow:0 0 10px rgba(210,12,21,.28)}
+.opponent.is-active:before,.player-dock.is-active:before{content:""!important;display:block!important;position:absolute;inset:2px;padding:2px;border-radius:inherit;pointer-events:none;z-index:5;background:conic-gradient(from 0deg,transparent 0 57%,#a40009 62%,#f21e2b 68%,#ff9b70 72%,#d10b17 78%,transparent 86% 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;transform-origin:center;animation:turn-ring-spin 1.8s linear infinite}
+.opponent.is-active:after,.player-dock.is-active:after{content:none!important;display:none!important}
+@keyframes turn-ring-spin{to{transform:rotate(360deg)}}
+.summary-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 9px}
+.summary-tabs [role="tab"]{min-height:36px;border:1px solid #9c6527;border-radius:9px;background:linear-gradient(#152f3d,#111412);color:#e8cb97;font:800 11px/1.2 Vazirmatn,Tahoma,sans-serif}
+.summary-tabs [role="tab"].active,.summary-tabs [role="tab"][aria-selected="true"]{border-color:#ffd16b;background:linear-gradient(#a14813,#4b1b09);box-shadow:0 0 8px rgba(246,141,29,.4);color:#fff2c8}
+.summary-tab-panel[hidden]{display:none!important}
+#summaryTab-draws .reveal-list{max-height:50dvh}
+@media(max-height:760px){.board-zone{padding-top:6px}.player-dock{flex-basis:158px;min-height:150px;grid-template-rows:34px minmax(34px,1fr) 30px 32px}}
+.player-dock:not(.show-bet) .bet-tray{display:grid;grid-column:2;grid-row:3;grid-template-columns:minmax(85px,1fr) minmax(0,62%);grid-template-rows:1fr;align-items:center;gap:4px;direction:rtl;padding:3px 6px}
+.player-dock:not(.show-bet) .bet-tray .dock-label{grid-column:1;justify-self:stretch;text-align:right;white-space:nowrap;line-height:1.2;font-size:9px}
+.player-dock:not(.show-bet) .bet-chips{grid-column:2;justify-self:stretch;width:100%;max-width:none;height:auto;justify-content:flex-start;overflow-x:auto;direction:ltr}
+.bet-tray .bet-chip-icon{flex:0 0 25px}
+.player-dock.show-bet .bet-tray .dock-label{font-size:9px}
+.active-flames{display:block!important;position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;border:1px solid rgba(220,24,29,.8);border-radius:inherit;box-shadow:0 0 9px rgba(240,29,30,.45)}
+.active-flames:before,.active-flames:after{content:"";position:absolute;top:0;width:42%;height:3px;background:linear-gradient(90deg,transparent,#ed202b 26%,#ffd0c5 48%,#ed202b 70%,transparent);animation:halo-edge-x 1.25s linear infinite}
+.active-flames:after{top:auto;bottom:0;right:0;animation-direction:reverse;animation-delay:-.62s}
+.active-flames:before{left:0}
+.active-flames i{position:absolute;top:0;width:3px;height:44%;background:linear-gradient(180deg,transparent,#ed202b 26%,#ffd0c5 48%,#ed202b 70%,transparent);animation:halo-edge-y 1.25s linear infinite}
+.active-flames i:first-child{left:0;right:auto}.active-flames i:last-child{top:auto;bottom:0;right:0;left:auto;animation-direction:reverse;animation-delay:-.62s}
+.is-active .active-flames:before,.is-active .active-flames:after{animation-name:halo-edge-x;animation-duration:1.25s;animation-timing-function:linear;animation-iteration-count:infinite}
+.is-active .active-flames i{animation-name:halo-edge-y;animation-duration:1.25s;animation-timing-function:linear;animation-iteration-count:infinite}
+.opponent.is-active,.player-dock.is-active{border-color:#d8232a;box-shadow:0 0 10px rgba(210,12,21,.36)}
+.opponent.is-active:before,.player-dock.is-active:before{content:none!important;display:none!important;animation:none!important}
+.opponent.is-active:after,.player-dock.is-active:after{content:none!important;display:none!important;animation:none!important}
+@keyframes halo-edge-x{from{transform:translateX(-105%)}to{transform:translateX(245%)}}
+@keyframes halo-edge-y{from{transform:translateY(-105%)}to{transform:translateY(245%)}}
 .draw-notice{min-width:0;height:34px;flex:0 0 34px;display:flex;align-items:center;gap:6px;padding:3px 7px;border:1px solid #a96c25;border-radius:10px;background:linear-gradient(90deg,#29140c,#092c42 52%,#2c150c);box-shadow:inset 0 0 0 1px rgba(255,218,133,.18),0 2px 5px #000;font-size:clamp(9px,2.6vw,11px);color:#ffe7b1;overflow:hidden}
 .draw-notice .draw-mark{font-size:18px;color:#f8b94c;text-shadow:0 0 7px #fb6018}
 .draw-notice>b{white-space:nowrap;color:#f9d58e}

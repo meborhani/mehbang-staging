@@ -68,17 +68,12 @@
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
 
-    <dialog id="revealModal" class="dialog reveal-dialog">
-      <button class="dialog-close" data-close aria-label="بستن">×</button>
-      <h2>زغال‌های رو شده</h2>
-      <p class="reveal-subtitle">برداشت‌ها به ترتیب نوبت نمایش داده می‌شوند.</p>
-      <div id="revealList" class="reveal-list"></div>
-      <button class="primary-button" data-close>ادامهٔ بازی</button>
-    </dialog>
     <dialog id="summaryModal" class="dialog summary-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button>
       <h2>خلاصهٔ بازی</h2>
-      <div id="summaryContent" class="dialog-content"></div>
+      <div class="summary-tabs" role="tablist" aria-label="خلاصه و برداشت‌ها"><button type="button" role="tab" data-summary-tab="summary" aria-selected="true">خلاصهٔ دست</button><button type="button" role="tab" data-summary-tab="draws" aria-selected="false">زغال‌های رو شده</button></div>
+      <section id="summaryTab-summary" class="summary-tab-panel"><div id="summaryContent" class="dialog-content"></div></section>
+      <section id="summaryTab-draws" class="summary-tab-panel" hidden><p class="reveal-subtitle">برداشت‌های همهٔ بازیکنان به ترتیب رو شدن</p><div id="revealList" class="reveal-list"></div></section>
       <div class="dialog-actions"><button class="secondary-button" data-history>تاریخچهٔ دست‌ها</button><button class="primary-button" data-close>ادامه</button></div>
     </dialog>
     <dialog id="historyModal" class="dialog">
