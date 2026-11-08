@@ -40,14 +40,10 @@
           <g id="trackLabels" aria-hidden="true"></g><g id="pawns"></g><g id="coals"></g>
         </svg>
       </section>
-      <section class="draw-panel" aria-label="تاریخچه زغال‌های رو شده">
-        <button id="drawNotice" class="draw-history-button draw-notice" data-kind="empty" data-reveals aria-live="polite"><span class="draw-mark" aria-hidden="true">♨</span><b>برداشت‌های این دست</b><span id="drawNoticeText">هنوز برداشتی ثبت نشده</span><span class="draw-count" id="revealCount">۰</span></button>
-        <div id="drawStrip" class="draw-strip" aria-label="زغال‌های رو شده به ترتیب"></div>
-      </section>
       <section class="round-status">
-        <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b></span>
+        <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b> <span class="bank-coals">· زغال نرفته <b id="coalCount">۴۸</b></span></span>
         <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
-        <button class="coal-info-button" data-coal-info>کوره <b id="coalCount">۴۸</b></button>
+        <button class="coal-info-button" data-coal-info aria-label="ترکیب زغال‌ها">ⓘ</button>
         <button class="summary-chip" data-summary>خلاصه بازی ▤</button>
       </section>
       <section class="player-dock" id="seat-0">
@@ -70,14 +66,10 @@
 
     <dialog id="summaryModal" class="dialog summary-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button>
-      <h2>خلاصهٔ بازی</h2>
-      <div class="summary-tabs" role="tablist" aria-label="خلاصه و برداشت‌ها"><button type="button" role="tab" data-summary-tab="summary" aria-selected="true">خلاصهٔ دست</button><button type="button" role="tab" data-summary-tab="draws" aria-selected="false">زغال‌های رو شده</button></div>
+      <h2>خلاصهٔ دست‌ها</h2>
+      <div class="summary-tabs" role="tablist" aria-label="خلاصه و برداشت‌ها"><button type="button" role="tab" data-summary-tab="summary" aria-selected="true">خلاصهٔ دست‌ها</button><button type="button" role="tab" data-summary-tab="draws" aria-selected="false">برداشت‌ها</button></div>
       <section id="summaryTab-summary" class="summary-tab-panel"><div id="summaryContent" class="dialog-content"></div></section>
-      <section id="summaryTab-draws" class="summary-tab-panel" hidden><p class="reveal-subtitle">برداشت‌های همهٔ بازیکنان به ترتیب رو شدن</p><div id="revealList" class="reveal-list"></div></section>
-      <div class="dialog-actions"><button class="secondary-button" data-history>تاریخچهٔ دست‌ها</button><button class="primary-button" data-close>ادامه</button></div>
-    </dialog>
-    <dialog id="historyModal" class="dialog">
-      <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تاریخچهٔ بازی</h2><div id="historyContent" class="dialog-content"></div><button class="primary-button" data-close>بستن</button>
+      <section id="summaryTab-draws" class="summary-tab-panel" hidden><p class="reveal-subtitle">تمام برداشت‌ها از آغاز بازی به ترتیب رو شدن</p><div id="revealList" class="reveal-list"></div></section>
     </dialog>
     <dialog id="settingsModal" class="dialog settings-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تنظیمات بازی</h2>

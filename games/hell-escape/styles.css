@@ -152,6 +152,24 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent.is-active:after,.player-dock.is-active:after{content:none!important;display:none!important;animation:none!important}
 @keyframes halo-edge-x{from{transform:translateX(-105%)}to{transform:translateX(245%)}}
 @keyframes halo-edge-y{from{transform:translateY(-105%)}to{transform:translateY(245%)}}
+.bank-coals{color:#f4d89d;margin-inline-start:3px}.bank-coals b{color:#fff2c4}
+.coal-info-button{flex:0 0 22px;width:22px;height:22px;min-width:22px;padding:0;border:1px solid #c79343;border-radius:50%;background:linear-gradient(#174664,#08283e);font-size:14px;line-height:1;color:#ffe1a1}
+.player-dock{flex-basis:clamp(160px,20vh,170px);min-height:160px;grid-template-rows:48px minmax(52px,1fr) 31px;gap:3px 7px}
+.player-identity{grid-row:1/4}
+.chip-bank,.player-dock.show-bet .chip-bank{grid-column:2;grid-row:1!important;height:48px;min-height:48px;max-height:48px;align-self:start}
+.chip-row{height:32px;min-height:32px;max-height:32px;flex:0 0 32px;gap:2px}
+.chip-button{height:32px;max-height:32px;min-width:0;max-width:none;flex:1 1 0}
+.chip-button img{display:block;width:100%;height:32px;max-width:38px;object-fit:contain}
+.player-dock .bet-tray,.player-dock.show-bet .bet-tray,.player-dock:not(.show-bet) .bet-tray{display:grid!important;grid-column:2;grid-row:2;grid-template-columns:minmax(85px,1fr) minmax(0,62%);grid-template-rows:1fr;align-items:center;gap:4px;direction:rtl;padding:3px 6px!important;flex-direction:unset;justify-content:unset;min-height:0}
+.player-dock .bet-tray .dock-label,.player-dock.show-bet .bet-tray .dock-label,.player-dock:not(.show-bet) .bet-tray .dock-label{grid-column:1;justify-self:stretch;margin:0;text-align:right;white-space:nowrap;line-height:1.2;font-size:9px}
+.player-dock .bet-chips,.player-dock.show-bet .bet-chips,.player-dock:not(.show-bet) .bet-chips{grid-column:2;justify-self:stretch;width:100%;max-width:none;height:auto;min-width:0;justify-content:flex-start;overflow-x:auto;direction:ltr}
+.player-dock .bet-chip-icon,.player-dock.show-bet .bet-chip-icon{flex:0 0 25px;width:25px;height:25px}
+.player-dock .dock-actions,.player-dock.show-bet .dock-actions{position:static;grid-column:2;grid-row:3;display:flex;justify-content:center;align-self:center;width:100%;gap:6px}
+.player-dock .dock-actions [hidden]{display:none!important}
+.pawn-piece image{pointer-events:none}
+.summary-dialog{max-height:84dvh}.summary-dialog .dialog-content{max-height:65dvh}
+.summary-dialog .history-round{margin:5px 0;padding:7px;border:1px solid rgba(217,171,88,.3);border-radius:9px;background:rgba(0,0,0,.2)}
+@media(max-width:360px){.round-status{gap:3px;padding-inline:3px;font-size:8px}.bank-coals{margin-inline-start:1px}.player-dock{grid-template-columns:62px minmax(0,1fr);grid-template-rows:46px minmax(50px,1fr) 30px;padding:5px;gap:3px}.player-identity img{width:47px;height:47px}.chip-bank,.player-dock.show-bet .chip-bank{height:46px;min-height:46px;max-height:46px}.chip-row{height:30px;min-height:30px;max-height:30px;flex-basis:30px}.chip-button{height:30px;max-height:30px}.chip-button img{height:30px}.player-dock .bet-chip-icon,.player-dock.show-bet .bet-chip-icon{flex-basis:21px;width:21px;height:21px}.player-dock .dock-actions .primary-button,.player-dock .dock-actions .end-turn,.player-dock .dock-actions .next-round{min-width:62px;padding-inline:5px}}
 .draw-notice{min-width:0;height:34px;flex:0 0 34px;display:flex;align-items:center;gap:6px;padding:3px 7px;border:1px solid #a96c25;border-radius:10px;background:linear-gradient(90deg,#29140c,#092c42 52%,#2c150c);box-shadow:inset 0 0 0 1px rgba(255,218,133,.18),0 2px 5px #000;font-size:clamp(9px,2.6vw,11px);color:#ffe7b1;overflow:hidden}
 .draw-notice .draw-mark{font-size:18px;color:#f8b94c;text-shadow:0 0 7px #fb6018}
 .draw-notice>b{white-space:nowrap;color:#f9d58e}
