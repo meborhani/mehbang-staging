@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#160d0b">
+  <title>فرار از جهنم | مهبانگ گیم</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="engine.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <main id="app" data-phase="setup">
+    <section id="setup" class="setup-screen">
+      <button class="icon-button setup-back" data-back aria-label="بازگشت">←</button>
+      <div class="setup-title"><span class="setup-flame">♨</span><h1>فرار از جهنم</h1><small>MAHBANG GAMES</small></div>
+      <p class="setup-lead">شرط ببند، زغال انتخاب کن، از شیطان فرار کن!</p>
+      <div class="setup-block"><b>تعداد بازیکنان</b><div class="choice-row"><button data-count="2">۲</button><button data-count="3">۳</button><button data-count="4" class="selected">۴</button></div></div>
+      <div class="setup-block"><b>سختی رایانه</b><div class="choice-row"><button data-difficulty="0">آسان</button><button data-difficulty="1" class="selected">متوسط</button><button data-difficulty="2">سخت</button></div></div>
+      <button class="primary-button" data-start>شروع بازی با رایانه</button>
+      <button class="secondary-button" data-resume hidden>ادامهٔ بازی ذخیره‌شده</button>
+      <div class="setup-rules">۴۸ زغال · ۹ شیطان · شرط پنهان · برداشت مستقیم از کوره</div>
+    </section>
+
+    <section id="game" hidden>
+      <header class="topbar">
+        <button class="icon-button" data-back aria-label="بازگشت">←</button>
+        <div class="round-title"><strong>فرار از جهنم</strong><small id="roundLabel">دست ۱</small></div>
+        <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
+      </header>
+      <nav class="phases" aria-label="مراحل بازی">
+        <span data-step="bet">شرط‌بندی</span><span data-step="coal">برداشت زغال</span><span data-step="settle">تسویه حساب</span><span data-step="move">حرکت مهره‌ها</span>
+      </nav>
+      <section id="opponents" class="opponents" aria-label="حریفان"></section>
+      <section class="board-zone">
+        <svg id="boardSvg" class="board-svg" viewBox="0 0 1000 1000" role="img" aria-label="صفحه امتیاز و کوره زغال">
+          <image href="assets/board-art.webp" x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid slice"></image>
+          <g id="trackLabels" aria-hidden="true"></g><g id="pawns"></g><g id="coals"></g>
+        </svg>
+      </section>
+      <section class="round-status">
+        <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b></span>
+        <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
+        <button class="summary-chip" data-summary>خلاصه بازی ▤</button>
+      </section>
+      <section class="player-dock" id="seat-0">
+        <div class="player-identity">
+          <img id="myAvatar" alt="آواتار بازیکن">
+          <div><b id="myName">بازیکن</b><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small>برداشت امن <strong id="myHaul">۰</strong></small></div>
+        </div>
+        <div class="chip-bank" id="chipBank"><span class="dock-label">چیپ‌های من</span><div class="chip-row" id="chips"></div></div>
+        <div class="bet-tray"><span class="dock-label">شرط این دست <b id="myWager">۰</b></span><div id="myBetChips" class="bet-chips"></div></div>
+        <div class="dock-actions">
+          <button class="secondary-button undo-button" data-undo>برگردان</button>
+          <button class="primary-button" data-lock>قفل شرط</button>
+          <button class="end-turn" data-end-turn hidden>پایان نوبت</button>
+          <button class="next-round" data-next hidden>دست بعد</button>
+        </div>
+      </section>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <dialog id="summaryModal" class="dialog summary-dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button>
+      <h2>خلاصهٔ بازی</h2>
+      <div id="summaryContent" class="dialog-content"></div>
+      <div class="dialog-actions"><button class="secondary-button" data-history>تاریخچهٔ دست‌ها</button><button class="primary-button" data-close>ادامه</button></div>
+    </dialog>
+    <dialog id="historyModal" class="dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تاریخچهٔ بازی</h2><div id="historyContent" class="dialog-content"></div><button class="primary-button" data-close>بستن</button>
+    </dialog>
+    <dialog id="settingsModal" class="dialog settings-dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تنظیمات بازی</h2>
+      <div class="dialog-content"><button class="secondary-button setting-toggle" data-vibration>لرزش نوبت: روشن</button><p class="summary-note">برای برگشت به هاب از دکمهٔ ← استفاده کن. بازی روی همین دستگاه ذخیره می‌شود.</p></div>
+      <button class="primary-button" data-close>بستن</button>
+    </dialog>
+    <dialog id="pactModal" class="dialog pact-dialog">
+      <h2>پیمان با شیطان</h2><p id="pactText"></p><p>اگر بازیکنی شیطان را رو کند، ۵۰ چیپ به تو می‌پردازد.</p>
+      <div class="dialog-actions"><button class="secondary-button" data-pact="no">رد پیمان</button><button class="primary-button" data-pact="yes">پذیرفتن پیمان</button></div>
+    </dialog>
+  </main>
+</body>
+</html>
