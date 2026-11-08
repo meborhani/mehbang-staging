@@ -38,6 +38,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(dockBounds.height<=205,'the player dock stays compact so the board has room');
   const opponentBottom=await page.locator('#opponents').evaluate(e=>e.getBoundingClientRect().bottom),boardTop=await page.locator('#boardSvg').evaluate(e=>e.getBoundingClientRect().top);
   assert.ok(boardTop>=opponentBottom+5,'the board artwork is separated from the opponent cards');
+  const layers=await page.evaluate(()=>({opponents:+getComputedStyle(document.querySelector('#opponents')).zIndex,board:+getComputedStyle(document.querySelector('.board-zone')).zIndex}));
+  assert.ok(layers.opponents>layers.board,'opponent cards paint above the central board artwork');
+  const startPawns=await page.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
+  assert.ok(Math.abs(startPawns[0].x-startPawns[1].x)>20&&Math.abs(startPawns[0].y-startPawns[1].y)<2,'the starting pawns form a compact horizontal cluster instead of a vertical line');
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
   assert.equal(await page.locator('#seat-0 .active-flames').evaluate(e=>getComputedStyle(e).display),'block','the active card has a red animated edge highlight');

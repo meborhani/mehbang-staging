@@ -113,6 +113,8 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 @media(max-width:360px){.player-dock{grid-template-rows:42px minmax(48px,1fr) 30px 32px}.player-dock.show-bet .bet-chip-icon{width:21px;height:21px}.dock-actions .primary-button,.dock-actions .end-turn,.dock-actions .next-round{min-width:62px}}
 .opponents{margin-bottom:4px}
 .board-zone{padding:10px 0 4px}
+.opponents{position:relative;z-index:4}
+.board-zone{z-index:1}
 .player-dock{flex:0 0 clamp(158px,22vh,190px);min-height:158px;grid-template-rows:40px minmax(40px,1fr) 34px 35px}
 .player-dock.show-bet .chip-bank{grid-column:2;grid-row:1}
 .player-dock.show-bet .bet-tray{display:grid;grid-column:2;grid-row:2/4;grid-template-columns:minmax(85px,1fr) minmax(0,62%);grid-template-rows:1fr;align-items:center;gap:4px;direction:rtl;padding:3px 6px}
