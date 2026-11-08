@@ -152,6 +152,27 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent.is-active:after,.player-dock.is-active:after{content:none!important;display:none!important;animation:none!important}
 @keyframes halo-edge-x{from{transform:translateX(-105%)}to{transform:translateX(245%)}}
 @keyframes halo-edge-y{from{transform:translateY(-105%)}to{transform:translateY(245%)}}
+.active-flames{display:block!important;inset:0;z-index:5;overflow:hidden;border:0;box-shadow:none}
+.active-flames:before{content:""!important;position:absolute;inset:0;width:auto;height:auto;padding:3px;border-radius:inherit;background:conic-gradient(from 0deg,transparent 0 68%,#a40009 75%,#f21e2b 82%,#ffd1a0 86%,#d10b17 92%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:turn-ring-spin 2s linear infinite!important}
+.active-flames:after,.active-flames i{display:none!important;content:none!important}
+.opponent.is-active .active-flames,.player-dock.is-active .active-flames{opacity:1}
+.opponent .op-name{overflow:hidden}
+.pact-mark{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.opponent-player-reveals,.player-identity #myPlayerReveals{grid-column:2;grid-row:3;min-width:0;max-width:100%;height:17px;display:flex;align-items:center;justify-content:flex-start;gap:3px;overflow:hidden;direction:ltr;mask-image:none}
+.player-identity #myPlayerReveals{width:100%;height:auto;min-height:0;direction:rtl;justify-content:center;flex-wrap:wrap;max-height:34px}
+.coal-reveal-badge{flex:0 0 auto;width:auto;min-width:18px;height:16px;padding:0 4px;border-radius:999px;font:800 9px/14px Vazirmatn,Tahoma,sans-serif;color:#fff4d1;white-space:nowrap}
+.coal-reveal-badge.devil-reveal{color:#fff0cc}
+.max-safe-box{flex:0 0 27px;min-height:27px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #e3b954;border-radius:10px;padding:2px 8px;background:linear-gradient(90deg,#072b42,#174664,#072b42);box-shadow:inset 0 0 0 1px #fff2bb30,0 2px 5px #000;color:#ffe8b0;font-size:11px}
+.max-safe-box strong{min-width:34px;padding:1px 7px;border:1px solid #f0c96a;border-radius:7px;background:#24150d;color:#fff3c7;text-align:center;font-size:12px}
+.chip-button.selected{transform:none!important}
+.coal-token{outline:none}
+.coal-token .selection-ring{fill:none;stroke:#ffd263;stroke-width:3;opacity:0;pointer-events:none;filter:drop-shadow(0 0 5px #ffae17)}
+.coal-token:focus .selection-ring,.coal-token.is-revealed .selection-ring{opacity:1}
+.coal-token.not-available{opacity:1!important;pointer-events:none;cursor:default}
+.coal-token.is-revealed .coal-body{filter:drop-shadow(0 2px 3px #050303)}
+.coal-token.available:focus .coal-body,.coal-token.available:hover .coal-body{transform:none}
+.coal-token .hit{cursor:pointer}
+.summary-chip{font-size:9px}
 .bank-coals{color:#f4d89d;margin-inline-start:3px}.bank-coals b{color:#fff2c4}
 .coal-info-button{flex:0 0 22px;width:22px;height:22px;min-width:22px;padding:0;border:1px solid #c79343;border-radius:50%;background:linear-gradient(#174664,#08283e);font-size:14px;line-height:1;color:#ffe1a1}
 .player-dock{flex-basis:clamp(160px,20vh,170px);min-height:160px;grid-template-rows:48px minmax(52px,1fr) 31px;gap:3px 7px}
@@ -182,3 +203,6 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .reveal-list{max-height:30dvh;overflow-y:auto;display:grid;gap:5px;padding:5px;border:1px solid rgba(215,161,76,.5);border-radius:10px;background:rgba(0,0,0,.24)}
 .reveal-entry{display:grid;grid-template-columns:22px 25px 1fr auto;align-items:center;gap:7px;padding:5px 7px;border:1px solid rgba(218,168,83,.5);border-radius:9px;background:linear-gradient(90deg,rgba(22,45,55,.9),rgba(51,23,11,.9));text-align:right;font-size:11px}
 .reveal-entry>small{color:#f0c568}.reveal-entry>img{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}.reveal-entry>b{color:#fff0bc;font-size:12px}.reveal-entry.is-devil{border-color:#fa5b3b;background:linear-gradient(90deg,#511909,#210b0a)}.reveal-entry.is-devil>b{color:#ff7953}.reveal-empty{margin:10px 4px;color:#dbc291;font-size:11px}
+.op-meta .opponent-player-reveals{display:inline-flex;grid-column:auto;grid-row:auto;vertical-align:middle;height:15px;margin-inline-start:3px;direction:ltr;overflow:hidden;max-width:60%;}
+.op-meta{display:flex;align-items:center;gap:2px;min-width:0}
+@media(max-width:360px){.max-safe-box{font-size:10px}.op-meta .opponent-player-reveals{max-width:48%}}

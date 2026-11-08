@@ -44,13 +44,14 @@
         <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b> <span class="bank-coals">· زغال نرفته <b id="coalCount">۴۸</b></span></span>
         <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
         <button class="coal-info-button" data-coal-info aria-label="ترکیب زغال‌ها">ⓘ</button>
-        <button class="summary-chip" data-summary>خلاصه بازی ▤</button>
+        <button class="summary-chip" data-summary>خلاصه بازی</button>
       </section>
+      <div class="max-safe-box" aria-live="polite">بیشترین زغال امن این دست: <strong id="maxSafeHaul">۰</strong></div>
       <section class="player-dock" id="seat-0">
         <span class="active-flames" aria-hidden="true"><i></i><i></i></span>
         <div class="player-identity">
           <img id="myAvatar" alt="آواتار بازیکن">
-          <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small>برداشت امن <strong id="myHaul">۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small><div id="myReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></div></div>
+          <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small><span id="myPlayerReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></span></div>
         </div>
         <div class="chip-bank" id="chipBank"><span class="dock-label">چیپ‌های من</span><div class="chip-row" id="chips"></div></div>
         <div class="bet-tray"><span class="dock-label">شرط این دست <b id="myWager">۰</b></span><div id="myBetChips" class="bet-chips"></div></div>
@@ -67,9 +68,7 @@
     <dialog id="summaryModal" class="dialog summary-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button>
       <h2>خلاصهٔ دست‌ها</h2>
-      <div class="summary-tabs" role="tablist" aria-label="خلاصه و برداشت‌ها"><button type="button" role="tab" data-summary-tab="summary" aria-selected="true">خلاصهٔ دست‌ها</button><button type="button" role="tab" data-summary-tab="draws" aria-selected="false">برداشت‌ها</button></div>
       <section id="summaryTab-summary" class="summary-tab-panel"><div id="summaryContent" class="dialog-content"></div></section>
-      <section id="summaryTab-draws" class="summary-tab-panel" hidden><p class="reveal-subtitle">تمام برداشت‌ها از آغاز بازی به ترتیب رو شدن</p><div id="revealList" class="reveal-list"></div></section>
     </dialog>
     <dialog id="settingsModal" class="dialog settings-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تنظیمات بازی</h2>
