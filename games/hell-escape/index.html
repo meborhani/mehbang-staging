@@ -38,12 +38,17 @@
           <g id="trackLabels" aria-hidden="true"></g><g id="pawns"></g><g id="coals"></g>
         </svg>
       </section>
+      <section id="drawNotice" class="draw-notice" data-kind="empty" aria-live="polite">
+        <span class="draw-mark" aria-hidden="true">♨</span><b>آخرین برداشت</b><span id="drawNoticeText">هنوز زغالی رو نشده</span>
+        <button class="draw-history-button" data-reveals>برداشت‌ها <span id="revealCount">۰</span></button>
+      </section>
       <section class="round-status">
         <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b></span>
         <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
         <button class="summary-chip" data-summary>خلاصه بازی ▤</button>
       </section>
       <section class="player-dock" id="seat-0">
+        <span class="active-flames" aria-hidden="true"><i></i><i></i></span>
         <div class="player-identity">
           <img id="myAvatar" alt="آواتار بازیکن">
           <div><b id="myName">بازیکن</b><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small>برداشت امن <strong id="myHaul">۰</strong></small></div>
@@ -60,6 +65,13 @@
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
 
+    <dialog id="revealModal" class="dialog reveal-dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button>
+      <h2>زغال‌های رو شده</h2>
+      <p class="reveal-subtitle">برداشت‌ها به ترتیب نوبت نمایش داده می‌شوند.</p>
+      <div id="revealList" class="reveal-list"></div>
+      <button class="primary-button" data-close>ادامهٔ بازی</button>
+    </dialog>
     <dialog id="summaryModal" class="dialog summary-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button>
       <h2>خلاصهٔ بازی</h2>

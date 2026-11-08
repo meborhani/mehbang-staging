@@ -22,3 +22,33 @@
 .bet-empty{display:none}
 .dock-actions .primary-button,.dock-actions .end-turn,.dock-actions .next-round{min-width:72px}
 .coal-token .coal-body{filter:drop-shadow(0 2px 3px rgba(0,0,0,.85))}
+.op-chips{display:none!important}
+.opponent.is-active,.player-dock.is-active{animation:none;filter:none;box-shadow:0 0 13px rgba(255,111,25,.55),0 0 23px rgba(255,55,10,.34)}
+.opponent.is-active:before{display:none}
+.opponent.is-active:after{content:"";position:absolute;inset:3px;border:1px solid rgba(255,220,137,.35);border-radius:9px;pointer-events:none;z-index:0}
+.player-dock.is-active:before{content:"";position:absolute;inset:4px;border:1px solid rgba(255,220,137,.28);border-radius:10px;background:none;box-shadow:none;filter:none;animation:none;pointer-events:none;z-index:0}
+.opponent.is-active:after,.player-dock.is-active:after{filter:none;animation:none}
+.player-dock.is-active:after{content:none!important}
+.active-flames{display:block;position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none;overflow:visible;transition:opacity .16s ease}
+.active-flames:before{content:"";position:absolute;top:-13px;left:5%;right:5%;height:31px;background:url("assets/flame.svg") center bottom/17px 28px repeat-x;filter:drop-shadow(0 0 4px #ff6718);transform-origin:center bottom}
+.active-flames i{position:absolute;top:-2px;bottom:48%;width:18px;background:url("assets/flame.svg") center bottom/16px 25px repeat-y;filter:drop-shadow(0 0 4px #ff6718)}
+.active-flames i:first-child{left:-8px}.active-flames i:last-child{right:-8px}
+.is-active .active-flames{opacity:1}
+.is-active .active-flames:before{animation:flame-wave .42s ease-in-out infinite alternate}
+.is-active .active-flames i:first-child{animation:flame-side .51s ease-in-out infinite alternate}
+.is-active .active-flames i:last-child{animation:flame-side .39s ease-in-out infinite alternate-reverse}
+.opponent>:not(.active-flames),.player-dock>:not(.active-flames){position:relative;z-index:2}
+@keyframes flame-wave{from{transform:scaleY(.83) skewX(-2deg)}to{transform:scaleY(1.12) skewX(2deg)}}
+@keyframes flame-side{from{filter:drop-shadow(0 0 3px #ff5412);opacity:.82}to{filter:drop-shadow(0 0 8px #ffc244);opacity:1}}
+.draw-notice{min-width:0;height:34px;flex:0 0 34px;display:flex;align-items:center;gap:6px;padding:3px 7px;border:1px solid #a96c25;border-radius:10px;background:linear-gradient(90deg,#29140c,#092c42 52%,#2c150c);box-shadow:inset 0 0 0 1px rgba(255,218,133,.18),0 2px 5px #000;font-size:clamp(9px,2.6vw,11px);color:#ffe7b1;overflow:hidden}
+.draw-notice .draw-mark{font-size:18px;color:#f8b94c;text-shadow:0 0 7px #fb6018}
+.draw-notice>b{white-space:nowrap;color:#f9d58e}
+#drawNoticeText{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff4d4}
+.draw-notice[data-kind="devil"]{border-color:#ff5b3e;box-shadow:inset 0 0 0 1px #ff9a46,0 0 10px #dd321c}
+.draw-notice[data-kind="devil"] .draw-mark{color:#ff5a2c;animation:flame-wave .35s infinite alternate}
+.draw-history-button{flex:0 0 auto;padding:4px 7px;border:1px solid #bb843e;border-radius:9px;background:linear-gradient(#174664,#08283e);font-size:9px;color:#ffdfa0;white-space:nowrap}
+.reveal-dialog{width:min(88vw,350px);max-height:48dvh;padding:16px 13px 13px;text-align:center}
+.reveal-subtitle{margin:0 0 9px;color:#f1d5a0;font-size:11px}
+.reveal-list{max-height:30dvh;overflow-y:auto;display:grid;gap:5px;padding:5px;border:1px solid rgba(215,161,76,.5);border-radius:10px;background:rgba(0,0,0,.24)}
+.reveal-entry{display:grid;grid-template-columns:22px 25px 1fr auto;align-items:center;gap:7px;padding:5px 7px;border:1px solid rgba(218,168,83,.5);border-radius:9px;background:linear-gradient(90deg,rgba(22,45,55,.9),rgba(51,23,11,.9));text-align:right;font-size:11px}
+.reveal-entry>small{color:#f0c568}.reveal-entry>img{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 1px 2px #000)}.reveal-entry>b{color:#fff0bc;font-size:12px}.reveal-entry.is-devil{border-color:#fa5b3b;background:linear-gradient(90deg,#511909,#210b0a)}.reveal-entry.is-devil>b{color:#ff7953}.reveal-empty{margin:10px 4px;color:#dbc291;font-size:11px}
