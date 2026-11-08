@@ -1,0 +1,2 @@
+-- cloud snapshot of hosted rooms so a host can resume from another device (applied via the Supabase MCP as mb_rooms_cloud_snapshot)
+-- table mb_rooms(code, account, game, state, updated_at); RPCs mb_room_save / mb_room_mine / mb_room_drop (token-checked, security definer)

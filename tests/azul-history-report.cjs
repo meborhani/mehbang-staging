@@ -6,16 +6,24 @@ try { ({ chromium } = require('playwright')); }
 catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')); }
 
 const azulHtml = fs.readFileSync('games/azul/index.html', 'utf8');
+const hubHtml = fs.readFileSync('index.html', 'utf8');
+const outcomeStart = hubHtml.indexOf('function histOutcome(e){');
+const outcomeEnd = hubHtml.indexOf('\nfunction histOpen(){', outcomeStart);
+assert.ok(outcomeStart >= 0 && outcomeEnd > outcomeStart, 'history should have a report-based Azul outcome resolver');
+const histOutcome = new Function(`return (${hubHtml.slice(outcomeStart, outcomeEnd)})`)();
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[100,12] }] } }), 'w', 'legacy Azul history should use final reported scores instead of a stale loss marker');
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[12,100] }] } }), 'l', 'history should still show a loss when another player has the higher score');
+assert.equal(histOutcome({ g:'آزول', s:0, r:'l', rp:{ rows:[{ l:'امتیاز نهایی', v:[12,12] }] } }), 'd', 'equal final scores should be a draw');
 const finishStart = azulHtml.indexOf('function finishRound(){');
 let scan = finishStart + 'function finishRound'.length, depth = 0, finishEnd = -1;
 for (; scan < azulHtml.length; scan++) { if (azulHtml[scan] === '{') depth++; else if (azulHtml[scan] === '}' && --depth === 0) { finishEnd = scan + 1; break; } }
 assert.ok(finishStart >= 0 && finishEnd > finishStart, 'production round scorer should exist');
-const finishRound = new Function('s','PEN','wallPoints','bonus','fa','render','refill','toast','setTimeout','online','onlineRole','onlineAi','botMove','timer', `return (${azulHtml.slice(finishStart, finishEnd)})()`);
+const finishRound = new Function('s','PEN','wallPoints','bonus','fa','render','refill','toast','setTimeout','online','onlineRole','onlineAi','botMove','timer','tutorialMode','tutorial','azulAiThinkDelay', `return (${azulHtml.slice(finishStart, finishEnd)})()`);
 const roundState = { round:1, players:[
   {score:0,lines:[[0],[],[],[],[]],wall:Array.from({length:5},()=>Array(5).fill(null)),floor:[]},
   {score:0,lines:[[],[],[],[],[]],wall:Array.from({length:5},()=>Array(5).fill(null)),floor:[]}
 ], discard:[], nextStarter:null, starter:0, roundHistory:[] };
-finishRound(roundState,[1,1,2,2,2,3,3],()=>1,()=>0,String,()=>{},()=>{},()=>{},()=>0,false,'host',[],()=>{},null);
+finishRound(roundState,[1,1,2,2,2,3,3],()=>1,()=>0,String,()=>{},()=>{},()=>{},()=>0,false,'host',[],()=>{},null,false,null,()=>15);
 assert.deepEqual(roundState.roundHistory, [{ round:1, scores:[1,0] }], 'completed hands should persist each player’s net score');
 
 (async () => {
@@ -48,6 +56,7 @@ assert.deepEqual(roundState.roundHistory, [{ round:1, scores:[1,0] }], 'complete
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('mb_hist') || '[]'));
     const game = stored.findLast(e => e.g === 'آزول');
     assert.ok(game && game.rp, 'Azul report should be saved in game history');
+    assert.equal(game.r, 'w', 'the highest-scoring local player must be recorded as the winner');
     assert.deepEqual(game.rp.rows.find(r => r.l === 'امتیاز دست ۱').v, [5, 2]);
     assert.deepEqual(game.rp.rows.find(r => r.l === 'امتیاز دست ۲').v, [7, 3]);
     assert.deepEqual(game.rp.rows.find(r => r.l === 'تکمیل رنگ').v, [5, 0]);

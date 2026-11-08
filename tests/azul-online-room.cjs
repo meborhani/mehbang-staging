@@ -34,6 +34,17 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
       };`;
     const host = await context.newPage();
     const guest = await context.newPage();
+    const playOnlineTurn = async (frame, page, afterSelect) => {
+      await frame.locator('[data-source]:not([disabled])').first().click();
+      if (afterSelect) await afterSelect();
+      await frame.locator('.pattern-row.available').first().click();
+      for (let i = 0; i < 8; i++) {
+        await page.waitForTimeout(160);
+        if ((await frame.locator('#status').innerText()) !== '● نوبت شماست') break;
+        if ((await frame.locator('#instruction').innerText()).includes('باقی‌مانده')) await frame.locator('.pattern-row.available').first().click();
+      }
+    };
+    await host.addInitScript(() => { if (location.pathname.endsWith('/games/azul/index.html')) { window.__FAST = true; Math.random = () => 0.99; } });
     await host.goto('http://127.0.0.1:8765/?hub=1', { waitUntil: 'domcontentloaded' });
     await host.evaluate(fakeTransport);
     await host.locator('[data-hg="azul"]').waitFor({ state: 'visible', timeout: 8000 });
@@ -57,25 +68,22 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await host.locator('#azulOverlay iframe').waitFor();
     await guest.locator('#azulOverlay iframe').waitFor();
     const hf = host.frameLocator('#azulOverlay iframe'), gf = guest.frameLocator('#azulOverlay iframe');
-    await hf.locator('[data-source]:not([disabled])').first().click();
-    await hf.locator('.pattern-row.available').first().click();
-    for (let i = 0; i < 8; i++) {
-      await host.waitForTimeout(160);
-      if ((await hf.locator('#status').innerText()) !== '● نوبت شماست') break;
-      if ((await hf.locator('#instruction').innerText()).includes('باقی‌مانده')) await hf.locator('.pattern-row.available').first().click();
-    }
-    await gf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });
-    await gf.locator('[data-source]:not([disabled])').first().click();
-    await gf.locator('.pattern-row.available').first().click();
-    for (let i = 0; i < 8; i++) {
-      await guest.waitForTimeout(160);
-      if ((await gf.locator('#status').innerText()) !== '● نوبت شماست') break;
-      if ((await gf.locator('#instruction').innerText()).includes('باقی‌مانده')) await gf.locator('.pattern-row.available').first().click();
-    }
+    await hf.locator('#status').waitFor(); await gf.locator('#status').waitFor();
+    assert.equal(await hf.locator('#status').innerText(), 'بازیکن ۱ در حال بازی…', 'the random opening seat should be allowed to belong to the guest, not the room creator');
+    await gf.getByText('● نوبت شماست').waitFor({ timeout: 3000 });
+    await playOnlineTurn(gf, guest, async () => {
+      await host.waitForTimeout(180);
+      assert.equal(await hf.locator('.pattern-row.available').count(), 0, 'a guest’s pending selection must not highlight the host’s pattern rows');
+      assert.equal(await hf.locator('.tile.selected').count(), 0, 'a guest’s pending selection must not highlight tiles in the host’s view');
+      assert.ok(await gf.locator('.pattern-row.available').count() > 0, 'the player who selected a tile should see their legal rows');
+    });
     await hf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });
+    await playOnlineTurn(hf, host);
+    await gf.getByText('● نوبت شماست').waitFor({ timeout: 6000 });
 
     await hf.locator('#azul-back').click();
     await host.locator('#azulOverlay iframe').waitFor({ state: 'attached' });
+    await host.waitForFunction(() => document.querySelector('#azulOverlay')?.style.visibility === 'hidden', null, { timeout: 3000 });
     assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'hidden', 'parking an online Azul game should hide but retain its live game frame');
     await host.locator('[data-hg="mgpark"]').click();
     assert.equal(await host.locator('#azulOverlay').evaluate(e => e.style.visibility), 'visible', 'resuming a parked Azul room should restore the same game frame');
@@ -107,18 +115,13 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     await four.locator('#azulOverlay iframe').waitFor();
     const fourFrame = four.frameLocator('#azulOverlay iframe');
     await fourFrame.locator('.opponent').first().waitFor({ timeout: 6000 });
+    await fourFrame.getByText('● نوبت شماست').waitFor({ timeout: 8000 });
     assert.equal(await fourFrame.locator('.opponent').count(), 3, 'four-player Azul must show three opponents');
     assert.deepEqual(await fourFrame.locator('.opp-floor').evaluateAll(rows => rows.map(e => e.querySelectorAll('.opp-floor-item').length)), [7, 7, 7], 'each rival board must show the same seven penalty spaces');
     const wStations = await fourFrame.locator('#factories .factory').evaluateAll(es => es.map(e => { const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; }));
     assert.equal(wStations.length, 9, 'four-player Azul must use nine factories');
     assert.ok(wStations[0].y < wStations[1].y && wStations[1].y > wStations[2].y && wStations[2].y < wStations[5].y && wStations[5].y > wStations[3].y, 'the five upper factories should form a W');
-    await fourFrame.locator('[data-source]:not([disabled])').first().click();
-    await fourFrame.locator('.pattern-row.available').first().click();
-    for (let i = 0; i < 8; i++) {
-      await four.waitForTimeout(160);
-      if ((await fourFrame.locator('#status').innerText()) !== '● نوبت شماست') break;
-      if ((await fourFrame.locator('#instruction').innerText()).includes('باقی‌مانده')) await fourFrame.locator('.pattern-row.available').first().click();
-    }
+    await playOnlineTurn(fourFrame, four);
     await fourFrame.getByText('● نوبت شماست').waitFor({ timeout: 12000 });
     await fourContext.close();
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>پنل ادمین مهبانگ</title>
+<style>
+:root{--bg:#05061a;--panel:#10132e;--line:#2a2f5e;--ink:#f1f1ff;--dim:#9aa0d0;--ember:#ffb23f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,Tahoma,sans-serif;padding:16px;max-width:760px;margin-inline:auto}
+h1{font-size:18px;margin:0 0 12px}input,button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 10px}
+button{cursor:pointer;background:var(--ember);color:#000;border:0;font-weight:700}button.g{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
+.pl{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}.pl small{color:var(--dim)}
+.pl input[type=number]{width:80px}details{border-bottom:1px solid var(--line);padding:6px 0}summary{cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap}summary b{flex:1;min-width:90px}.pos{color:#5fd68a}.neg{color:#ff7a7a}.acts{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;align-items:center}.acts input{width:110px}.msg{color:var(--ember);min-height:1.4em}table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right;font-size:13px}
+</style></head><body>
+<h1>🪙 پنل ادمین مهبانگ گیم</h1>
+<div id="login" class="card"><div class="row"><input id="em" type="email" placeholder="ایمیل ادمین" autocomplete="username"><input id="pw" type="password" placeholder="رمز" autocomplete="current-password"><button id="go">ورود</button></div><div class="msg" id="m1"></div></div>
+<div id="app" hidden>
+ <div class="card"><div class="row"><b>حساب‌های کاربری</b><input id="q" placeholder="جستجوی نام کاربری…" style="flex:1"><button class="g" id="rf">تازه‌سازی</button><button class="g" id="out">خروج</button></div><div class="msg" id="m2"></div><div id="list"></div>
+  <small style="color:var(--dim)">«تعداد» = تعداد تراکنش‌های ثبت‌شدهٔ سکه در آن بازی (ورودی، شرط، برد). «برد» مجموع افزایش‌ها و «باخت» مجموع کاهش‌هاست.</small></div>
+ <div class="card"><b>رمز خودِ ادمین</b><div class="row"><input id="np" type="password" placeholder="رمز جدید (حداقل ۶ نویسه)" autocomplete="new-password"><button id="cp">تغییر رمز</button></div><div class="msg" id="m3"></div></div>
+ <details class="card"><summary><b>بازیکنان بدون حساب (قدیمی)</b></summary><div class="row"><input id="q2" placeholder="جستجوی نام یا شناسه…" style="flex:1"></div><div class="msg" id="m4"></div><div id="plist"></div><b>هدیه‌های اخیر</b><div id="gl"></div></details>
+</div>
+<script src="sb-config.js"></script>
+<script>
+(function(){
+var C=window.MB_SB||{},U=(C.url||'').replace(/\/$/,''),K=C.key||'',tok='',A=[],ST={},P=[],$=function(s){return document.querySelector(s);};
+var GN={catan:'کتان',ttt:'دوز',c4:'چهار در ردیف',chess:'شطرنج',tavla:'تخته نرد',poker:'پوکر',jaliz:'جالیز',manch:'منچ'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function api(path,opt){opt=opt||{};opt.headers=Object.assign({apikey:K,Authorization:'Bearer '+(tok||K),'Content-Type':'application/json'},opt.headers||{});return fetch(U+path,opt).then(function(r){return r.text().then(function(t){var j=null;try{j=JSON.parse(t);}catch(e){}if(!r.ok)throw new Error((j&&(j.msg||j.message||j.error_description))||('خطا '+r.status));return j;});});}
+function rpc(fn,a){return api('/rest/v1/rpc/'+fn,{method:'POST',body:JSON.stringify(a||{})});}
+if(!U||!K){$('#m1').textContent='ابتدا sb-config.js را با آدرس و کلید Supabase پر کن.';}
+$('#go').onclick=function(){$('#m1').textContent='…';api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('#em').value.trim(),password:$('#pw').value})}).then(function(d){tok=d.access_token;try{sessionStorage.setItem('mb_adm',tok);}catch(e){}start();}).catch(function(e){$('#m1').textContent=e.message;});};
+$('#out').onclick=function(){tok='';try{sessionStorage.removeItem('mb_adm');}catch(e){}$('#app').hidden=true;$('#login').hidden=false;};
+$('#rf').onclick=load;$('#q').oninput=draw;$('#q2').oninput=drawP;
+$('#cp').onclick=function(){var p=$('#np').value;if(p.length<6){$('#m3').textContent='رمز باید حداقل ۶ نویسه باشد';return;}
+ api('/auth/v1/user',{method:'PUT',body:JSON.stringify({password:p})}).then(function(){$('#np').value='';$('#m3').textContent='✔ رمز ادمین عوض شد';}).catch(function(e){$('#m3').textContent=e.message;});};
+function start(){$('#login').hidden=true;$('#app').hidden=false;load();}
+function ago(t){var s=(Date.now()-new Date(t))/1000;if(s<90)return 'الان';if(s<5400)return Math.round(s/60)+' دقیقه پیش';if(s<129600)return Math.round(s/3600)+' ساعت پیش';return Math.round(s/86400)+' روز پیش';}
+function sg(n){return '<span class="'+(n>0?'pos':n<0?'neg':'')+'">'+(n>0?'+':'')+n+'</span>';}
+function load(){$('#m2').textContent='در حال بارگذاری…';
+ Promise.all([rpc('mb_admin_accounts'),rpc('mb_admin_stats')]).then(function(r){A=r[0]||[];ST={};(r[1]||[]).forEach(function(x){(ST[x.account_id]=ST[x.account_id]||[]).push(x);});$('#m2').textContent=A.length+' حساب';draw();}).catch(function(e){$('#m2').textContent=e.message;});
+ api('/rest/v1/players?select=uid,name,last_seen,created_at&order=last_seen.desc&limit=1000').then(function(d){P=d||[];drawP();}).catch(function(){});
+ api('/rest/v1/grants?select=uid,amount,note,created_at,claimed_at&order=created_at.desc&limit=40').then(function(g){var nm={};P.forEach(function(p){nm[p.uid]=p.name;});$('#gl').innerHTML='<table><tr><th>بازیکن</th><th>سکه</th><th>یادداشت</th><th>وضعیت</th></tr>'+(g||[]).map(function(r){return '<tr><td>'+esc(nm[r.uid]||'')+' <small>'+esc(r.uid)+'</small></td><td>'+r.amount+'</td><td>'+esc(r.note)+'</td><td>'+(r.claimed_at?'دریافت شد':'منتظر')+'</td></tr>';}).join('')+'</table>';}).catch(function(){});
+}
+function draw(){var q=$('#q').value.trim().toLowerCase();
+ $('#list').innerHTML=A.filter(function(p){return !q||p.username.toLowerCase().indexOf(q)>=0;}).map(function(p){
+  var rows=(ST[p.id]||[]).slice().sort(function(a,b){return b.plays-a.plays;});var tw=0,tl=0,tp=0;rows.forEach(function(x){tw+=+x.won;tl+=+x.lost;tp+=+x.plays;});
+  return '<details data-id="'+p.id+'"><summary><b>'+esc(p.username)+'</b><span>🪙 '+p.balance+'</span><small>'+tp+' تراکنش · برد '+tw+' · باخت '+tl+' · خالص '+sg(tw-tl)+'</small><small>'+ago(p.last_seen)+'</small></summary>'
+  +(rows.length?'<table><tr><th>بازی</th><th>تعداد</th><th>برد</th><th>باخت</th><th>خالص</th><th>آخرین</th></tr>'+rows.map(function(x){return '<tr><td>'+esc(GN[x.game]||x.game)+'</td><td>'+x.plays+'</td><td>'+x.won+'</td><td>'+x.lost+'</td><td>'+sg(+x.net)+'</td><td>'+ago(x.last_at)+'</td></tr>';}).join('')+'</table>':'<small>هنوز بازی‌ای ثبت نشده</small>')
+  +'<div class="acts"><input type="number" min="1" max="1000000" value="20" data-a="'+p.id+'"><button data-g="'+p.id+'">سکه بده</button><input type="text" placeholder="رمز جدید" data-pw="'+p.id+'" autocomplete="off"><button class="g" data-p="'+p.id+'">ثبت رمز</button></div>'
+  +'<small style="color:var(--dim)">عضویت: '+ago(p.created_at)+'</small></details>';}).join('')||'<small>حسابی نیست</small>';
+ Array.prototype.forEach.call(document.querySelectorAll('[data-g]'),function(b){b.onclick=function(){var id=+b.dataset.g,a=+document.querySelector('[data-a="'+id+'"]').value|0;
+  if(!(a>=1&&a<=1000000)){$('#m2').textContent='مقدار نامعتبر (۱ تا ۱٬۰۰۰٬۰۰۰)';return;}
+  b.disabled=true;rpc('mb_admin_grant',{p_account:id,p_amount:a}).then(function(nb){$('#m2').textContent='✔ '+a+' سکه داده شد؛ موجودی جدید '+nb;b.disabled=false;var x=A.filter(function(z){return z.id===id;})[0];if(x)x.balance=nb;keepOpen(draw);}).catch(function(e){$('#m2').textContent=e.message;b.disabled=false;});};});
+ Array.prototype.forEach.call(document.querySelectorAll('[data-p]'),function(b){b.onclick=function(){var id=+b.dataset.p,pw=document.querySelector('[data-pw="'+id+'"]').value;
+  if(pw.length<6){$('#m2').textContent='رمز باید حداقل ۶ نویسه باشد';return;}
+  b.disabled=true;rpc('mb_admin_setpass',{p_account:id,p_pass:pw}).then(function(){$('#m2').textContent='✔ رمز جدید ثبت شد؛ کاربر باید دوباره وارد شود';b.disabled=false;document.querySelector('[data-pw="'+id+'"]').value='';}).catch(function(e){$('#m2').textContent=e.message;b.disabled=false;});};});}
+function keepOpen(f){var o={};Array.prototype.forEach.call(document.querySelectorAll('details[data-id]'),function(d){if(d.open)o[d.dataset.id]=1;});f();Array.prototype.forEach.call(document.querySelectorAll('details[data-id]'),function(d){if(o[d.dataset.id])d.open=true;});}
+function drawP(){var q=$('#q2').value.trim().toLowerCase();
+ $('#plist').innerHTML=P.filter(function(p){return !q||(p.name||'').toLowerCase().indexOf(q)>=0||p.uid.toLowerCase().indexOf(q)>=0;}).map(function(p){
+  return '<div class="pl"><div><b>'+esc(p.name||'بدون نام')+'</b> <small>'+esc(p.uid)+' · '+ago(p.last_seen)+'</small></div><input type="number" min="1" max="100000" value="20" data-ga="'+esc(p.uid)+'"><input placeholder="یادداشت" data-gn="'+esc(p.uid)+'" style="width:110px"><button data-gg="'+esc(p.uid)+'">بده</button></div>';}).join('')||'<small>بازیکنی نیست</small>';
+ Array.prototype.forEach.call(document.querySelectorAll('[data-gg]'),function(b){b.onclick=function(){var u=b.dataset.gg,a=+document.querySelector('[data-ga="'+u+'"]').value|0,n=document.querySelector('[data-gn="'+u+'"]').value;
+  if(!(a>=1&&a<=100000)){$('#m4').textContent='مقدار نامعتبر';return;}
+  b.disabled=true;api('/rest/v1/grants',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({uid:u,amount:a,note:n.slice(0,60)})}).then(function(){$('#m4').textContent='✔ '+a+' سکه ثبت شد؛ وقتی بازیکن بازی را باز کند دریافت می‌کند';b.disabled=false;load();}).catch(function(e){$('#m4').textContent=e.message;b.disabled=false;});};});}
+try{var t=sessionStorage.getItem('mb_adm');if(t&&U&&K){tok=t;start();}}catch(e){}
+})();
+</script></body></html>
