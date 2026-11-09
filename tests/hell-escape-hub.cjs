@@ -8,6 +8,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const page=await browser.newPage({viewport:{width:390,height:844}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${port}/index.html?hub=1`,{waitUntil:'domcontentloaded',timeout:15000});
   await page.locator('[data-hg="hell"]').click({timeout:4000});
+  await page.locator('#mini [data-mg="mk"]').waitFor();
+  assert.ok(await page.locator('#mgCode').count(),'Hell Escape room menu exposes the shared five-digit join field');
+  assert.ok(await page.locator('#mini [data-mg="ai"]').count(),'offline AI remains available from the shared room menu');
+  await page.locator('#mini [data-mg="ai"]').click();
   const frameEl=page.locator('#hellEscapeOverlay iframe');await frameEl.waitFor({timeout:5000});
   const frame=page.frameLocator('#hellEscapeOverlay iframe');
   assert.equal(await frame.locator('.setup-title h1').innerText(),'فرار از جهنم','hub opens the standalone game iframe');
