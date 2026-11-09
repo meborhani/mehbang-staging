@@ -34,7 +34,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(await page.locator('#seat-0').evaluate(e=>e.classList.contains('is-active')),'human seat is visibly active at first after highest wager');
   assert.equal(await page.locator('[data-end-turn]').isDisabled(),true,'the end-turn button remains disabled until the human reveals a coal');
   assert.equal(await page.locator('.op-chips').count(),0,'opponent cards do not show wager chips over their bet text');
-  assert.equal(await page.locator('#seat-0 .active-flames').count(),1,'the active seat has the flame border overlay');
+  assert.equal(await page.locator('#seat-0 .active-flames').count(),0,'the active turn uses the card frame itself instead of a rectangular overlay');
   assert.equal(await page.locator('#seat-0 .player-reveal-row').count(),1,'the human has a revealed-coal summary inside their panel');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').count(),1,'each opponent has revealed values inside their card');
   assert.ok((await page.locator('#seat-1 .op-meta').innerText()).includes('شرط')&&!(await page.locator('#seat-1 .op-meta').innerText()).includes('امن'),'opponent cards show the wager without a redundant safe-haul score');
@@ -53,9 +53,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(Math.abs(startPawns[0].x-startPawns[1].x)>20&&Math.abs(startPawns[0].y-startPawns[1].y)<2,'the starting pawns form a compact horizontal cluster instead of a vertical line');
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
-  assert.equal(await page.locator('#seat-0 .active-flames').evaluate(e=>getComputedStyle(e).display),'block','the active card has a red animated edge highlight');
-  assert.equal(await page.locator('#seat-0 .active-flames').evaluate(e=>getComputedStyle(e,':before').animationName),'turn-ring-spin','the active player highlight rotates around the full frame');
-  assert.ok(await page.locator('#seat-0 .active-flames').evaluate(e=>getComputedStyle(e,':before').backgroundImage.includes('conic-gradient')&&!getComputedStyle(e,':before').backgroundImage.includes('flame.svg')),'the active frame uses a red moving highlight instead of flame artwork');
+  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'turn-ring-spin','the active player highlight follows the rounded card frame');
+  assert.ok(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').backgroundImage.includes('conic-gradient')&&!getComputedStyle(e,':after').backgroundImage.includes('flame.svg')),'the stationary rounded frame uses a moving gold conic gradient like Kahroba');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
   await first.click();
@@ -113,6 +112,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
     assert.equal(await p.locator('.opponent').count(),count-1,`${count}-player game shows exactly ${count-1} opponents`);
     assert.equal(await p.locator('#pawns image').count(),count,'the score track has one pawn for every player');
     assert.equal(await p.locator('.pawn-key').count(),count,'all players have a visible pawn-color key');
+    const botStyles=await p.locator('.ai-personality').allTextContents();assert.equal(new Set(botStyles).size,botStyles.length,'AI opponents use distinct visible play personalities');assert.ok(botStyles.every(n=>['ریسک‌پذیر','محتاط','باهوش','خنگ','نرمال','متناوب'].includes(n)),'AI profiles include the requested play styles');
     assert.equal(await p.locator('.coal-token').count(),48,'48 coal choices remain visible in each player-count layout');
     const fit=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&document.documentElement.scrollHeight<=innerHeight+1);
     assert.ok(fit,`${count}-player portrait layout fits without scrolling`);await p.close();

@@ -76,11 +76,11 @@
   function settle(g){
     if(!g||g.phase!=='settlement')return null;
     if(g.settled)return g.settled;
-    var p=g.players, maxHaul=Math.max.apply(null,p.map(function(x){return x.haul;})),totalSafeHaul=p.reduce(function(sum,x){return sum+x.haul;},0),maxWager=Math.max.apply(null,p.map(function(x){return x.wager;}));
-    var leaders=p.map(function(x,i){return x.haul===maxHaul&&maxHaul>0?i:-1;}).filter(function(i){return i>=0;});
+    var p=g.players,eligibleHaul=p.map(function(x){return x.busted?0:x.haul;}),maxHaul=Math.max.apply(null,eligibleHaul),totalSafeHaul=eligibleHaul.reduce(function(sum,value){return sum+value;},0),maxWager=Math.max.apply(null,p.map(function(x){return x.wager;}));
+    var leaders=p.map(function(x,i){return !x.busted&&x.haul===maxHaul&&maxHaul>0?i:-1;}).filter(function(i){return i>=0;});
     var transfers=[],pactSeats=p.map(function(x,i){return x.pact?i:-1;}).filter(function(i){return i>=0;});
     p.forEach(function(x,i){
-      var succeeds=x.wager<=totalSafeHaul;
+      var succeeds=x.wager<=maxHaul;
       x.lastHaul=x.haul;
       var doubled=succeeds&&x.wager===maxWager;
       var payout=0,burned=0;
@@ -94,7 +94,7 @@
     p.forEach(function(x){x.pact=false;x.scorePos=x.wealth;});
     var low=Math.min.apply(null,p.map(function(x){return x.wealth;})),last=p.map(function(x,i){return x.wealth===low?i:-1;}).filter(function(i){return i>=0;});
     g.pactOffers=last.slice();g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;
-    var summary={round:g.round,maxHaul:maxHaul,totalSafeHaul:totalSafeHaul,highHaulPlayers:leaders,bestWager:maxWager,players:p.map(function(x){return {name:x.name,wager:x.wager,haul:x.lastHaul,busted:x.busted,success:x.roundSuccess,doubled:x.roundDoubled,payout:x.roundPayout,burned:x.roundBurned,wealth:x.wealth};}),transfers:transfers,bank:g.bank};
+    var summary={round:g.round,maxHaul:maxHaul,totalSafeHaul:totalSafeHaul,highHaulPlayers:leaders,bestWager:maxWager,players:p.map(function(x){return {name:x.name,wager:x.wager,haul:x.busted?0:x.lastHaul,busted:x.busted,success:x.roundSuccess,doubled:x.roundDoubled,payout:x.roundPayout,burned:x.roundBurned,wealth:x.wealth};}),transfers:transfers,bank:g.bank};
     g.history.push(summary);g.settled=summary;finishIfWon(g);if(g.gameOver){g.pactOffers=[];g.pactOffer=null;}return summary;
   }
   function offerPact(g){if(!g||g.phase!=='settlement'||g.gameOver)return null;g.pactOffers=Array.isArray(g.pactOffers)?g.pactOffers:(validSeat(g,g.pactOffer)?[g.pactOffer]:[]);g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return g.pactOffer;}

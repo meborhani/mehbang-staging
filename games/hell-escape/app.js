@@ -7,6 +7,8 @@
   var CHIP_VALUES=[10,20,50,100,200,500,1000],CHIP_COLORS={10:'#d71920',20:'#a9a7ac',50:'#15994d',100:'#e2a900',200:'#1467dc',500:'#df6b0e',1000:'#20242b'};
   var FALLBACK=['assets/avatars/avatar_ali.webp','assets/avatars/avatar_male2.webp','assets/avatars/avatar_maryam.webp','assets/avatars/avatar_sara.webp'];
   var CPU_NAMES=['کاوه','رها','سارا'];
+  var AI_PERSONALITIES=[{id:'risk',name:'ریسک‌پذیر'},{id:'cautious',name:'محتاط'},{id:'smart',name:'باهوش'},{id:'dumb',name:'خنگ'},{id:'normal',name:'نرمال'},{id:'alternating',name:'متناوب'}];
+  var BOT_CHIPS=[500,200,100,50,20,10];
   var PAWN_COLORS=['#f2c95b','#ef4944','#35c9dc','#4ccc70'];
   var g=null,avatarUrls=FALLBACK.slice(),difficulty=1,roundStartedAt=0,autoTimer=null,toastTimer=null,lastTurnKey='',reportSent=false,profileName='بازیکن',roundReveals=[],vibrationEnabled=localStorage.getItem('mb-hell-vibration')!=='0';
   var rows=[4,6,7,8,8,7,5,3];
@@ -22,7 +24,7 @@
   function validSave(){var s=safeRead(SAVE_KEY);return !!(s&&s.version===1&&E.validate(s.game)&&!s.game.gameOver);}
   function normalizeSave(s){
     var game=s.game,logged=Array.isArray(s.roundReveals)?s.roundReveals:[],safeTotal=logged.reduce(function(sum,r){return sum+(r.kind==='coal'?(+r.value||0):0);},0);
-    if(!Array.isArray(game.pactOffers))game.pactOffers=game.pactOffer==null?[]:[game.pactOffer];
+    if(!Array.isArray(game.pactOffers))game.pactOffers=game.pactOffer==null?[]:[game.pactOffer];game.players.forEach(function(p,i){if(i>0&&!p.aiPersonality)p.aiPersonality=AI_PERSONALITIES[(i-1)%AI_PERSONALITIES.length].id;});
     game.players.forEach(function(p,i){
       var rows=logged.filter(function(r){return r.seat===i;});
       if(!Array.isArray(p.reveals))p.reveals=rows.map(function(r,index){return {id:index,kind:r.kind,value:r.value,round:game.round};});
@@ -39,14 +41,27 @@
   function readHistory(){var h=safeRead(HISTORY_KEY);return Array.isArray(h)?h:[];}
   function storeHistory(rec){var h=readHistory();if(!h.some(function(x){return x.id===rec.id;})){h.push(rec);try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h.slice(-30)));}catch(e){}}}
   function getNames(n){var a=[profileName];for(var i=1;i<n;i++)a.push(CPU_NAMES[(i-1)%CPU_NAMES.length]+' (رایانه)');return a;}
+  function basePersonality(p){return AI_PERSONALITIES.find(function(x){return x.id===(p&&p.aiPersonality);})||AI_PERSONALITIES[4];}
+  function personality(p){var id=basePersonality(p).id;if(id==='alternating')id=g.round%2?'risk':'cautious';return AI_PERSONALITIES.find(function(x){return x.id===id;})||AI_PERSONALITIES[4];}
+  function assignPersonalities(){var offset=Math.floor(Math.random()*AI_PERSONALITIES.length);g.players.forEach(function(p,i){if(i>0){p.isAI=true;p.aiPersonality=AI_PERSONALITIES[(offset+i-1)%AI_PERSONALITIES.length].id;}});}
+  function npcWager(seat,maxValue){var p=g.players[seat];if(p.wealth<10){p.wager=0;p.locked=true;p.wagerHidden=true;return true;}var style=personality(p).id,cap=Math.max(10,Math.min(p.wealth,maxValue||p.wealth)),r=Math.random(),fraction;
+    if(style==='alternating')style=personality(p).id;
+    if(style==='risk')fraction=.78+r*.2;
+    else if(style==='cautious')fraction=.3+r*.22;
+    else if(style==='smart'){var past=(g.history||[]).slice(-3),estimate=past.length?past.reduce(function(sum,h){return sum+(+h.maxHaul||0);},0)/past.length:100;fraction=Math.min(.8,Math.max(.35,estimate/cap*.72));}
+    else if(style==='dumb')fraction=.12+r*.88;
+    else fraction=.5+r*.3;
+    var remaining=Math.max(10,Math.min(cap,Math.floor(cap*fraction/10)*10));BOT_CHIPS.forEach(function(v){while(remaining>=v&&p.wealth-p.wager>=v){E.addWager(g,seat,v);remaining-=v;}});
+    if(p.wager<10&&p.wealth-p.wager>=10)E.addWager(g,seat,10);return E.lockBet(g,seat);
+  }
   function avatarFor(i){return avatarUrls[i]||FALLBACK[i%FALLBACK.length];}
   function showGame(){ $('#setup').hidden=true;$('#game').hidden=false; }
   function showSetup(){ $('#game').hidden=true;$('#setup').hidden=false;document.body.dataset.phase='setup'; }
   function sendBack(){msgParent({type:'hell:back'});if(parent===window)showSetup();}
   function startGame(n){
     n=n||+$('[data-count].selected').dataset.count||4;
-    roundReveals=[];g=E.createGame(n,getNames(n));g.gameId='hell-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);g.startedAt=Date.now();g.players.forEach(function(p,i){p.isAI=i>0;});var chosenDifficulty=+$('[data-difficulty].selected').dataset.difficulty;difficulty=Number.isFinite(chosenDifficulty)?chosenDifficulty:1;reportSent=false;
-    for(var i=1;i<n;i++)E.addNpcWager(g,i,Math.random,100+difficulty*50);
+    roundReveals=[];g=E.createGame(n,getNames(n));g.gameId='hell-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);g.startedAt=Date.now();var chosenDifficulty=+$('[data-difficulty].selected').dataset.difficulty;difficulty=Number.isFinite(chosenDifficulty)?chosenDifficulty:1;assignPersonalities();reportSent=false;
+    for(var i=1;i<n;i++)npcWager(i,100+difficulty*50);
     roundStartedAt=Date.now();
     showGame();render();
   }
@@ -61,8 +76,8 @@
   }
   function wagerRow(){var p=g.players[0],counts=chipCounts(p.wager),html='';counts.forEach(function(c){for(var i=0;i<Math.min(c.n,8);i++)html+='<img class="bet-chip-icon" src="assets/chip-'+c.v+'.svg" alt="'+c.v+'">';});return html||'<span class="bet-empty">هنوز شرطی نگذاشتی</span>';}
   function playerRevealRow(p){return (p.reveals||[]).map(function(r){return '<span class="coal-reveal-badge'+(r.kind==='devil'?' devil-reveal':'')+'" data-player-reveal aria-label="'+(r.kind==='devil'?'شیطان':fa(r.value))+'">'+(r.kind==='devil'?'شیطان':fa(r.value))+'</span>';}).join('');}
-  function opponentCard(i){var p=g.players[i],active=g.phase==='play'&&g.turn===i;var bet=p.wagerHidden?'شرط مخفی':('شرط '+fa(p.wager));var colors=['#f2c95b','#ef4944','#35c9dc','#4ccc70'];
-    return '<article class="opponent'+(active?' is-active':'')+'" id="seat-'+i+'" data-seat="'+i+'"><span class="active-flames" aria-hidden="true"><i></i><i></i></span><img src="'+esc(avatarFor(i))+'" alt=""><span class="op-name">'+esc(p.name)+(p.pact?'<em class="pact-mark" title="هم‌پیمان شیطان">♆ پیمان</em>':'')+'</span><span class="op-meta">'+bet+'</span><small class="pawn-key opponent-pawn-key"><i style="background:'+colors[i%colors.length]+'"></i>مهره '+fa(i+1)+'</small><span class="player-reveal-row opponent-player-reveals" aria-label="زغال‌های رو شدهٔ '+esc(p.name)+'">'+playerRevealRow(p)+'</span></article>';
+  function opponentCard(i){var p=g.players[i],active=g.phase==='play'&&g.turn===i;var bet=p.wagerHidden?'شرط مخفی':('شرط '+fa(p.wager));var colors=['#f2c95b','#ef4944','#35c9dc','#4ccc70'];var type=basePersonality(p).name;
+    return '<article class="opponent'+(active?' is-active':'')+'" id="seat-'+i+'" data-seat="'+i+'"><img src="'+esc(avatarFor(i))+'" alt=""><span class="op-name"><span class="op-label">'+esc(p.name)+'</span><em class="ai-personality">'+esc(type)+'</em>'+(p.pact?'<em class="pact-mark" title="هم‌پیمان شیطان">♆ پیمان</em>':'')+'</span><span class="op-meta">'+bet+'</span><small class="pawn-key opponent-pawn-key"><i style="background:'+colors[i%colors.length]+'"></i>مهره '+fa(i+1)+'</small><span class="player-reveal-row opponent-player-reveals" aria-label="زغال‌های رو شدهٔ '+esc(p.name)+'">'+playerRevealRow(p)+'</span></article>';
   }
   function renderOpponents(){var o=$('#opponents');o.style.gridTemplateColumns='repeat('+Math.max(1,g.players.length-1)+',minmax(0,1fr))';o.innerHTML=g.players.slice(1).map(function(p,j){return opponentCard(j+1);}).join('');}
   function polyPoint(pos,seat,count){
@@ -80,7 +95,7 @@
   function drawDescription(r){return r.kind==='devil'?'شیطان رو شد!':'زغال '+fa(r.value);}
   function allReveals(){var all=[];(g.history||[]).forEach(function(round){(round.reveals||[]).forEach(function(r){all.push(Object.assign({round:round.round},r));});});roundReveals.forEach(function(r){all.push(Object.assign({round:g.round},r));});return all;}
   function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals');if(target)target.innerHTML=playerRevealRow(p);});}
-  function renderSafeHaul(){var safe=g.players.reduce(function(max,p){return Math.max(max,+p.haul||0);},0);$('#maxSafeHaul').textContent=fa(safe);}
+  function renderSafeHaul(){var safe=g.players.reduce(function(max,p){return Math.max(max,p.busted?0:(+p.haul||0));},0);$('#maxSafeHaul').textContent=fa(safe);}
   function recordReveal(seat,token){
     roundReveals.push({seat:seat,name:g.players[seat].name,kind:token.kind,value:token.value});
   }
@@ -108,7 +123,7 @@
   }
   function maybeSettle(){if(g.phase!=='settlement')return;var summary=E.settle(g);if(summary){summary.reveals=roundReveals.slice();render();if(g.gameOver)finishGame();else maybeCpuPact();}}
   function showPact(){var d=$('#pactModal');if(!d.open){$('#pactText').textContent='تو در کمترین موجودی این دست هستی و می‌توانی برای دست بعد پیمان ببندی.';d.showModal();}}
-  function maybeCpuPact(){var s=E.offerPact(g);if(s===0){showPact();return;}if(s!=null&&s>0){var current=g;setTimeout(function(){if(g!==current||E.offerPact(g)!==s)return;var take=Math.random()<(difficulty===0?.3:difficulty===1?.55:.78);if(take)E.acceptPact(g,s);else E.declinePact(g,s);render();maybeCpuPact();},700);}}
+  function maybeCpuPact(){var s=E.offerPact(g);if(s===0){showPact();return;}if(s!=null&&s>0){var current=g;setTimeout(function(){if(g!==current||E.offerPact(g)!==s)return;var style=personality(g.players[s]).id,odds=style==='risk'?.9:style==='cautious'?.42:style==='smart'?.72:style==='dumb'?.5:style==='normal'?.62:.55;var take=Math.random()<odds;if(take)E.acceptPact(g,s);else E.declinePact(g,s);render();maybeCpuPact();},700);}}
   function renderSummary(){
     var content=$('#summaryContent'),html='<div class="summary-note">دست‌های ثبت‌شده: '+fa(g.history.length)+' · دست جاری: '+fa(g.round)+'</div>';
     function roundBlock(s,current){
@@ -128,12 +143,13 @@
   function makeReport(){var n=g.players.length,rowsReport=[{l:'امتیاز نهایی',v:g.players.map(function(p){return p.wealth;}),h:1}];g.history.forEach(function(r){rowsReport.push({l:'دست '+r.round+' · شرط',v:r.players.map(function(p){return p.wager;})});rowsReport.push({l:'دست '+r.round+' · برداشت امن بازیکن',v:r.players.map(function(p){return p.haul;})});});var winners=g.winners||[],res=winners.length===1?winners[0]:'draw';return {id:'hell',gid:g.gameId,g:'فرار از جهنم',t:Date.now(),dur:Date.now()-(g.startedAt||Date.now()),n:n,names:g.players.map(function(p){return p.name;}),ai:g.players.map(function(p){return !!p.isAI;}),res:res,rows:rowsReport,sum:['موجودی بانک: '+fa(g.bank),'مجموع زغال امن دست آخر: '+fa(g.settled?g.settled.totalSafeHaul:0)],rounds:g.history};}
   function finishGame(){if(reportSent)return;reportSent=true;g.reportSent=true;var report=makeReport(),winner=g.winners.indexOf(0)>=0,rec={id:g.gameId,when:new Date().toLocaleDateString('fa-IR'),won:winner,rounds:g.history,names:g.players.map(function(p){return p.name;}),finalWealth:g.players[0].wealth,report:report};storeHistory(rec);persist();msgParent({type:'hell:report',report:report,result:winner?'w':'l',gameId:g.gameId,opponents:g.players.slice(1).map(function(p){return p.name;})});renderSummary();$('#summaryModal').showModal();}
   function reveal(id){if(!g||g.phase!=='play'||g.turn!==0)return;var ok=E.revealCoal(g,0,+id);if(!ok){toast('این زغال دیگر در دسترس نیست');return;}recordReveal(0,g.coals[+id]);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}}
-  function scheduleAI(){clearTimeout(autoTimer);if(!g||g.phase!=='play'||g.turn<=0)return;var seat=g.turn,round=g.round;autoTimer=setTimeout(function(){if(!g||g.phase!=='play'||g.turn!==seat||g.round!==round)return;var p=g.players[seat],available=g.available.slice();if(!available.length){if(p.coalCount>0)E.endTurn(g,seat);else E.forcePassEmpty(g);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}return;}var stopAfter=difficulty===0?1:(difficulty===1?2:3);var wantStop=p.coalCount>=stopAfter&&Math.random()<(difficulty===0?.65:difficulty===1?.45:.28),revealedToken=null;if(wantStop){E.endTurn(g,seat);toast(p.name+' نوبتش را تمام کرد');}else{var id=available[Math.floor(Math.random()*available.length)];revealedToken=g.coals[id];E.revealCoal(g,seat,id);}
+  function npcShouldStop(p){if(p.coalCount<1)return false;var style=personality(p).id,top=g.players.reduce(function(m,x){return Math.max(m,x.busted?0:x.haul);},0),hiddenDevils=9-g.coals.filter(function(c){return c.revealed&&c.kind==='devil';}).length,risk=hiddenDevils/Math.max(1,g.available.length),hasMet=p.haul>=p.wager,otherLocked=g.players.some(function(x,i){return i!==g.turn&&x.turnDone&&!x.busted&&x.haul>=p.wager;});if(style==='smart'){if(otherLocked)return true;if(hasMet&&p.haul>=top&&risk>=.1)return true;return p.coalCount>=3&&hasMet&&risk>.22;}if(style==='cautious')return otherLocked||hasMet||(p.coalCount>=3&&p.haul>=top&&risk>.1);if(style==='risk')return (hasMet&&Math.random()<.32)||(p.coalCount>=5&&Math.random()<.25);if(style==='dumb')return p.coalCount>=2&&Math.random()<.3;return otherLocked||(hasMet&&p.coalCount>=(difficulty===0?1:2)&&Math.random()<.55)||(p.coalCount>=4&&Math.random()<.3);}
+  function scheduleAI(){clearTimeout(autoTimer);if(!g||g.phase!=='play'||g.turn<=0)return;var seat=g.turn,round=g.round;autoTimer=setTimeout(function(){if(!g||g.phase!=='play'||g.turn!==seat||g.round!==round)return;var p=g.players[seat],available=g.available.slice();if(!available.length){if(p.coalCount>0)E.endTurn(g,seat);else E.forcePassEmpty(g);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}return;}var revealedToken=null;if(npcShouldStop(p)){E.endTurn(g,seat);toast(p.name+' نوبتش را تمام کرد');}else{var id=available[Math.floor(Math.random()*available.length)];revealedToken=g.coals[id];E.revealCoal(g,seat,id);}
       if(revealedToken)recordReveal(seat,revealedToken);if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}
     },1000+Math.floor(Math.random()*4001));}
   function endUserTurn(){if(!g||!E.endTurn(g,0))return;toast('نوبتت تمام شد');if(g.phase==='settlement')maybeSettle();else{render();scheduleAI();}}
   function lockUser(){if(!g||!E.lockBet(g,0)){toast('برای بستن شرط دست‌کم ۱۰ چیپ انتخاب کن');return;}if(g.phase==='bet-reveal'){E.startRound(g);roundStartedAt=Date.now();toast('شرط‌ها آشکار شد · آغازگر '+g.players[g.turn].name);render();scheduleAI();}else{toast('شرطت قفل شد؛ منتظر رایانه بمان');render();}}
-  function beginNextRound(){if(!g||!E.nextRound(g))return;roundReveals=[];if($('#summaryModal').open)$('#summaryModal').close();for(var i=1;i<g.players.length;i++)E.addNpcWager(g,i,Math.random,100+difficulty*50);g.players[0].wager=0;g.players[0].locked=false;g.players[0].wagerHidden=true;g.phase='bet';lastTurnKey='';roundStartedAt=Date.now();render();toast('دست '+fa(g.round)+' شروع شد؛ شرط خودت را ببند');}
+  function beginNextRound(){if(!g||!E.nextRound(g))return;roundReveals=[];if($('#summaryModal').open)$('#summaryModal').close();for(var i=1;i<g.players.length;i++)npcWager(i,100+difficulty*50);g.players[0].wager=0;g.players[0].locked=false;g.players[0].wagerHidden=true;g.phase='bet';lastTurnKey='';roundStartedAt=Date.now();render();toast('دست '+fa(g.round)+' شروع شد؛ شرط خودت را ببند');}
   function choosePact(take){if(!g)return;var ok=take?E.acceptPact(g,0):E.declinePact(g,0);if(ok){$('#pactModal').close();render();maybeCpuPact();}}
   function events(){
     $$('[data-count]').forEach(function(b){b.addEventListener('click',function(){$$('[data-count]').forEach(function(x){x.classList.toggle('selected',x===b);});});});

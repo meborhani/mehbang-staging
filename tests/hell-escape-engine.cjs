@@ -113,10 +113,10 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   E.endTurn(g,second);
   const report=E.settle(g);
   assert.equal(report.maxHaul,125);
-  assert.equal(report.totalSafeHaul,235,'wager success uses all safe coal values revealed by every player');
-  assert.equal(g.players[first].wealth,400,'the highest wager doubles when its owner personally reaches the wager, even if another player hauled more');
+  assert.equal(report.totalSafeHaul,235,'non-busted players contribute their safe values to the shared visible total');
+  assert.equal(g.players[first].wealth,400,'the highest wager doubles when it is at or below the top safe haul');
   assert.equal(g.players[safePlayer].wealth,300,'the highest safe haul earns its separate 50-chip bonus');
-  assert.equal(g.players[second].wealth,220,'lower wagers receive the ordinary payout when total safe haul covers them');
+  assert.equal(g.players[second].wealth,220,'lower wagers receive the ordinary payout when the top safe haul covers them');
   assert.equal(report.players[first].doubled,true);
   assert.equal(report.players[first].success,true);
   assert.equal(report.players[second].success,true);
@@ -130,8 +130,9 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   const report=E.settle(g);
   assert.equal(report.totalSafeHaul,100);
   assert.equal(report.maxHaul,50);
-  assert.equal(report.players[first].success,true,'the highest wager succeeds from combined haul even when no individual reaches it');
-  assert.equal(report.players[first].doubled,true);
+  assert.equal(report.players[first].success,false,'combined hauls do not cover a wager when neither safe player reaches it');
+  assert.equal(report.players[first].doubled,false);
+  assert.equal(report.players[second].success,true,'a wager equal to the top individual safe haul wins');
 }
 {
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
@@ -145,9 +146,11 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   const second=g.turn;
   E.revealCoal(g,second,coalWith(g,c=>c.kind==='coal'&&c.value===50).id);E.endTurn(g,second);
   const report=E.settle(g);
-  assert.equal(report.totalSafeHaul,125);
-  assert.equal(report.players[first].success,true,'a devil reveal does not erase previously revealed safe coals');
-  assert.equal(report.players[first].doubled,true,'the highest wager can still double when the combined safe total covers it');
+  assert.equal(report.totalSafeHaul,50,'a busted player’s earlier safe haul no longer counts');
+  assert.equal(report.maxHaul,50,'the maximum safe haul excludes anyone who revealed the devil');
+  assert.equal(report.players[first].success,false,'revealing the devil invalidates that player’s safe haul for settlement');
+  assert.equal(report.players[first].haul,0,'a busted player receives no score for their earlier coal reveals');
+  assert.equal(report.players[first].doubled,false);
 }
 {
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
@@ -195,6 +198,34 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   assert(summary.transfers.some(x=>x.from===finder&&x.to===1&&x.amount===50));
   assert(g.players[1].wealth>=before[1]+50,'the pact recipient receives 50 chips from the devil finder');
   assert(!summary.transfers.some(x=>x.from===1&&x.to===1),'a pact holder who reveals the devil does not pay themselves');
+}
+{
+  const g=E.createGame(3,['نفر ۱','نفر ۲','نفر ۳'],()=>0.5);
+  E.addWager(g,0,100);E.lockBet(g,0);E.addWager(g,1,100);E.addWager(g,1,50);E.lockBet(g,1);E.addWager(g,2,100);E.addWager(g,2,20);E.lockBet(g,2);E.startRound(g,()=>0.5);
+  g.players[0].haul=100;
+  g.players[1].haul=195;g.players[1].busted=true;g.players[1].foundDevil=true;
+  g.players[2].haul=120;
+  g.players[0].pact=true;
+  g.phase='settlement';
+  const report=E.settle(g);
+  assert.equal(report.maxHaul,120,'the top safe score is 120; the devil finder’s 195 is ignored');
+  assert.equal(report.totalSafeHaul,220,'only the two non-busted players contribute safe scores');
+  assert.deepEqual(report.players.map(p=>p.success),[true,false,true]);
+  assert.deepEqual(report.players.map(p=>p.doubled),[false,false,false],'the highest 150 wager fails because no eligible safe haul reaches 150');
+  assert.deepEqual(report.players.map(p=>p.burned),[0,150,0]);
+  assert.deepEqual(report.highHaulPlayers,[2]);
+  assert(report.transfers.some(t=>t.from===1&&t.to===0&&t.amount===50),'the devil finder pays 50 to the pact holder');
+  assert.equal(g.players[1].wealth,0,'the devil finder loses the 150 wager and an additional 50 pact payment');
+  assert.equal(g.players[0].wealth,350,'player one wins their 100 payout and receives the pact payment');
+  assert.equal(g.players[2].wealth,370,'player three wins 120 and the 50 high-haul bonus');
+}
+{
+  const g=E.createGame(2,['نفر با شرط بالا','نفر امن'],()=>0.5);
+  E.addWager(g,0,100);E.addWager(g,0,50);E.lockBet(g,0);E.addWager(g,1,100);E.lockBet(g,1);E.startRound(g,()=>0.5);
+  g.players[0].haul=0;g.players[1].haul=150;g.phase='settlement';
+  const report=E.settle(g);
+  assert.equal(report.players[0].success,true,'the highest bettor may qualify from another player’s safe haul');
+  assert.equal(report.players[0].doubled,true,'the highest wager doubles when the top safe haul reaches it');
 }
 {
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
