@@ -260,6 +260,8 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .player-identity div{width:100%;align-items:center;gap:1px}
 .player-identity #myPact{white-space:normal;line-height:1.1;max-height:22px;text-align:center}
 .chip-bank,.player-dock.show-bet .chip-bank{height:44px;min-height:44px;max-height:44px}
+.score-box-label rect{fill:rgba(4,17,28,.9);stroke:#f4c96a;stroke-width:2.5;filter:drop-shadow(0 1px 3px #000)}
+.score-box-label text{font:800 20px Vazirmatn,Tahoma,sans-serif;fill:#fff0bd;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#241208;stroke-width:1.5px;pointer-events:none}
 @media(max-width:360px){.max-safe-box{gap:4px;padding-inline:5px}.max-safe-box .shared-stat{font-size:8px;gap:2px}.max-safe-box .shared-stat strong{min-width:24px;padding-inline:3px}.opponent{grid-template-rows:minmax(9px,1fr) 12px 10px 15px;padding-inline:3px}.opponent-player-reveals{height:15px;min-height:15px}.player-dock{grid-template-columns:76px minmax(0,1fr);grid-template-rows:44px minmax(39px,1fr) 28px 18px}.player-dock #myPlayerReveals{max-width:100%}}
 
 /* The active frame stays lit all around while several brighter waves travel along it. */

@@ -6,6 +6,7 @@
   'use strict';
   var CHIP_VALUES=[10,20,50,100,200,500,1000];
   var COAL_COUNTS={10:9,20:9,25:9,50:7,75:3,100:2};
+  function scoreBoxIndex(score){score=Math.max(0,+score||0);if(score<=50)return 0;if(score<200)return 1;if(score===200)return 2;if(score<300)return 3;if(score===300)return 4;if(score<500)return 5;if(score===500)return 6;if(score<750)return 7;if(score===750)return 8;if(score<1000)return 9;if(score===1000)return 10;if(score<1300)return 11;if(score===1300)return 12;if(score<1600)return 13;return 14;}
   function rnd(rng){var n=Number((rng||Math.random)());return Number.isFinite(n)?Math.max(0,Math.min(.999999999,n)):0;}
   function shuffledBag(rng){
     var bag=[];for(var i=0;i<9;i++)bag.push({kind:'devil',value:0});
@@ -92,12 +93,12 @@
     p.forEach(function(x,from){if(!x.foundDevil)return;pactSeats.forEach(function(to){if(to===from)return;var amount=50;x.wealth-=amount;p[to].wealth+=amount;transfers.push({from:from,to:to,amount:amount});});});
     g.maxHaul=maxHaul;g.totalSafeHaul=totalSafeHaul;
     p.forEach(function(x){x.pact=false;x.scorePos=x.wealth;});
-    var low=Math.min.apply(null,p.map(function(x){return x.wealth;})),last=p.map(function(x,i){return x.wealth===low?i:-1;}).filter(function(i){return i>=0;});
-    g.pactOffers=last.slice();g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;
+    var lowBox=Math.min.apply(null,p.map(function(x){return scoreBoxIndex(x.wealth);})),last=p.map(function(x,i){return scoreBoxIndex(x.wealth)===lowBox?i:-1;}).filter(function(i){return i>=0;});
+    g.pactOffers=last.length===1?last.slice():[];g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;
     var summary={round:g.round,maxHaul:maxHaul,totalSafeHaul:totalSafeHaul,highHaulPlayers:leaders,bestWager:maxWager,players:p.map(function(x){return {name:x.name,wager:x.wager,haul:x.busted?0:x.lastHaul,busted:x.busted,success:x.roundSuccess,doubled:x.roundDoubled,payout:x.roundPayout,burned:x.roundBurned,wealth:x.wealth};}),transfers:transfers,bank:g.bank};
     g.history.push(summary);g.settled=summary;finishIfWon(g);if(g.gameOver){g.pactOffers=[];g.pactOffer=null;}return summary;
   }
-  function offerPact(g){if(!g||g.phase!=='settlement'||g.gameOver)return null;var low=Math.min.apply(null,g.players.map(function(p){return p.wealth;}));g.pactOffers=Array.isArray(g.pactOffers)?g.pactOffers:(validSeat(g,g.pactOffer)?[g.pactOffer]:[]);g.pactOffers=g.pactOffers.filter(function(s){return validSeat(g,s)&&g.players[s].wealth===low;});g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return g.pactOffer;}
+  function offerPact(g){if(!g||g.phase!=='settlement'||g.gameOver)return null;var lowBox=Math.min.apply(null,g.players.map(function(p){return scoreBoxIndex(p.wealth);})),lowest=g.players.map(function(p,i){return scoreBoxIndex(p.wealth)===lowBox?i:-1;}).filter(function(i){return i>=0;});g.pactOffers=Array.isArray(g.pactOffers)?g.pactOffers:(validSeat(g,g.pactOffer)?[g.pactOffer]:[]);if(g.pactOffers.length)g.pactOffers=lowest.length===1?[lowest[0]]:[];g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return g.pactOffer;}
   function resolvePact(g,s,take){if(!validSeat(g,s)||g.phase!=='settlement'||g.gameOver||offerPact(g)!==s)return false;if(take)g.players[s].pact=true;g.pactOffers.shift();g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return true;}
   function acceptPact(g,s){return resolvePact(g,s,true);}
   function declinePact(g,s){return resolvePact(g,s,false);}
@@ -121,5 +122,5 @@
     if(g.players.some(function(p){return !p||!Number.isFinite(p.wealth)||!Number.isFinite(p.wager)||p.wager<0||p.haul<0||p.haul>1270||(p.reveals!==undefined&&!Array.isArray(p.reveals));}))return false;
     return ['bet','bet-reveal','play','settlement','game-over'].includes(g.phase);
   }
-  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,forcePassEmpty:forcePassEmpty,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
+  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,scoreBoxIndex:scoreBoxIndex,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,forcePassEmpty:forcePassEmpty,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
 });

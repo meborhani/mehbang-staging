@@ -237,23 +237,26 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
 }
 {
   const g=E.createGame(3,['تو','الف','ب'],()=>0.5);
-  g.players[0].wealth=100;g.players[1].wealth=100;g.players[2].wealth=400;
+  g.players[0].wealth=100;g.players[1].wealth=120;g.players[2].wealth=400;
   g.phase='settlement';E.settle(g);
-  assert.deepEqual(g.pactOffers,[0,1],'all players tied for last place receive a pact offer');
-  assert.equal(E.offerPact(g),0,'the first eligible player receives the pact offer');
-  assert.equal(E.acceptPact(g,0),true);
-  assert.equal(g.players[0].pact,true);
-  assert.equal(E.offerPact(g),1,'the next tied player can independently accept or decline');
-  assert.equal(E.declinePact(g,1),true);
+  assert.deepEqual(g.pactOffers,[],'no pact is offered when multiple players share the lowest score box, even if their exact scores differ');
+  assert.equal(E.offerPact(g),null,'a tied lowest score box has no pact recipient');
+  const unique=E.createGame(3,['تو','الف','ب'],()=>0.5);unique.players[0].wealth=40;unique.players[1].wealth=250;unique.players[2].wealth=400;unique.phase='settlement';E.settle(unique);
+  assert.deepEqual(unique.pactOffers,[0],'the only player in the lowest score box receives the pact offer');
+  assert.equal(E.acceptPact(unique,0),true);
+  assert.equal(unique.players[0].pact,true);
+  assert.deepEqual([0,50,51,199,200,201,300,301,500,501,750,751,1000,1001,1300,1301,1600].map(E.scoreBoxIndex),[0,0,1,1,2,3,4,5,6,7,8,9,10,11,12,13,14],'score values map to the exact listed box boundaries');
 }
 {
   const g=E.createGame(3,['تو','الف','ب'],()=>0.5);
-  g.players[0].wealth=85;g.players[1].wealth=120;g.players[2].wealth=300;
+  g.players[0].wealth=40;g.players[1].wealth=120;g.players[2].wealth=300;
   g.phase='settlement';g.pactOffers=[0];g.pactOffer=0;E.settle(g);
   assert.deepEqual(g.pactOffers,[0],'only the player with the lowest settled score receives the pact offer');
   const stale=E.createGame(3,['تو','الف','ب'],()=>0.5);
-  stale.players[0].wealth=85;stale.players[1].wealth=120;stale.players[2].wealth=300;stale.phase='settlement';stale.pactOffers=[1];stale.pactOffer=1;
-  assert.equal(E.offerPact(stale),null,'a resumed or stale pact offer for a player ahead of last place is discarded');
+  stale.players[0].wealth=250;stale.players[1].wealth=85;stale.players[2].wealth=300;stale.phase='settlement';stale.pactOffers=[0];stale.pactOffer=0;
+  assert.equal(E.offerPact(stale),1,'a stale offer is redirected to the unique player in the lowest score box');
+  const tied=E.createGame(3,['تو','الف','ب'],()=>0.5);tied.players[0].wealth=100;tied.players[1].wealth=120;tied.players[2].wealth=300;tied.phase='settlement';tied.pactOffers=[0];
+  assert.equal(E.offerPact(tied),null,'a stale offer is cleared when multiple players share the lowest score box');
 }
 {
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);

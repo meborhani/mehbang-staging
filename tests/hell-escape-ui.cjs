@@ -46,7 +46,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#pawns image').count(),2,'both player pawns render on the score track');
   assert.equal(await page.locator('.pawn-key').count(),2,'each player card identifies the matching pawn color');
   assert.ok((await page.locator('#pawns .pawn-piece').first().getAttribute('aria-label')).includes('۲۰۰'),'the wager escrow does not move the player’s score pawn');
-  assert.equal(await page.locator('#trackLabels text').count(),0,'HTML does not overlay score numbers that disagree with the board artwork');
+  assert.equal(await page.locator('#trackLabels .score-box-label').count(),10,'the eight range boxes and two unlabeled milestone boxes are marked on the board');
+  assert.ok((await page.locator('#trackLabels').evaluate(e=>e.textContent)).includes('۱۳۰۰–۱۶۰۰'),'the board labels the final score range');
   const dockBounds=await page.locator('.player-dock').boundingBox(),actionBounds=await page.locator('.dock-actions').boundingBox();
   assert.ok(actionBounds.x>=dockBounds.x&&actionBounds.y>=dockBounds.y&&actionBounds.x+actionBounds.width<=dockBounds.x+dockBounds.width&&actionBounds.y+actionBounds.height<=dockBounds.y+dockBounds.height,'action buttons are laid out inside the player frame');
   const cardParts=await page.locator('.player-dock').evaluate(e=>['.player-identity','#chipBank','.bet-tray','.dock-actions','#myPlayerReveals'].map(s=>{const r=e.querySelector(s).getBoundingClientRect();return [s,r.x,r.y,r.right,r.bottom]}));
@@ -135,19 +136,19 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   await pactPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
   await pactPage.evaluate(()=>{
     const game=HellEscapeEngine.createGame(3,['ابراهیم','رها','سارا'],()=>0.5);
-    game.phase='settlement';game.turn=-1;game.players[0].wealth=100;game.players[1].wealth=100;game.players[2].wealth=200;
-    game.pactOffers=[0,1];game.pactOffer=0;game.settled={round:1,bestWager:100,maxHaul:80,highHaulPlayers:[2],transfers:[],players:game.players.map(p=>({name:p.name,wager:50,haul:40,busted:false,success:true,doubled:false,wealth:p.wealth}))};
+    game.phase='settlement';game.turn=-1;game.players[0].wealth=40;game.players[1].wealth=120;game.players[2].wealth=200;
+    game.pactOffers=[0];game.pactOffer=0;game.settled={round:1,bestWager:100,maxHaul:80,highHaulPlayers:[2],transfers:[],players:game.players.map(p=>({name:p.name,wager:50,haul:40,busted:false,success:true,doubled:false,wealth:p.wealth}))};
     game.players.forEach(p=>delete p.reveals);delete game.totalSafeHaul;
     const roundReveals=[{seat:0,name:'ابراهیم',kind:'coal',value:80},{seat:1,name:'رها',kind:'coal',value:50}];
     localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,roundReveals}));
   });
   await pactPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
   await pactPage.waitForFunction(()=>document.querySelector('#pactModal').open,'',{timeout:1500});
-  assert.ok(await pactPage.locator('[data-next]').isDisabled(),'the next hand stays blocked while tied-last pact offers are pending');
+  assert.ok(await pactPage.locator('[data-next]').isDisabled(),'the next hand stays blocked while the unique lowest-score player considers the pact');
   await pactPage.locator('[data-pact="yes"]').click();
   await pactPage.waitForFunction(()=>{const s=JSON.parse(localStorage.getItem('mb-hell-escape-save-v1'));return s.game.pactOffers.length===0;},{timeout:3000});
   const pactSave=await pactPage.evaluate(()=>JSON.parse(localStorage.getItem('mb-hell-escape-save-v1')).game);
-  assert.equal(pactSave.players[0].pact,true,'the human can accept their own tied-last pact offer');
+  assert.equal(pactSave.players[0].pact,true,'the human can accept the pact when alone in the lowest score box');
   assert.equal(await pactPage.locator('#myPact').evaluate(e=>e.hidden),false,'the active pact is shown on the human panel');
   assert.equal(await pactPage.locator('#seat-0 [data-player-reveal]').count(),1,'legacy saves reconstruct the human coal row from their current-hand reveals');
   assert.equal(await pactPage.locator('#seat-1 [data-player-reveal]').count(),1,'legacy saves reconstruct opponent coal rows from their current-hand reveals');
@@ -174,12 +175,13 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const pactEligibilityPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
   await pactEligibilityPage.evaluate(()=>{
-    const game=HellEscapeEngine.createGame(3,['بازیکن','علی','رها'],()=>.5);game.gameId='lowest-pact-only';game.phase='settlement';game.turn=-1;game.players.forEach((p,i)=>{p.wealth=[120,85,300][i];p.scorePos=p.wealth;});
+    const game=HellEscapeEngine.createGame(3,['بازیکن','علی','رها'],()=>.5);game.gameId='lowest-pact-only';game.phase='settlement';game.turn=-1;game.players.forEach((p,i)=>{p.wealth=[250,40,300][i];p.scorePos=p.wealth;});
     game.pactOffers=[0];game.pactOffer=0;game.settled={round:1,players:game.players.map(p=>({name:p.name,wealth:p.wealth,wager:0,haul:0,busted:false}))};
     localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));
   });
   await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
-  assert.equal(await pactEligibilityPage.locator('#pactModal[open]').count(),0,'a player one score space ahead of the lowest player is not offered a devil pact');
+  assert.equal(await pactEligibilityPage.locator('#pactModal[open]').count(),0,'a player ahead of the unique lowest box is not offered a devil pact');
+  assert.deepEqual(await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['3','0','4'],'pawns occupy their score-range boxes instead of floating along an unrelated continuous path');
   const pactPawns=await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
   assert.ok(Math.abs(pactPawns[0].x-pactPawns[1].x)>1||Math.abs(pactPawns[0].y-pactPawns[1].y)>1,'different low scores render at their own positions on the score track');
   await pactEligibilityPage.close();
