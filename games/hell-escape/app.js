@@ -119,10 +119,10 @@
     $('#bankValue').textContent=fa(g.bank);$('#coalCount').textContent=fa(g.available.length);
   }
   function statusText(){
-    if(g.phase==='bet')return g.players[0].locked?'شرط‌ها قفل‌اند؛ منتظر بازشدن شرط‌ها':'با لمس چیپ‌ها شرط مخفی خودت را ببند';
-    if(g.phase==='bet-reveal')return 'شرط‌ها آشکار شدند؛ آغازگر: '+g.players[g.turn].name;
-    if(g.phase==='play'){if(g.turn===0)return 'یک زغال را انتخاب کن؛ پس از هر زغال می‌توانی نوبت را تمام کنی';return g.players[g.turn].name+' زغال برمی‌دارد…';}
-    if(g.phase==='settlement')return g.gameOver?'بازی به پایان رسید':'دست '+fa(g.round)+' تمام شد · خلاصه بازی را ببین یا دست بعد را آغاز کن';
+    if(g.phase==='bet')return g.players[0].locked?'شرط تو قفل شد؛ پس از قفل‌شدن شرط همه، مبلغ‌ها آشکار می‌شوند و دست آغاز می‌شود.':'چیپ‌های شرط را انتخاب کن و «قفل شرط» را بزن؛ مبلغت تا شروع دست مخفی می‌ماند.';
+    if(g.phase==='bet-reveal')return 'شرط‌ها آشکار شدند؛ آغازگر این دست: '+g.players[g.turn].name+'؛ نوبت‌ها به‌ترتیب می‌چرخد.';
+    if(g.phase==='play'){if(g.turn===0)return 'از کوره یک زغال بردار؛ پس از برداشت امن می‌توانی نوبت را تمام کنی. رو شدن شیطان، نوبتت را تمام می‌کند.';return g.players[g.turn].name+' در حال انتخاب زغال است؛ زغال‌های رو‌شده برای همه روی صفحه می‌مانند.';}
+    if(g.phase==='settlement')return g.gameOver?'بازی به پایان رسید؛ نتیجه و امتیاز نهایی را در خلاصه بازی ببین.':'دست '+fa(g.round)+' تمام شد؛ خلاصهٔ امتیازها را ببین یا برای ادامه «دست بعد» را بزن.';
     if(g.phase==='game-over')return 'بازی تمام شد';
     return '';
   }

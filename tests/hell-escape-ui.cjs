@@ -20,6 +20,11 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(wagerChips.width>=110,'the four selected bet chips are not clipped under the wager label');
   assert.equal(await page.locator('.draw-panel').count(),0,'the separate current-hand draw bar has been removed');
   assert.equal(await page.locator('#coalCount').innerText(),'۴۸','the bank bar shows the unrevealed coal count');
+  assert.ok(await page.locator('.max-safe-box #roundLabel').count(),'the current hand counter sits inside the shared status card');
+  assert.ok(await page.locator('.max-safe-box #bankValue').count()&&await page.locator('.max-safe-box #coalCount').count(),'the status card shows bank balance and remaining coals');
+  assert.equal(await page.locator('#game [data-coal-info]').count(),0,'the redundant coal-information button beside game summary is removed');
+  const betInstruction=await page.locator('#statusText').innerText();
+  assert.ok(betInstruction.includes('قفل شرط')&&betInstruction.includes('مخفی می‌ماند'),'the betting instruction explains how to lock the hidden wager');
   assert.equal(await page.locator('#summaryModal [data-history]').count(),0,'the summary modal has no separate history button');
   assert.equal(await page.locator('#summaryModal .dialog-actions').count(),0,'the summary modal has no continue button row');
   const dockBefore=await page.locator('.player-dock').boundingBox(),chipsBefore=await page.locator('#chipBank').boundingBox(),betBefore=await page.locator('.bet-tray').boundingBox(),chipSizeBefore=await page.locator('.chip-button img').first().boundingBox();
@@ -42,6 +47,9 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'4','the human reveal row occupies the bottom row of the player card');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
   assert.ok(await page.locator('#totalRevealedHaul').count(),'the shared panel includes a total revealed-coal value');
+  const statusLayout=await page.locator('#statusText').evaluate(e=>({text:e.innerText,scroll:e.scrollHeight,client:e.clientHeight,whiteSpace:getComputedStyle(e).whiteSpace}));
+  assert.ok(statusLayout.text.includes('نوبت را تمام کنی')&&statusLayout.text.includes('شیطان'),'the draw instruction explains how to end a turn and what happens when the devil appears');
+  assert.ok(statusLayout.scroll<=statusLayout.client+1&&statusLayout.whiteSpace!=='nowrap','the full game instruction wraps without clipping');
   assert.ok(await page.locator('.max-safe-box').evaluate(e=>e.querySelector('.stat-best').getBoundingClientRect().x>e.querySelector('.stat-total').getBoundingClientRect().x),'the maximum safe haul is on the right and the total is on the left');
   assert.ok((await page.locator('#seat-1 .op-meta').innerText()).includes('شرط')&&!(await page.locator('#seat-1 .op-meta').innerText()).includes('امن'),'opponent cards show the wager without a redundant safe-haul score');
   assert.equal(await page.locator('#pawns image').count(),2,'both player pawns render on the score track');
@@ -119,6 +127,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
     await page.setViewportSize(viewportSize);
     const viewport=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,sh:document.documentElement.scrollHeight,iw:innerWidth,ih:innerHeight}));
     assert.ok(viewport.sw<=viewport.iw+1&&viewport.sh<=viewport.ih+1,`no viewport overflow: ${JSON.stringify(viewport)}`);
+    const statusFits=await page.locator('#statusText').evaluate(e=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).whiteSpace!=='nowrap');
+    assert.equal(statusFits,true,`the instructional sentence is fully visible at ${viewportSize.width}px`);
+    const statsInside=await page.locator('.max-safe-box').evaluate(e=>Array.from(e.children).every(c=>{const a=c.getBoundingClientRect(),b=e.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1}));
+    assert.equal(statsInside,true,`round, bank, coal count, and safe hauls fit inside their card at ${viewportSize.width}px`);
     const dockOverflow=await page.locator('.player-dock').evaluate(e=>e.scrollWidth>e.clientWidth||e.scrollHeight>e.clientHeight);
     assert.equal(dockOverflow,false,`the player's card remains responsive at ${viewportSize.width}×${viewportSize.height}`);
   }

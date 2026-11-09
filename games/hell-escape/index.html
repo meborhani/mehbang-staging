@@ -27,7 +27,7 @@
     <section id="game" hidden>
       <header class="topbar">
         <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
-        <div class="round-title"><strong>فرار از جهنم</strong><small id="roundLabel">دست ۱</small></div>
+        <div class="round-title"><strong>فرار از جهنم</strong></div>
         <button class="icon-button help-button" data-help aria-label="راهنمای بازی">؟</button>
         <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
       </header>
@@ -42,12 +42,12 @@
         </svg>
       </section>
       <section class="round-status">
-        <span class="bank-label">🏦 بانک <b id="bankValue">۱۰٬۰۰۰</b> <span class="bank-coals">· زغال نرفته <b id="coalCount">۴۸</b></span></span>
-        <span id="statusText">برای شروع، چیپ شرط را انتخاب کن</span>
-        <button class="coal-info-button" data-coal-info aria-label="ترکیب زغال‌ها">ⓘ</button>
+        <span id="statusText">چیپ‌های شرط را انتخاب کن و «قفل شرط» را بزن؛ مبلغت تا شروع دست مخفی می‌ماند.</span>
         <button class="summary-chip" data-summary>خلاصه بازی</button>
       </section>
       <div class="max-safe-box" aria-live="polite">
+        <span class="shared-stat stat-round"><span>دست</span><strong id="roundLabel">۱</strong></span>
+        <span class="shared-stat stat-bank"><span>بانک</span><strong id="bankValue">۱۰٬۰۰۰</strong><span>زغال نرفته</span><strong id="coalCount">۴۸</strong></span>
         <span class="shared-stat stat-best">بیشترین زغال امن <strong id="maxSafeHaul">۰</strong></span>
         <span class="shared-stat stat-total">زغال امن من <strong id="totalRevealedHaul">۰</strong></span>
       </div>
