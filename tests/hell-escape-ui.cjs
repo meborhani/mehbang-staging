@@ -37,7 +37,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#seat-0 .active-flames').count(),0,'the active turn uses the card frame itself instead of a rectangular overlay');
   assert.equal(await page.locator('#seat-0 .player-reveal-row').count(),1,'the human has a revealed-coal summary inside their panel');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').count(),1,'each opponent has revealed values inside their card');
-  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-identity')),true,'the human reveal row is separated from identity text and anchored at the bottom of the identity column');
+  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-dock')),true,'the human reveal row has its own full-width bottom row in the player card');
+  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'4','the human reveal row occupies the bottom row of the player card');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
   assert.ok(await page.locator('#totalRevealedHaul').count(),'the shared panel includes a total revealed-coal value');
   assert.ok(await page.locator('.max-safe-box').evaluate(e=>e.querySelector('.stat-best').getBoundingClientRect().x>e.querySelector('.stat-total').getBoundingClientRect().x),'the maximum safe haul is on the right and the total is on the left');
@@ -48,6 +49,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#trackLabels text').count(),0,'HTML does not overlay score numbers that disagree with the board artwork');
   const dockBounds=await page.locator('.player-dock').boundingBox(),actionBounds=await page.locator('.dock-actions').boundingBox();
   assert.ok(actionBounds.x>=dockBounds.x&&actionBounds.y>=dockBounds.y&&actionBounds.x+actionBounds.width<=dockBounds.x+dockBounds.width&&actionBounds.y+actionBounds.height<=dockBounds.y+dockBounds.height,'action buttons are laid out inside the player frame');
+  const cardParts=await page.locator('.player-dock').evaluate(e=>['.player-identity','#chipBank','.bet-tray','.dock-actions','#myPlayerReveals'].map(s=>{const r=e.querySelector(s).getBoundingClientRect();return [s,r.x,r.y,r.right,r.bottom]}));
+  for(let i=0;i<cardParts.length;i++)for(let j=i+1;j<cardParts.length;j++){const a=cardParts[i],b=cardParts[j],overlap=Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1]))*Math.max(0,Math.min(a[4],b[4])-Math.max(a[2],b[2]));assert.ok(overlap<2,`player card parts do not overlap: ${a[0]} / ${b[0]}`)}
   assert.ok(dockBounds.height<=205,'the player dock stays compact so the board has room');
   const opponentBottom=await page.locator('#opponents').evaluate(e=>e.getBoundingClientRect().bottom),boardTop=await page.locator('#boardSvg').evaluate(e=>e.getBoundingClientRect().top);
   assert.ok(boardTop>=opponentBottom+5,'the board artwork is separated from the opponent cards');
@@ -72,10 +75,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.match(await page.locator('#maxSafeHaul').innerText(),/[۰-۹]+/,'a shared box shows the maximum safe haul');
   assert.match(await page.locator('#totalRevealedHaul').innerText(),/[۰-۹]+/,'the shared box shows the sum of safe coal currently revealed');
   const myRevealBounds=await page.locator('#myPlayerReveals').boundingBox(),identityBounds=await page.locator('.player-identity').boundingBox();
-  assert.ok(myRevealBounds.y+myRevealBounds.height<=identityBounds.y+identityBounds.height+1,'the human revealed-coal row stays within the bottom edge of the player card');
+  assert.ok(myRevealBounds.y>=identityBounds.y+identityBounds.height-2,'the human revealed-coal row is below the pawn-color key and identity details');
   assert.equal(await page.locator(`[data-coal-id="${before}"]`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coals remain full contrast but become unavailable');
   assert.equal(await page.locator(`[data-coal-id="${before}"] .selection-ring`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coal selection is marked by a circular ring');
-  assert.equal(await page.locator('.coal-body').first().getAttribute('width'),'55','coal tokens are 25 percent larger');
+  assert.equal(await page.locator('.coal-body').first().getAttribute('width'),'66','coal tokens are 50 percent larger than their original size');
   assert.equal(await page.locator('#summaryModal[open]').count(),0,'revealing a coal does not open the summary modal');
   await page.locator('[data-summary]').click();
   assert.equal(await page.locator('[data-summary-tab]').count(),0,'the summary has no separate revealed-draws tab');
@@ -108,10 +111,12 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const summaryText=await page.locator('#summaryContent').innerText();
   assert.ok(summaryText.includes('کاوه')||summaryText.includes('رها')||summaryText.includes('سارا'),'the summary shows the opponent who revealed coal');
   await page.locator('#summaryModal .dialog-close').click();
-  for(const width of [360,390,430]){
-    await page.setViewportSize({width,height:844});
+  for(const viewportSize of [{width:360,height:740},{width:390,height:844},{width:430,height:932}]){
+    await page.setViewportSize(viewportSize);
     const viewport=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,sh:document.documentElement.scrollHeight,iw:innerWidth,ih:innerHeight}));
     assert.ok(viewport.sw<=viewport.iw+1&&viewport.sh<=viewport.ih+1,`no viewport overflow: ${JSON.stringify(viewport)}`);
+    const dockOverflow=await page.locator('.player-dock').evaluate(e=>e.scrollWidth>e.clientWidth||e.scrollHeight>e.clientHeight);
+    assert.equal(dockOverflow,false,`the player's card remains responsive at ${viewportSize.width}×${viewportSize.height}`);
   }
   assert.deepEqual(failed,[],'all UI and asset requests succeed');
   for(const count of [3,4]){
@@ -121,7 +126,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
     assert.equal(await p.locator('.opponent').count(),count-1,`${count}-player game shows exactly ${count-1} opponents`);
     assert.equal(await p.locator('#pawns image').count(),count,'the score track has one pawn for every player');
     assert.equal(await p.locator('.pawn-key').count(),count,'all players have a visible pawn-color key');
-    const botStyles=await p.locator('.ai-personality').allTextContents();assert.equal(new Set(botStyles).size,botStyles.length,'AI opponents use distinct visible play personalities');assert.ok(botStyles.every(n=>['ریسک‌پذیر','محتاط','باهوش','خنگ','نرمال','متناوب'].includes(n)),'AI profiles include the requested play styles');
+    assert.equal(await p.locator('.ai-personality').count(),0,'AI personality labels are kept off opponent cards');
     assert.equal(await p.locator('.coal-token').count(),48,'48 coal choices remain visible in each player-count layout');
     const fit=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&document.documentElement.scrollHeight<=innerHeight+1);
     assert.ok(fit,`${count}-player portrait layout fits without scrolling`);await p.close();
@@ -165,6 +170,50 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const highPawn=await archivePage.locator('#pawns .pawn-seat-0').evaluate(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};});
   assert.ok(highPawn.x<700&&highPawn.y<350,'a 1260-point pawn stays on the top score-track section instead of jumping to the right edge');
   await archivePage.close();
+
+  const pactEligibilityPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  await pactEligibilityPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(3,['بازیکن','علی','رها'],()=>.5);game.gameId='lowest-pact-only';game.phase='settlement';game.turn=-1;game.players.forEach((p,i)=>{p.wealth=[120,85,300][i];p.scorePos=p.wealth;});
+    game.pactOffers=[0];game.pactOffer=0;game.settled={round:1,players:game.players.map(p=>({name:p.name,wealth:p.wealth,wager:0,haul:0,busted:false}))};
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));
+  });
+  await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  assert.equal(await pactEligibilityPage.locator('#pactModal[open]').count(),0,'a player one score space ahead of the lowest player is not offered a devil pact');
+  const pactPawns=await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
+  assert.ok(Math.abs(pactPawns[0].x-pactPawns[1].x)>1||Math.abs(pactPawns[0].y-pactPawns[1].y)>1,'different low scores render at their own positions on the score track');
+  await pactEligibilityPage.close();
+
+  const aiPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await aiPage.addInitScript(()=>{Math.random=()=>.1;});
+  await aiPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  await aiPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(2,['بازیکن','کاوه (رایانه)'],()=>.5);game.gameId='ai-wager-threshold';game.phase='play';game.turnOrder=[1,0];game.turnIndex=0;game.turn=1;game.totalSafeHaul=10;
+    game.players.forEach(p=>{p.wealth=100;p.wager=100;p.locked=true;p.wagerHidden=false;});
+    game.players[1].isAI=true;game.players[1].aiPersonality='dumb';game.players[1].haul=10;game.players[1].coalCount=1;game.players[1].reveals=[{id:0,kind:'coal',value:10,round:1}];
+    game.coals=game.coals.map(c=>({id:c.id,kind:'coal',value:10,revealed:c.id===0}));game.available=Array.from({length:47},(_,i)=>i+1);
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:0,avatarNames:game.players.map(p=>p.name),roundReveals:[{seat:1,name:game.players[1].name,kind:'coal',value:10}]}));
+  });
+  await aiPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  await aiPage.waitForFunction(()=>document.querySelectorAll('#seat-1 [data-player-reveal]').length>=3,{timeout:6500});
+  assert.ok(await aiPage.locator('#seat-1').evaluate(e=>e.classList.contains('is-active')),'AI continues its turn until safe revealed coal reaches its wager');
+  assert.equal(await aiPage.locator('#seat-1 [data-player-reveal]').count(),3,'AI does not randomly stop early while the table-wide safe haul is below its wager');
+  assert.match(await aiPage.locator('#totalRevealedHaul').innerText(),/۳۰/,'AI continuation is governed by the shared safe haul threshold');
+  assert.equal(await aiPage.locator('.ai-personality').count(),0,'the AI personality remains hidden from the card while still driving decisions');
+  await aiPage.close();
+
+  const orderingPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await orderingPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  await orderingPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(2,['بازیکن','کاوه (رایانه)'],()=>.5);game.gameId='summary-order';game.phase='play';game.round=3;game.turnOrder=[0,1];game.turnIndex=0;game.turn=0;
+    game.history=[{round:1,reveals:[{seat:0,name:'بازیکن',kind:'coal',value:20}]},{round:2,reveals:[{seat:1,name:'کاوه (رایانه)',kind:'coal',value:50}]}];
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));
+  });
+  await orderingPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  await orderingPage.locator('[data-summary]').click();
+  const handTitles=await orderingPage.locator('#summaryContent .history-round h3').allTextContents();
+  assert.ok(handTitles[0].includes('جاری')&&handTitles[1].includes('دست ۲')&&handTitles[2].includes('دست ۱'),'the current hand appears first, followed by earlier hands newest to oldest');
+  await orderingPage.close();
   assert.deepEqual(failed,[],'all UI and asset requests succeed');
   console.log('hell escape UI: 2–4 seats, lock, exact coal pick, CPU delay, summary and mobile fit passed');
  }finally{await browser.close();server.kill();}

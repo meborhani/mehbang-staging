@@ -97,7 +97,7 @@
     var summary={round:g.round,maxHaul:maxHaul,totalSafeHaul:totalSafeHaul,highHaulPlayers:leaders,bestWager:maxWager,players:p.map(function(x){return {name:x.name,wager:x.wager,haul:x.busted?0:x.lastHaul,busted:x.busted,success:x.roundSuccess,doubled:x.roundDoubled,payout:x.roundPayout,burned:x.roundBurned,wealth:x.wealth};}),transfers:transfers,bank:g.bank};
     g.history.push(summary);g.settled=summary;finishIfWon(g);if(g.gameOver){g.pactOffers=[];g.pactOffer=null;}return summary;
   }
-  function offerPact(g){if(!g||g.phase!=='settlement'||g.gameOver)return null;g.pactOffers=Array.isArray(g.pactOffers)?g.pactOffers:(validSeat(g,g.pactOffer)?[g.pactOffer]:[]);g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return g.pactOffer;}
+  function offerPact(g){if(!g||g.phase!=='settlement'||g.gameOver)return null;var low=Math.min.apply(null,g.players.map(function(p){return p.wealth;}));g.pactOffers=Array.isArray(g.pactOffers)?g.pactOffers:(validSeat(g,g.pactOffer)?[g.pactOffer]:[]);g.pactOffers=g.pactOffers.filter(function(s){return validSeat(g,s)&&g.players[s].wealth===low;});g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return g.pactOffer;}
   function resolvePact(g,s,take){if(!validSeat(g,s)||g.phase!=='settlement'||g.gameOver||offerPact(g)!==s)return false;if(take)g.players[s].pact=true;g.pactOffers.shift();g.pactOffer=g.pactOffers.length?g.pactOffers[0]:null;return true;}
   function acceptPact(g,s){return resolvePact(g,s,true);}
   function declinePact(g,s){return resolvePact(g,s,false);}

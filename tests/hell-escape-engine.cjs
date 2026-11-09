@@ -247,6 +247,15 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   assert.equal(E.declinePact(g,1),true);
 }
 {
+  const g=E.createGame(3,['تو','الف','ب'],()=>0.5);
+  g.players[0].wealth=85;g.players[1].wealth=120;g.players[2].wealth=300;
+  g.phase='settlement';g.pactOffers=[0];g.pactOffer=0;E.settle(g);
+  assert.deepEqual(g.pactOffers,[0],'only the player with the lowest settled score receives the pact offer');
+  const stale=E.createGame(3,['تو','الف','ب'],()=>0.5);
+  stale.players[0].wealth=85;stale.players[1].wealth=120;stale.players[2].wealth=300;stale.phase='settlement';stale.pactOffers=[1];stale.pactOffer=1;
+  assert.equal(E.offerPact(stale),null,'a resumed or stale pact offer for a player ahead of last place is discarded');
+}
+{
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
   g.phase='settlement';g.players[0].foundDevil=true;g.players[0].wealth=0;g.players[1].pact=true;
   const report=E.settle(g);
