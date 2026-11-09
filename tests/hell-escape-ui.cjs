@@ -20,7 +20,9 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(buttonGeometry.adjacent&&Math.abs(buttonGeometry.sw-buttonGeometry.bw)<1&&Math.abs(buttonGeometry.sh-buttonGeometry.bh)<1&&buttonGeometry.radius==='50%','summary is a back-sized circle beside the back button');
   assert.equal(await page.locator('#devilCount').innerText(),'۰/۹','the shared stats show revealed devils out of the nine on the board');
   assert.ok(await page.locator('#toast.show').count(),'phase guidance appears as a temporary warning');
+  const initialToastBottom=await page.locator('#toast').evaluate(e=>getComputedStyle(e).bottom);
   await page.waitForFunction(()=>!document.querySelector('#toast').classList.contains('show'),{timeout:3500});
+  await page.waitForFunction(()=>document.querySelector('#toast').textContent==='',{timeout:500});
   assert.equal(await page.locator('#devilCount').innerText(),'۰/۹','the devil counter remains intact after the guidance warning disappears');
   for(const value of [100,50,20,10])await page.locator(`[data-chip="${value}"]`).click();
   const wagerLabel=await page.locator('.bet-tray .dock-label').boundingBox(),wagerChips=await page.locator('.bet-tray .bet-chips').boundingBox();
@@ -40,13 +42,20 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const dockBefore=await page.locator('.player-dock').boundingBox(),chipsBefore=await page.locator('#chipBank').boundingBox(),betBefore=await page.locator('.bet-tray').boundingBox(),chipSizeBefore=await page.locator('.chip-button img').first().boundingBox();
   await page.locator('[data-lock]').click();
   await page.waitForFunction(()=>document.body.dataset.phase==='play');
-  const drawInstruction=await page.locator('#toast').innerText();
-  assert.ok(drawInstruction.includes('نوبت را تمام کنی')&&drawInstruction.includes('شیطان'),'the temporary draw warning explains how to end a turn and what happens when the devil appears');
+  await page.waitForFunction(()=>document.querySelector('#toast').classList.contains('show'));
+  const drawInstruction=await page.locator('#toast').textContent();
+  const phaseToastGeometry=await page.locator('#toast').evaluate(e=>{const style=getComputedStyle(e),matrix=style.transform.match(/matrix\(([^)]+)\)/);return{bottom:style.bottom,vertical:matrix?Number(matrix[1].split(',')[5]):0,height:e.getBoundingClientRect().height,y:e.getBoundingClientRect().y};});
+  assert.equal(phaseToastGeometry.bottom,initialToastBottom,'the toast keeps one fixed bottom anchor across phase changes');
+  assert.equal(phaseToastGeometry.vertical,0,'the toast does not slide vertically when it appears or disappears');
+  assert.equal(Math.round(phaseToastGeometry.height),54,'the toast keeps a fixed height so its anchor does not jump between messages');
+  const toastTopBeforeDraw=phaseToastGeometry.y;
+  assert.ok(drawInstruction.includes('نوبت را تمام کنی')&&drawInstruction.includes('شیطان'),`the temporary draw warning explains how to end a turn and what happens when the devil appears: ${drawInstruction}`);
   assert.equal(await page.locator('.coal-token').count(),48,'all 48 coal tokens render as separate controls');
   const dockAfter=await page.locator('.player-dock').boundingBox(),chipsAfter=await page.locator('#chipBank').boundingBox(),betAfter=await page.locator('.bet-tray').boundingBox();
   assert.ok(await page.locator('.player-dock').evaluate(e=>e.classList.contains('compact-play')),'the betting panels collapse into the approved compact coal-play dock');
-  assert.equal(Math.round(dockAfter.height),62,'the compact player dock reserves only the reveal row and turn action');
-  assert.ok(!chipsAfter&&!betAfter,'the chip bank and bet tray are hidden while drawing coal');
+  assert.equal(Math.round(dockAfter.height),104,'the compact coal-play dock retains fixed rows for the player chips, reveals, and turn action');
+  assert.ok(chipsAfter&&!betAfter,'the player chip bank remains visible while drawing coal and the betting tray stays hidden');
+  assert.ok(chipsAfter.y>=dockAfter.y&&chipsAfter.y+chipsAfter.height<=dockAfter.y+dockAfter.height,'the chip bank stays inside the compact coal-play dock');
   assert.ok(await page.locator('#seat-0').evaluate(e=>e.classList.contains('is-active')),'human seat is visibly active at first after highest wager');
   assert.equal(await page.locator('[data-end-turn]').isDisabled(),true,'the end-turn button remains disabled until the human reveals a coal');
   assert.equal(await page.locator('.op-chips').count(),0,'opponent cards do not show wager chips over their bet text');
@@ -56,9 +65,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>e.getBoundingClientRect().top>=e.previousElementSibling.getBoundingClientRect().bottom-1),'opponent reveal values are placed in a full-width row beneath the card details');
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-dock')),true,'the human reveal row has its own full-width bottom row in the player card');
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'1','the human reveal row occupies the first row of the compact dock');
+  assert.equal(await page.locator('#chipBank').evaluate(e=>getComputedStyle(e).gridRowStart),'2','the visible chip bank occupies its own row in the compact dock');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
   assert.ok(await page.locator('#totalRevealedHaul').count(),'the shared panel includes a total revealed-coal value');
-  const statusLayout=await page.locator('#toast').evaluate(e=>({text:e.innerText,scroll:e.scrollWidth,client:e.clientWidth,whiteSpace:getComputedStyle(e).whiteSpace}));
+  const statusLayout=await page.locator('#toast').evaluate(e=>({text:e.textContent,scroll:e.scrollWidth,client:e.clientWidth,whiteSpace:getComputedStyle(e).whiteSpace}));
   assert.ok(statusLayout.text.includes('نوبت را تمام کنی')&&statusLayout.text.includes('شیطان'),'the draw warning remains readable after revealing a coal');
   assert.ok(statusLayout.scroll<=statusLayout.client+1&&statusLayout.whiteSpace!=='nowrap','the warning wraps without clipping');
   assert.ok(await page.locator('.max-safe-box').evaluate(e=>e.querySelector('.stat-best').getBoundingClientRect().x>e.querySelector('.stat-total').getBoundingClientRect().x),'the maximum safe haul is on the right and the total is on the left');
@@ -93,7 +103,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   await page.waitForFunction(id=>document.querySelector(`[data-coal-id="${id}"]`).classList.contains('is-revealed'),before);
   await page.waitForFunction(()=>document.querySelectorAll('#seat-0 [data-player-reveal]').length===1);
   assert.equal(await page.locator('#coalCount').innerText(),'۴۷','the unrevealed coal count updates after a draw');
-  assert.ok((await page.locator('#toast').innerText()).includes('زغال امن رو شد'),'the temporary guidance updates after the player reveals their first safe coal');
+  assert.ok((await page.locator('#toast').textContent()).includes('زغال امن رو شد'),'the temporary guidance updates after the player reveals their first safe coal');
+  assert.equal(await page.locator('#toast').evaluate(e=>e.getBoundingClientRect().y),toastTopBeforeDraw,'the warning stays in exactly the same place when its text changes');
   const boardBeforeReveal=await page.locator('#boardSvg').boundingBox();
   assert.equal(await page.locator('#myPlayerReveals [data-player-reveal]').count(),1,'the player card shows the revealed coal value without an image row');
   assert.match(await page.locator('#maxSafeHaul').innerText(),/[۰-۹]+/,'a shared box shows the maximum safe haul');
@@ -143,8 +154,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
     assert.equal(warningFits,true,`the temporary warning fits the viewport at ${viewportSize.width}px`);
     const statsInside=await page.locator('.max-safe-box').evaluate(e=>Array.from(e.children).every(c=>{const a=c.getBoundingClientRect(),b=e.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1}));
     assert.equal(statsInside,true,`round, bank, coal count, and safe hauls fit inside their card at ${viewportSize.width}px`);
-    const dockOverflow=await page.locator('.player-dock').evaluate(e=>e.scrollWidth>e.clientWidth||e.scrollHeight>e.clientHeight);
-    assert.equal(dockOverflow,false,`the player's card remains responsive at ${viewportSize.width}×${viewportSize.height}`);
+    const dockMetrics=await page.locator('.player-dock').evaluate(e=>({overflow:e.scrollWidth>e.clientWidth||e.scrollHeight>e.clientHeight,scroll:[e.scrollWidth,e.scrollHeight],client:[e.clientWidth,e.clientHeight]}));
+    assert.equal(dockMetrics.overflow,false,`the player's card remains responsive at ${viewportSize.width}×${viewportSize.height}: ${JSON.stringify(dockMetrics)}`);
   }
   assert.deepEqual(failed,[],'all UI and asset requests succeed');
   for(const count of [3,4]){
