@@ -22,6 +22,9 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#coalCount').innerText(),'۴۸','the bank bar shows the unrevealed coal count');
   assert.ok(await page.locator('.max-safe-box #roundLabel').count(),'the current hand counter sits inside the shared status card');
   assert.ok(await page.locator('.max-safe-box #bankValue').count()&&await page.locator('.max-safe-box #coalCount').count(),'the status card shows bank balance and remaining coals');
+  assert.equal(await page.locator('.max-safe-box #myRoundWager').count(),1,'the shared status card shows the player’s wager');
+  const bankLabelsFit=await page.locator('.stat-bank').evaluate(e=>{const labels=[...e.querySelectorAll('span')],values=[...e.querySelectorAll('strong')];return labels.every((label,i)=>{const l=label.getBoundingClientRect(),v=values[i].getBoundingClientRect();return getComputedStyle(label).whiteSpace==='nowrap'&&label.scrollWidth<=label.clientWidth+1&&v.top>=l.bottom;});});
+  assert.equal(bankLabelsFit,true,'bank and remaining-coal labels fit on one line directly above their values');
   assert.equal(await page.locator('#game [data-coal-info]').count(),0,'the redundant coal-information button beside game summary is removed');
   const betInstruction=await page.locator('#statusText').innerText();
   assert.ok(betInstruction.includes('قفل شرط')&&betInstruction.includes('مخفی می‌ماند'),'the betting instruction explains how to lock the hidden wager');
@@ -31,11 +34,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   await page.locator('[data-lock]').click();
   await page.waitForFunction(()=>document.body.dataset.phase==='play');
   assert.equal(await page.locator('.coal-token').count(),48,'all 48 coal tokens render as separate controls');
-  const dockAfter=await page.locator('.player-dock').boundingBox(),chipsAfter=await page.locator('#chipBank').boundingBox(),betAfter=await page.locator('.bet-tray').boundingBox(),chipSizeAfter=await page.locator('.chip-button img').first().boundingBox();
-  assert.ok(Math.abs(dockAfter.height-dockBefore.height)<1&&Math.abs(dockAfter.y-dockBefore.y)<1,'the player panel does not shift when the coal phase starts');
-  assert.ok(Math.abs(chipsAfter.height-chipsBefore.height)<1&&Math.abs(chipsAfter.width-chipsBefore.width)<1,'the chip bank keeps fixed dimensions across phases');
-  assert.ok(Math.abs(chipSizeAfter.width-chipSizeBefore.width)<1&&Math.abs(chipSizeAfter.height-chipSizeBefore.height)<1,'the player chips keep their size across phases');
-  assert.ok(Math.abs(betAfter.height-betBefore.height)<1&&Math.abs(betAfter.width-betBefore.width)<1,'the bet panel keeps fixed dimensions across phases');
+  const dockAfter=await page.locator('.player-dock').boundingBox(),chipsAfter=await page.locator('#chipBank').boundingBox(),betAfter=await page.locator('.bet-tray').boundingBox();
+  assert.ok(await page.locator('.player-dock').evaluate(e=>e.classList.contains('compact-play')),'the betting panels collapse into the approved compact coal-play dock');
+  assert.equal(Math.round(dockAfter.height),62,'the compact player dock reserves only the reveal row and turn action');
+  assert.ok(!chipsAfter&&!betAfter,'the chip bank and bet tray are hidden while drawing coal');
   assert.ok(await page.locator('#seat-0').evaluate(e=>e.classList.contains('is-active')),'human seat is visibly active at first after highest wager');
   assert.equal(await page.locator('[data-end-turn]').isDisabled(),true,'the end-turn button remains disabled until the human reveals a coal');
   assert.equal(await page.locator('.op-chips').count(),0,'opponent cards do not show wager chips over their bet text');
@@ -44,7 +46,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').count(),1,'each opponent has revealed values inside their card');
   assert.ok(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>e.getBoundingClientRect().top>=e.previousElementSibling.getBoundingClientRect().bottom-1),'opponent reveal values are placed in a full-width row beneath the card details');
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-dock')),true,'the human reveal row has its own full-width bottom row in the player card');
-  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'4','the human reveal row occupies the bottom row of the player card');
+  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'1','the human reveal row occupies the first row of the compact dock');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
   assert.ok(await page.locator('#totalRevealedHaul').count(),'the shared panel includes a total revealed-coal value');
   const statusLayout=await page.locator('#statusText').evaluate(e=>({text:e.innerText,scroll:e.scrollHeight,client:e.clientHeight,whiteSpace:getComputedStyle(e).whiteSpace}));
@@ -86,8 +88,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#myPlayerReveals [data-player-reveal]').count(),1,'the player card shows the revealed coal value without an image row');
   assert.match(await page.locator('#maxSafeHaul').innerText(),/[۰-۹]+/,'a shared box shows the maximum safe haul');
   assert.match(await page.locator('#totalRevealedHaul').innerText(),/[۰-۹]+/,'the shared box shows the sum of safe coal currently revealed');
-  const myRevealBounds=await page.locator('#myPlayerReveals').boundingBox(),identityBounds=await page.locator('.player-identity').boundingBox();
-  assert.ok(myRevealBounds.y>=identityBounds.y+identityBounds.height-2,'the human revealed-coal row is below the pawn-color key and identity details');
+  const myRevealBounds=await page.locator('#myPlayerReveals').boundingBox(),compactDockBounds=await page.locator('.player-dock').boundingBox();
+  assert.ok(myRevealBounds.y>=compactDockBounds.y&&myRevealBounds.y+myRevealBounds.height<=compactDockBounds.y+compactDockBounds.height,'the human revealed-coal row stays inside the compact player dock');
   assert.equal(await page.locator(`[data-coal-id="${before}"]`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coals remain full contrast but become unavailable');
   assert.equal(await page.locator(`[data-coal-id="${before}"] .selection-ring`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coal selection is marked by a circular ring');
   assert.equal(await page.locator('.coal-body').first().getAttribute('width'),'66','coal tokens are 50 percent larger than their original size');

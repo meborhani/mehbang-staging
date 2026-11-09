@@ -293,6 +293,24 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent .pact-mark svg{display:block;width:17px;height:22px;overflow:visible;filter:drop-shadow(0 0 3px #ff4a15)}
 .opponent .pact-mark svg path{fill:none;stroke:#ffe28a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 @media(max-width:360px){.opponent{grid-template-rows:minmax(11px,1fr) 13px 11px 16px}.opponent>img.op-avatar{width:28px;height:28px}.opponent-player-reveals{height:15px;min-height:15px}.opponent .pact-mark{width:21px;height:23px}.opponent .pact-mark svg{width:15px;height:20px}}
+
+/* Compact round summary: keep every label on one line above its value. */
+.max-safe-box{flex:0 0 46px;min-height:46px;grid-template-columns:.5fr 1.45fr 1.2fr 1fr .75fr;gap:2px;padding:3px 4px}
+.max-safe-box .shared-stat{min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;white-space:nowrap;text-align:center;line-height:1.05;font-size:clamp(7.5px,2.3vw,9px);font-weight:700}
+.max-safe-box .shared-stat>span{max-width:100%;white-space:nowrap}
+.max-safe-box .shared-stat strong{flex:0 0 auto;min-width:0;max-width:100%;padding:1px 4px;font-size:clamp(10px,3.1vw,12px);line-height:1;white-space:nowrap;font-weight:900}
+.max-safe-box .stat-round{order:0}
+.max-safe-box .stat-bank{order:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:15px 21px;align-content:center;align-items:center;justify-items:center;gap:0 3px;line-height:1}
+.max-safe-box .stat-bank span:first-child{grid-column:1;grid-row:1}
+.max-safe-box .stat-bank strong:nth-child(2){grid-column:1;grid-row:2}
+.max-safe-box .stat-bank span:nth-child(3){grid-column:2;grid-row:1;border-inline-start:0;padding-inline-start:0}
+.max-safe-box .stat-bank strong:nth-child(4){grid-column:2;grid-row:2}
+.max-safe-box .stat-bank span{font-size:clamp(7px,2.3vw,9px)}
+.max-safe-box .stat-bank strong{justify-self:center;padding-inline:2px}
+.max-safe-box .stat-best{order:2}
+.max-safe-box .stat-total{order:3}
+.max-safe-box .stat-wager{order:4}
+@media(max-width:360px){.max-safe-box{grid-template-columns:.5fr 1.45fr 1.2fr 1fr .75fr;gap:2px;padding-inline:3px}.max-safe-box .shared-stat{font-size:8px}.max-safe-box .shared-stat strong{font-size:11px;padding-inline:2px}.max-safe-box .stat-bank span{font-size:7px}}
 /* Do not orbit the whole overlay: only the SVG strokes advance around the fixed rounded frame. */
 .turn-light{offset-path:none!important;offset-distance:0!important;offset-rotate:0deg!important;transform:none!important;animation:none!important}
 .opponent.is-active>.turn-light,.player-dock.is-active>.turn-light{animation:none!important}
@@ -305,3 +323,32 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 
 .topbar{grid-template-columns:44px minmax(0,1fr) 40px 40px;gap:4px}.help-button{font:900 22px/1 Vazirmatn,Tahoma,sans-serif}.help-rules{margin:0;padding:0 18px 0 0;line-height:1.8}.help-rules li{margin:0 0 8px}.help-rules b{color:#ffdc8a}.tutorial-launch{width:100%;margin-top:10px}.tutorial-launch[hidden]{display:none!important}.tutorial-guide{flex:0 0 auto;min-height:43px;padding:5px 9px;display:flex;align-items:center;gap:8px;border:1px solid #f0bf5a;border-radius:10px;background:linear-gradient(100deg,#152f3e,#371606);box-shadow:0 0 9px rgba(255,177,45,.24);color:#fff0ca;font:700 10px/1.55 Vazirmatn,Tahoma,sans-serif}.tutorial-guide[hidden]{display:none!important}.tutorial-guide b{flex:0 0 auto;color:#ffe28e;white-space:nowrap}.tutorial-guide span{min-width:0}.tutorial-done-dialog .dialog-content{line-height:1.8;text-align:center}.tutorial-done-dialog>.primary-button{width:100%;margin-top:10px}
 @media(max-width:360px){.topbar{grid-template-columns:38px minmax(0,1fr) 36px 36px;gap:3px}.icon-button{width:35px;height:35px}.help-button{font-size:20px}.tutorial-guide{font-size:9px;gap:5px;padding-inline:6px}}
+
+/* Compact the player's lower dock while revealing coal, keeping the board large. */
+.player-dock.compact-play{flex:0 0 62px;min-height:62px;height:62px;grid-template-columns:minmax(0,1fr);grid-template-rows:20px 30px;gap:2px;padding:2px 5px;overflow:hidden}
+.player-dock.compact-play .player-identity,.player-dock.compact-play #chipBank,.player-dock.compact-play .bet-tray{display:none!important}
+.player-dock.compact-play .dock-actions{position:static;grid-column:1;grid-row:2;display:flex;width:100%;height:30px;justify-content:stretch;align-self:stretch}
+.player-dock.compact-play .dock-actions .end-turn{flex:1 1 100%;width:100%;min-width:0;max-width:none;height:30px;min-height:30px;padding:4px 8px;font-size:11px}
+.player-dock.compact-play #myPlayerReveals{grid-column:1;grid-row:1;width:100%;height:20px;min-height:20px;align-self:center;justify-self:stretch;justify-content:center;margin:0;padding:0 5px;border-top:0;border-radius:8px;background:linear-gradient(90deg,rgba(7,35,49,.56),rgba(88,47,17,.38),rgba(7,35,49,.56))}
+.player-dock.compact-play #myPlayerReveals:empty{display:flex}
+.player-dock.compact-play #myPlayerReveals:before{content:"برداشت‌های من";color:#f6d797;font-size:9px;white-space:nowrap}
+.player-dock.compact-play #myPlayerReveals .coal-reveal-badge{height:16px;min-width:23px;font-size:10px}
+.player-dock.compact-play #myPlayerReveals .safe-haul-total{height:16px;font-size:9px}
+.board-svg{width:auto!important;height:min(100%,100vw)!important}
+.max-safe-box{flex:0 0 46px;min-height:46px;grid-template-columns:.58fr 1.45fr 1.15fr 1fr .72fr;gap:2px;padding:3px 4px}
+.max-safe-box .shared-stat{min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;white-space:nowrap;text-align:center;line-height:1.05;font-size:clamp(7.5px,2.3vw,9px);font-weight:700}
+.max-safe-box .shared-stat>span{max-width:100%;white-space:nowrap}
+.max-safe-box .shared-stat strong{flex:0 0 auto;min-width:0;max-width:100%;padding:1px 4px;font-size:clamp(10px,3.1vw,12px);line-height:1;white-space:nowrap;font-weight:900}
+.max-safe-box .stat-round{order:0}
+.max-safe-box .stat-round strong{min-width:0;font-size:clamp(10px,2.8vw,11px)}
+.max-safe-box .stat-bank{order:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:15px 21px;align-content:center;align-items:center;justify-items:center;gap:0 3px;line-height:1}
+.max-safe-box .stat-bank span:first-child{grid-column:1;grid-row:1}
+.max-safe-box .stat-bank strong:nth-child(2){grid-column:1;grid-row:2}
+.max-safe-box .stat-bank span:nth-child(3){grid-column:2;grid-row:1;border-inline-start:1px solid rgba(255,221,150,.35);padding-inline-start:3px}
+.max-safe-box .stat-bank strong:nth-child(4){grid-column:2;grid-row:2}
+.max-safe-box .stat-bank span{font-size:clamp(7px,2.3vw,9px)}
+.max-safe-box .stat-bank strong{justify-self:center;padding-inline:2px}
+.max-safe-box .stat-best{order:2}
+.max-safe-box .stat-total{order:3}
+.max-safe-box .stat-wager{order:4}
+@media(max-width:360px){.max-safe-box{grid-template-columns:.58fr 1.45fr 1.15fr 1fr .72fr;gap:2px;padding-inline:3px}.max-safe-box .shared-stat{font-size:8px}.max-safe-box .shared-stat strong{font-size:11px;padding-inline:2px}.max-safe-box .stat-bank span{font-size:8px}}
