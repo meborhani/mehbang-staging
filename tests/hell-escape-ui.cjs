@@ -58,9 +58,9 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
   assert.equal(await page.locator('.back-button svg').evaluate(e=>{const r=e.getBoundingClientRect(),b=e.closest('button').getBoundingClientRect();return Math.abs(r.left+r.width/2-b.left-b.width/2)<1&&Math.abs(r.top+r.height/2-b.top-b.height/2)<1}),true,'the arrow svg is centered inside its circular button');
-  assert.equal(await page.locator('#seat-0 > .turn-light').count(),1,'the active player card owns its own moving light');
-  assert.ok(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).animationName==='turn-light-orbit'&&getComputedStyle(e).offsetPath.includes('inset')),'the light follows the player card’s rounded border path');
-  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'none','the player frame itself does not rotate');
+  assert.equal(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).display),'none','the turn highlight is not a single moving dot');
+  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'turn-ring-spin','a multi-point light wave travels along the whole frame');
+  assert.notEqual(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e).borderColor),'rgb(156, 112, 47)','the whole active frame stays illuminated');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
   await first.click();
