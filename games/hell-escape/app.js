@@ -14,11 +14,11 @@
   var rows=[4,6,7,8,8,7,5,3];
   var coalPoints=[]; (function(){var cy=520,yy=-189,id=0;rows.forEach(function(count){var gap=56,start=500-(count-1)*gap/2;for(var i=0;i<count;i++)coalPoints.push({id:id++,x:start+i*gap,y:cy+yy});yy+=59;});})();
   var SCORE_BOXES=[
-    {label:'۰–۵۰',show:true,x:870,y:785,a:20,px:870,py:835},{label:'۵۰–۲۰۰',show:true,x:780,y:835,a:10,px:780,py:880},{label:'۲۰۰',show:true,x:690,y:860,a:0,px:690,py:905},
-    {label:'۲۰۰–۳۰۰',show:true,x:585,y:860,a:0,px:585,py:903},{label:'۳۰۰',x:480,y:900,a:0,px:480,py:860},{label:'۳۰۰–۵۰۰',show:true,x:315,y:795,a:-20,px:335,py:825},
-    {label:'۵۰۰',x:82,y:610,a:75,px:112,py:625},{label:'۵۰۰–۷۵۰',show:true,x:72,y:535,a:90,px:102,py:535},{label:'۷۵۰',show:true,x:72,y:460,a:90,px:102,py:460},
-    {label:'۷۵۰–۱۰۰۰',show:true,x:85,y:385,a:75,px:112,py:375},{label:'۱۰۰۰',x:120,y:305,a:60,px:148,py:305},{label:'۱۰۰۰–۱۳۰۰',show:true,x:255,y:205,a:32,px:280,py:230},
-    {label:'۱۳۰۰',x:425,y:120,a:0,px:425,py:158},{label:'۱۳۰۰–۱۶۰۰',show:true,x:600,y:120,a:0,px:600,py:158},{label:'۱۶۰۰',x:770,y:150,a:-12,px:742,py:180}
+    {label:'۰–۵۰',show:true,x:870,y:785,a:20,px:870,py:835},{label:'۵۰–۲۰۰',show:true,x:665,y:885,a:0,px:665,py:885},{label:'۲۰۰',show:true,x:490,y:890,a:0,px:490,py:890},
+    {label:'۲۰۰–۳۰۰ / ۳۰۰',show:true,x:330,y:890,a:0,px:330,py:890},{label:'۳۰۰–۵۰۰',show:true,x:110,y:700,a:-4,px:110,py:700},
+    {label:'۵۰۰',show:true,x:92,y:600,a:90,px:92,py:600},{label:'۵۰۰–۷۵۰',show:true,x:100,y:495,a:90,px:100,py:495},{label:'۷۵۰',show:true,x:112,y:405,a:90,px:112,py:405},
+    {label:'۷۵۰–۱۰۰۰',show:true,x:120,y:310,a:78,px:120,py:310},{label:'۱۰۰۰',show:true,x:165,y:240,a:58,px:165,py:240},{label:'۱۰۰۰–۱۳۰۰',show:true,x:300,y:168,a:20,px:300,py:168},
+    {label:'۱۳۰۰',show:true,x:485,y:158,a:0,px:485,py:158},{label:'۱۳۰۰–۱۶۰۰',show:true,x:675,y:165,a:-4,px:675,py:165},{label:'۱۶۰۰',show:true,x:870,y:170,a:-10,px:870,py:170}
   ];
   function fa(n){try{return new Intl.NumberFormat('fa-IR').format(n);}catch(e){return String(n);}}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -101,8 +101,8 @@
   function renderCoals(){var h='';g.coals.forEach(function(t){h+=coalSvg(t,coalPoints[t.id]);});$('#coals').innerHTML=h;}
   function drawDescription(r){return r.kind==='devil'?'شیطان رو شد!':'زغال '+fa(r.value);}
   function allReveals(){var all=[];(g.history||[]).forEach(function(round){(round.reveals||[]).forEach(function(r){all.push(Object.assign({round:round.round},r));});});roundReveals.forEach(function(r){all.push(Object.assign({round:g.round},r));});return all;}
-  function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals');if(target)target.innerHTML=playerRevealRow(p);});}
-  function renderSafeHaul(){var max=0;g.players.forEach(function(p){var haul=p.busted?0:Math.max(0,+p.haul||0);max=Math.max(max,haul);});$('#maxSafeHaul').textContent=fa(max);$('#totalRevealedHaul').textContent=fa(Math.max(0,+g.totalSafeHaul||0));}
+  function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals');if(target)target.innerHTML='<span class="safe-haul-total" title="مجموع زغال امنی که خودش پیش از شیطان در این دست رو کرده">'+fa(Math.max(0,+p.haul||0))+'</span>'+playerRevealRow(p);});}
+  function renderSafeHaul(){var max=0;g.players.forEach(function(p){max=Math.max(max,E.playerSafeHaul(p));});$('#maxSafeHaul').textContent=fa(max);$('#totalRevealedHaul').textContent=fa(Math.max(0,+g.totalSafeHaul||0));}
   function recordReveal(seat,token){
     roundReveals.push({seat:seat,name:g.players[seat].name,kind:token.kind,value:token.value});
   }

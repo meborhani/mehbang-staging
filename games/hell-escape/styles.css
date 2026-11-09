@@ -247,11 +247,13 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent-pawn-key{grid-row:3;align-self:center}
 .opponent-player-reveals{grid-column:2;grid-row:4;align-self:end;width:100%;height:16px;min-height:16px;display:flex;align-items:center;justify-content:flex-start;gap:2px;overflow-x:auto;overflow-y:hidden;direction:ltr;scrollbar-width:none}
 .opponent-player-reveals:empty{visibility:hidden}
+.safe-haul-total{flex:0 0 auto;min-width:25px;height:15px;padding:0 4px;display:inline-grid;place-items:center;border:1px solid rgba(255,213,115,.85);border-radius:7px;background:linear-gradient(145deg,#5c3b12,#211209);color:#ffe8a9;font:800 8px/1 Vazirmatn,Tahoma,sans-serif;white-space:nowrap}
 .opponent-player-reveals .coal-reveal-badge{height:14px;min-height:14px;min-width:17px;padding:0 3px;font-size:8px;line-height:12px}
 .player-dock #myPlayerReveals{grid-column:1/-1;grid-row:4;align-self:center;justify-self:stretch;width:100%;height:18px;min-height:18px;margin:0;display:flex;align-items:center;justify-content:flex-start;gap:3px;padding:0 4px;overflow-x:auto;overflow-y:hidden;direction:ltr;scrollbar-width:none}
 .player-dock #myPlayerReveals:not(:empty){justify-content:center;border-top:1px solid rgba(255,221,150,.35);border-radius:0 0 8px 8px;background:linear-gradient(90deg,rgba(7,35,49,.65),rgba(88,47,17,.42),rgba(7,35,49,.65))}
 .player-dock #myPlayerReveals:empty{display:none}
 .player-dock #myPlayerReveals .coal-reveal-badge{flex:0 0 auto;width:auto;min-width:20px;height:16px;padding:0 4px;font-size:8px;line-height:14px}
+.player-dock #myPlayerReveals .safe-haul-total{height:16px;font-size:9px}
 .player-dock{flex-basis:170px;min-height:170px;grid-template-rows:44px minmax(39px,1fr) 28px 18px;gap:3px 7px}
 .player-dock{grid-template-columns:clamp(76px,21vw,90px) minmax(0,1fr)}
 .player-identity{grid-row:1/4}

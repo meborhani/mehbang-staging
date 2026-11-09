@@ -10,6 +10,16 @@ function coalWith(state, pred) { return state.coals.find(c => !c.revealed && pre
 function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declinePact(state, E.offerPact(state)); }
 
 {
+  assert.equal(E.scoreBoxIndex(40),0);
+  assert.equal(E.scoreBoxIndex(220),3);
+  assert.equal(E.scoreBoxIndex(300),3,'300 shares the single 200–300 board position');
+  assert.equal(E.scoreBoxIndex(301),4,'scores above 300 advance to the 300–500 position');
+  assert.equal(E.scoreBoxIndex(400),4);
+  assert.equal(E.playerSafeHaul({haul:150,busted:false}),150,'the card uses only this player’s current-hand safe haul');
+  assert.equal(E.playerSafeHaul({haul:150,busted:true}),0,'a devil clears this player’s visible safe haul');
+}
+
+{
   const g=E.createGame(4,['تو','الف','ب','ج'],rngFrom([0.25]));
   assert.equal(g.coals.length,48);
   assert.equal(g.coals.filter(c=>c.kind==='devil').length,9);
@@ -245,7 +255,7 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   assert.deepEqual(unique.pactOffers,[0],'the only player in the lowest score box receives the pact offer');
   assert.equal(E.acceptPact(unique,0),true);
   assert.equal(unique.players[0].pact,true);
-  assert.deepEqual([0,50,51,199,200,201,300,301,500,501,750,751,1000,1001,1300,1301,1600].map(E.scoreBoxIndex),[0,0,1,1,2,3,4,5,6,7,8,9,10,11,12,13,14],'score values map to the exact listed box boundaries');
+  assert.deepEqual([0,50,51,199,200,201,300,301,500,501,750,751,1000,1001,1300,1301,1600].map(E.scoreBoxIndex),[0,0,1,1,2,3,3,4,5,6,7,8,9,10,11,12,13],'300 shares the 200–300 position and later values retain their correct boundaries');
 }
 {
   const g=E.createGame(3,['تو','الف','ب'],()=>0.5);

@@ -46,8 +46,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#pawns image').count(),2,'both player pawns render on the score track');
   assert.equal(await page.locator('.pawn-key').count(),2,'each player card identifies the matching pawn color');
   assert.ok((await page.locator('#pawns .pawn-piece').first().getAttribute('aria-label')).includes('۲۰۰'),'the wager escrow does not move the player’s score pawn');
-  assert.equal(await page.locator('#trackLabels .score-box-label').count(),10,'the eight range boxes and two unlabeled milestone boxes are marked on the board');
-  assert.ok((await page.locator('#trackLabels').evaluate(e=>e.textContent)).includes('۱۳۰۰–۱۶۰۰'),'the board labels the final score range');
+  assert.equal(await page.locator('#trackLabels .score-box-label').count(),0,'the score labels are part of the board artwork and are not duplicated as HTML labels');
   const dockBounds=await page.locator('.player-dock').boundingBox(),actionBounds=await page.locator('.dock-actions').boundingBox();
   assert.ok(actionBounds.x>=dockBounds.x&&actionBounds.y>=dockBounds.y&&actionBounds.x+actionBounds.width<=dockBounds.x+dockBounds.width&&actionBounds.y+actionBounds.height<=dockBounds.y+dockBounds.height,'action buttons are laid out inside the player frame');
   const cardParts=await page.locator('.player-dock').evaluate(e=>['.player-identity','#chipBank','.bet-tray','.dock-actions','#myPlayerReveals'].map(s=>{const r=e.querySelector(s).getBoundingClientRect();return [s,r.x,r.y,r.right,r.bottom]}));
@@ -181,10 +180,31 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   });
   await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
   assert.equal(await pactEligibilityPage.locator('#pactModal[open]').count(),0,'a player ahead of the unique lowest box is not offered a devil pact');
-  assert.deepEqual(await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['3','0','4'],'pawns occupy their score-range boxes instead of floating along an unrelated continuous path');
+  assert.deepEqual(await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['3','0','3'],'the 200–300 interval and 300 milestone share one pawn position');
   const pactPawns=await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
   assert.ok(Math.abs(pactPawns[0].x-pactPawns[1].x)>1||Math.abs(pactPawns[0].y-pactPawns[1].y)>1,'different low scores render at their own positions on the score track');
   await pactEligibilityPage.close();
+
+  const scoreTrackPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html`);
+  await scoreTrackPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(4,['۴۰۰','۲۲۰','۳۰۰','۴۰'],()=>.5);game.players.forEach((p,i)=>{p.wealth=[400,220,300,40][i];p.scorePos=p.wealth;});
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));
+  });
+  await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  const trackPawns=scoreTrackPage.locator('#pawns .pawn-piece');
+  assert.deepEqual(await trackPawns.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['4','3','3','0'],'220 and 300 occupy the merged 200–300 box, while 400 occupies 300–500 and 40 stays below 50');
+  const mergedPositions=await trackPawns.evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
+  assert.equal(Math.round((mergedPositions[1].x+mergedPositions[2].x)/2),330,'220 and 300 are centered on the same merged box, with a small overlap-avoiding offset');
+  assert.equal(mergedPositions[1].y,mergedPositions[2].y,'pawns sharing the merged box stay on the same track position');
+  const safeGame=await scoreTrackPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(4,['من','یک','دو','سه'],()=>.5);game.phase='play';game.turn=0;game.turnOrder=[0,1,2,3];game.players[0].haul=75;game.players[0].reveals=[{id:0,kind:'coal',value:75,round:1}];game.players[1].haul=150;game.players[1].reveals=[{id:1,kind:'coal',value:100,round:1},{id:2,kind:'coal',value:50,round:2}];game.players[1].busted=true;game.totalSafeHaul=75;
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));return true;
+  });
+  await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  assert.equal(await scoreTrackPage.locator('#myPlayerReveals .safe-haul-total').innerText(),'۷۵','the human card shows only its current-hand safe haul');
+  assert.equal(await scoreTrackPage.locator('#seat-1 .safe-haul-total').innerText(),'۱۵۰','a busted opponent card shows only its own safe coals revealed before the devil, not zero or other players’ haul');
+  await scoreTrackPage.close();
 
   const aiPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   await aiPage.addInitScript(()=>{Math.random=()=>.1;});
