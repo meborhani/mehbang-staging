@@ -31,7 +31,7 @@
   function validSave(){var s=safeRead(SAVE_KEY);return !!(s&&s.version===1&&E.validate(s.game)&&!s.game.gameOver);}
   function normalizeSave(s){
     var game=s.game,logged=Array.isArray(s.roundReveals)?s.roundReveals:[],safeTotal=logged.reduce(function(sum,r){return sum+(r.kind==='coal'?(+r.value||0):0);},0);
-    if(!Array.isArray(game.pactOffers))game.pactOffers=game.pactOffer==null?[]:[game.pactOffer];game.players.forEach(function(p,i){if(i>0&&!p.aiPersonality)p.aiPersonality=AI_PERSONALITIES[(i-1)%AI_PERSONALITIES.length].id;});
+    if(!Array.isArray(game.pactOffers))game.pactOffers=game.pactOffer==null?[]:[game.pactOffer];E.normalizePactHolder(game);game.players.forEach(function(p,i){if(i>0&&!p.aiPersonality)p.aiPersonality=AI_PERSONALITIES[(i-1)%AI_PERSONALITIES.length].id;});
     game.players.forEach(function(p,i){
       var rows=logged.filter(function(r){return r.seat===i;});
       if(!Array.isArray(p.reveals))p.reveals=rows.map(function(r,index){return {id:index,kind:r.kind,value:r.value,round:game.round};});
@@ -96,14 +96,14 @@
   function renderLabels(){$('#trackLabels').innerHTML='';}
   function coalSvg(token,pt){var unavailable=g.available.indexOf(token.id)<0,cls='coal-token'+(unavailable?' not-available':' available')+(token.revealed?' is-revealed':'')+(token.revealed&&token.kind==='devil'?' is-devil':'');
     var body=token.revealed&&token.kind==='coal'?'<text class="coal-value" x="0" y="2">'+fa(token.value)+'</text>':'';
-    var face='<g class="devil-face"><image href="assets/devil.svg" x="-33" y="-33" width="66" height="66"/></g>';
+    var face='<g class="devil-face"><image href="assets/devil-coal.svg" x="-33" y="-33" width="66" height="66"/></g>';
     return '<g class="'+cls+'" data-coal-id="'+token.id+'" role="button" tabindex="0" aria-label="'+(unavailable?'زغال برداشته شد':'انتخاب زغال')+'" transform="translate('+pt.x+' '+pt.y+')"><circle class="selection-ring" r="35"></circle><circle class="hit" r="36"></circle><image class="coal-body" href="assets/coal.svg" x="-33" y="-33" width="66" height="66"></image>'+body+face+'</g>';
   }
   function renderCoals(){var h='';g.coals.forEach(function(t){h+=coalSvg(t,coalPoints[t.id]);});$('#coals').innerHTML=h;}
   function drawDescription(r){return r.kind==='devil'?'شیطان رو شد!':'زغال '+fa(r.value);}
   function allReveals(){var all=[];(g.history||[]).forEach(function(round){(round.reveals||[]).forEach(function(r){all.push(Object.assign({round:round.round},r));});});roundReveals.forEach(function(r){all.push(Object.assign({round:g.round},r));});return all;}
-  function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals');if(target)target.innerHTML='<span class="safe-haul-total" title="مجموع زغال امنی که خودش پیش از شیطان در این دست رو کرده">'+fa(Math.max(0,+p.haul||0))+'</span>'+playerRevealRow(p);});}
-  function renderSafeHaul(){var max=0;g.players.forEach(function(p){max=Math.max(max,E.playerSafeHaul(p));});$('#maxSafeHaul').textContent=fa(max);$('#totalRevealedHaul').textContent=fa(Math.max(0,+g.totalSafeHaul||0));}
+  function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals'),safe=E.playerSafeHaul(p);if(target)target.innerHTML='<span class="safe-haul-total" title="مجموع زغال امنی که خودش پیش از شیطان در این دست رو کرده">'+(p.foundDevil||p.busted?'شیطان':fa(safe))+'</span>'+playerRevealRow(p);});}
+  function renderSafeHaul(){var max=0;g.players.forEach(function(p){max=Math.max(max,E.playerSafeHaul(p));});$('#maxSafeHaul').textContent=fa(max);$('#totalRevealedHaul').textContent=fa(E.playerSafeHaul(g.players[0]));}
   function recordReveal(seat,token){
     roundReveals.push({seat:seat,name:g.players[seat].name,kind:token.kind,value:token.value});
   }

@@ -269,6 +269,15 @@ function clearPactOffers(state) { while (E.offerPact(state) !== null) E.declineP
   assert.equal(E.offerPact(tied),null,'a stale offer is cleared when multiple players share the lowest score box');
 }
 {
+  const legacy=E.createGame(3,['تو','الف','ب'],()=>0.5);
+  legacy.players.forEach((p,i)=>{p.wealth=[400,40,220][i];p.scorePos=p.wealth;p.pact=i!==2;});
+  E.normalizePactHolder(legacy);
+  assert.deepEqual(legacy.players.map(p=>p.pact),[false,true,false],'a legacy save with duplicate pact flags keeps only the unique lowest-score-box player');
+  legacy.players[0].wealth=40;legacy.players[0].scorePos=40;legacy.players[0].pact=true;
+  E.normalizePactHolder(legacy);
+  assert.deepEqual(legacy.players.map(p=>p.pact),[false,false,false],'no pact holder remains when the lowest score box is tied');
+}
+{
   const g=E.createGame(2,['تو','رایانه'],()=>0.5);
   g.phase='settlement';g.players[0].foundDevil=true;g.players[0].wealth=0;g.players[1].pact=true;
   const report=E.settle(g);

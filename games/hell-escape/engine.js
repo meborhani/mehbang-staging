@@ -7,6 +7,7 @@
   var CHIP_VALUES=[10,20,50,100,200,500,1000];
   var COAL_COUNTS={10:9,20:9,25:9,50:7,75:3,100:2};
   function scoreBoxIndex(score){score=Math.max(0,+score||0);if(score<=50)return 0;if(score<200)return 1;if(score===200)return 2;if(score<=300)return 3;if(score<500)return 4;if(score===500)return 5;if(score<750)return 6;if(score===750)return 7;if(score<1000)return 8;if(score===1000)return 9;if(score<1300)return 10;if(score===1300)return 11;if(score<1600)return 12;return 13;}
+  function normalizePactHolder(g){if(!g||!Array.isArray(g.players))return null;var positions=g.players.map(function(p){return Number.isFinite(p.scorePos)?p.scorePos:p.wealth;}),lowestBox=Math.min.apply(null,positions.map(scoreBoxIndex)),lowest=positions.map(function(score,i){return scoreBoxIndex(score)===lowestBox?i:-1;}).filter(function(i){return i>=0;}),holder=lowest.length===1&&g.players[lowest[0]].pact?lowest[0]:null;g.players.forEach(function(p,i){p.pact=i===holder;});return holder;}
   function playerSafeHaul(player){return player&&!player.busted?Math.max(0,+player.haul||0):0;}
   function rnd(rng){var n=Number((rng||Math.random)());return Number.isFinite(n)?Math.max(0,Math.min(.999999999,n)):0;}
   function shuffledBag(rng){
@@ -123,5 +124,5 @@
     if(g.players.some(function(p){return !p||!Number.isFinite(p.wealth)||!Number.isFinite(p.wager)||p.wager<0||p.haul<0||p.haul>1270||(p.reveals!==undefined&&!Array.isArray(p.reveals));}))return false;
     return ['bet','bet-reveal','play','settlement','game-over'].includes(g.phase);
   }
-  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,scoreBoxIndex:scoreBoxIndex,playerSafeHaul:playerSafeHaul,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,forcePassEmpty:forcePassEmpty,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
+  return {CHIP_VALUES:CHIP_VALUES,COAL_COUNTS:COAL_COUNTS,scoreBoxIndex:scoreBoxIndex,normalizePactHolder:normalizePactHolder,playerSafeHaul:playerSafeHaul,createGame:createGame,addWager:addWager,lockBet:lockBet,startRound:startRound,revealCoal:revealCoal,endTurn:endTurn,forcePassEmpty:forcePassEmpty,settle:settle,offerPact:offerPact,acceptPact:acceptPact,declinePact:declinePact,nextRound:nextRound,addNpcWager:addNpcWager,finishIfWon:finishIfWon,snapshot:snapshot,validate:validate};
 });

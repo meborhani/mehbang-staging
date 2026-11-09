@@ -187,6 +187,14 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.deepEqual(await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['3','0','3'],'the 200–300 interval and 300 milestone share one pawn position');
   const pactPawns=await pactEligibilityPage.locator('#pawns .pawn-piece').evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
   assert.ok(Math.abs(pactPawns[0].x-pactPawns[1].x)>1||Math.abs(pactPawns[0].y-pactPawns[1].y)>1,'different low scores render at their own positions on the score track');
+  await pactEligibilityPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(3,['من','کمترین','دیگری'],()=>.5);game.phase='bet';game.players.forEach((p,i)=>{p.wealth=[400,40,220][i];p.scorePos=p.wealth;p.pact=true;});
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));
+  });
+  await pactEligibilityPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  assert.equal(await pactEligibilityPage.locator('#seat-1 .pact-mark').count(),1,'an old save retains the pact only on the sole player in the lowest score box');
+  assert.equal(await pactEligibilityPage.locator('#myPact:not([hidden])').count(),0,'a player ahead of the lowest box loses an obsolete pact badge');
+  assert.equal(await pactEligibilityPage.locator('.opponent .pact-mark').count(),1,'duplicate legacy pact badges are removed from other CPU cards');
   await pactEligibilityPage.close();
 
   const scoreTrackPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -207,7 +215,11 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   });
   await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
   assert.equal(await scoreTrackPage.locator('#myPlayerReveals .safe-haul-total').innerText(),'۷۵','the human card shows only its own current-hand safe haul');
-  assert.equal(await scoreTrackPage.locator('#seat-1 .safe-haul-total').innerText(),'۱۵۰','a busted opponent retains only their own safe haul revealed before the devil');
+  assert.equal(await scoreTrackPage.locator('#seat-1 .safe-haul-total').innerText(),'شیطان','a player who revealed the devil is marked as busted instead of showing a safe total');
+  assert.equal(await scoreTrackPage.locator('#totalRevealedHaul').innerText(),'۷۵','the shared haul indicator shows the human player’s own safe haul, not the table-wide total');
+  const revealsLayout=await scoreTrackPage.locator('#myPlayerReveals').evaluate(el=>({row:getComputedStyle(el).gridRow,line:getComputedStyle(el,'::before').top,border:getComputedStyle(el).borderTopWidth}));
+  assert.equal(revealsLayout.border,'0px','the reveal row separates from the content with a line above it rather than through its top edge');
+  assert.equal(await scoreTrackPage.locator('#myPlayerReveals .safe-haul-total').innerText(),'۷۵','the reveal row retains the human safe haul');
   await scoreTrackPage.evaluate(()=>{
     const game=HellEscapeEngine.createGame(2,['من','حریف'],()=>.5);game.phase='play';game.turn=0;game.turnOrder=[0,1];game.turnIndex=0;game.players[0].haul=50;game.players[0].coalCount=1;game.players[0].reveals=[{id:0,kind:'coal',value:50,round:1},{id:1,kind:'devil',value:0,round:1}];game.players[0].busted=true;
     game.coals[0]={id:0,kind:'coal',value:50,revealed:true};game.coals[1]={id:1,kind:'devil',value:0,revealed:true};game.available=game.available.filter(id=>id>1);
@@ -218,6 +230,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.deepEqual(revealedCoalStyle,{fontSize:'28px',fontWeight:'900'},'revealed coal values are twice as large and bold');
   const devilTile=await scoreTrackPage.locator('#coals .coal-token.is-devil').evaluate(el=>({text:el.querySelector('.devil-face text')?.textContent||'',imageWidth:el.querySelector('.devil-face image')?.getAttribute('width'),imageHeight:el.querySelector('.devil-face image')?.getAttribute('height')}));
   assert.deepEqual(devilTile,{text:'',imageWidth:'66',imageHeight:'66'},'a revealed devil has no caption and fills the same 66px tile as a normal coal');
+  assert.equal(await scoreTrackPage.locator('#coals .coal-token.is-devil .devil-face image').getAttribute('href'),'assets/devil-coal.svg','the devil uses a dedicated devil-coal asset');
   await scoreTrackPage.close();
 
   const aiPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -234,7 +247,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   await aiPage.waitForFunction(()=>document.querySelectorAll('#seat-1 [data-player-reveal]').length>=3,{timeout:6500});
   assert.ok(await aiPage.locator('#seat-1').evaluate(e=>e.classList.contains('is-active')),'AI continues its turn until safe revealed coal reaches its wager');
   assert.equal(await aiPage.locator('#seat-1 [data-player-reveal]').count(),3,'AI does not randomly stop early while the table-wide safe haul is below its wager');
-  assert.match(await aiPage.locator('#totalRevealedHaul').innerText(),/۳۰/,'AI continuation is governed by the shared safe haul threshold');
+  assert.equal(await aiPage.locator('#totalRevealedHaul').innerText(),'۰','the shared stat remains the human player’s own haul while an AI reveals coal');
   assert.equal(await aiPage.locator('.ai-personality').count(),0,'the AI personality remains hidden from the card while still driving decisions');
   await aiPage.close();
 
