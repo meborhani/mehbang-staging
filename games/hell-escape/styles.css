@@ -231,3 +231,24 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
   .is-active>.turn-light{display:none}
   .opponent.is-active:before,.player-dock.is-active:before{content:""!important;display:block!important;position:absolute;inset:-4px;padding:5px;border-radius:calc(var(--frame-radius) + 5px);background:conic-gradient(from var(--turn-angle),transparent 0 74%,rgba(255,136,0,.28) 77%,#ffb20c 79%,#fffbd8 81%,#fff 82%,#ffb20c 84%,rgba(255,126,0,.32) 88%,transparent 92% 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:turn-ring-spin 2.2s linear infinite!important;pointer-events:none}
 }
+
+/* Keep shared round totals side by side, with the maximum on the right. */
+.max-safe-box{direction:rtl;justify-content:space-between;gap:7px;padding-inline:9px}
+.max-safe-box .shared-stat{display:flex;flex:1 1 0;align-items:center;justify-content:space-between;gap:4px;min-width:0;direction:rtl;white-space:nowrap;font-size:clamp(8px,2.45vw,11px)}
+.max-safe-box .stat-best{order:0}
+.max-safe-box .stat-total{order:1}
+.max-safe-box .shared-stat strong{flex:0 0 auto;min-width:29px;padding-inline:5px}
+
+/* Reveals sit in a dedicated bottom row in every seat card. */
+.opponent{grid-template-rows:minmax(10px,1fr) 13px 11px 16px;gap:0 5px;padding:3px 5px}
+.opponent>img{grid-row:1/5}
+.opponent .op-name{grid-row:1;align-self:center}
+.opponent .op-meta{grid-row:2}
+.opponent-pawn-key{grid-row:3;align-self:center}
+.opponent-player-reveals{grid-column:2;grid-row:4;align-self:end;width:100%;height:16px;min-height:16px;display:flex;align-items:center;justify-content:flex-start;gap:2px;overflow-x:auto;overflow-y:hidden;direction:ltr;scrollbar-width:none}
+.opponent-player-reveals:empty{visibility:hidden}
+.opponent-player-reveals .coal-reveal-badge{height:14px;min-height:14px;min-width:17px;padding:0 3px;font-size:8px;line-height:12px}
+.player-identity #myPlayerReveals{display:flex;flex:0 0 20px;align-self:stretch;width:100%;max-width:72px;height:20px;min-height:20px;margin-top:auto;align-items:center;justify-content:flex-start;flex-wrap:nowrap;gap:2px;overflow-x:auto;overflow-y:hidden;direction:ltr;scrollbar-width:none}
+.player-identity #myPlayerReveals:empty{display:none}
+.player-identity #myPlayerReveals .coal-reveal-badge{flex:0 0 auto;width:auto;min-width:18px;height:15px;padding:0 3px;font-size:8px;line-height:13px}
+@media(max-width:360px){.max-safe-box{gap:4px;padding-inline:5px}.max-safe-box .shared-stat{font-size:8px;gap:2px}.max-safe-box .shared-stat strong{min-width:24px;padding-inline:3px}.opponent{grid-template-rows:minmax(9px,1fr) 12px 10px 15px;padding-inline:3px}.opponent-player-reveals{height:15px;min-height:15px}.player-identity #myPlayerReveals{max-width:62px}}

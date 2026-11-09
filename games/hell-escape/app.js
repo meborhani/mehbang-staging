@@ -95,7 +95,7 @@
   function drawDescription(r){return r.kind==='devil'?'شیطان رو شد!':'زغال '+fa(r.value);}
   function allReveals(){var all=[];(g.history||[]).forEach(function(round){(round.reveals||[]).forEach(function(r){all.push(Object.assign({round:round.round},r));});});roundReveals.forEach(function(r){all.push(Object.assign({round:g.round},r));});return all;}
   function renderPlayerReveals(){g.players.forEach(function(p,i){var target=i===0?$('#myPlayerReveals'):$('#seat-'+i+' .opponent-player-reveals');if(target)target.innerHTML=playerRevealRow(p);});}
-  function renderSafeHaul(){var safe=g.players.reduce(function(max,p){return Math.max(max,p.busted?0:(+p.haul||0));},0);$('#maxSafeHaul').textContent=fa(safe);}
+  function renderSafeHaul(){var max=0;g.players.forEach(function(p){var haul=p.busted?0:Math.max(0,+p.haul||0);max=Math.max(max,haul);});$('#maxSafeHaul').textContent=fa(max);$('#totalRevealedHaul').textContent=fa(Math.max(0,+g.totalSafeHaul||0));}
   function recordReveal(seat,token){
     roundReveals.push({seat:seat,name:g.players[seat].name,kind:token.kind,value:token.value});
   }

@@ -37,6 +37,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#seat-0 .active-flames').count(),0,'the active turn uses the card frame itself instead of a rectangular overlay');
   assert.equal(await page.locator('#seat-0 .player-reveal-row').count(),1,'the human has a revealed-coal summary inside their panel');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').count(),1,'each opponent has revealed values inside their card');
+  assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-identity')),true,'the human reveal row is separated from identity text and anchored at the bottom of the identity column');
+  assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
+  assert.ok(await page.locator('#totalRevealedHaul').count(),'the shared panel includes a total revealed-coal value');
+  assert.ok(await page.locator('.max-safe-box').evaluate(e=>e.querySelector('.stat-best').getBoundingClientRect().x>e.querySelector('.stat-total').getBoundingClientRect().x),'the maximum safe haul is on the right and the total is on the left');
   assert.ok((await page.locator('#seat-1 .op-meta').innerText()).includes('شرط')&&!(await page.locator('#seat-1 .op-meta').innerText()).includes('امن'),'opponent cards show the wager without a redundant safe-haul score');
   assert.equal(await page.locator('#pawns image').count(),2,'both player pawns render on the score track');
   assert.equal(await page.locator('.pawn-key').count(),2,'each player card identifies the matching pawn color');
@@ -66,6 +70,9 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const boardBeforeReveal=await page.locator('#boardSvg').boundingBox();
   assert.equal(await page.locator('#myPlayerReveals [data-player-reveal]').count(),1,'the player card shows the revealed coal value without an image row');
   assert.match(await page.locator('#maxSafeHaul').innerText(),/[۰-۹]+/,'a shared box shows the maximum safe haul');
+  assert.match(await page.locator('#totalRevealedHaul').innerText(),/[۰-۹]+/,'the shared box shows the sum of safe coal currently revealed');
+  const myRevealBounds=await page.locator('#myPlayerReveals').boundingBox(),identityBounds=await page.locator('.player-identity').boundingBox();
+  assert.ok(myRevealBounds.y+myRevealBounds.height<=identityBounds.y+identityBounds.height+1,'the human revealed-coal row stays within the bottom edge of the player card');
   assert.equal(await page.locator(`[data-coal-id="${before}"]`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coals remain full contrast but become unavailable');
   assert.equal(await page.locator(`[data-coal-id="${before}"] .selection-ring`).evaluate(e=>getComputedStyle(e).opacity),'1','revealed coal selection is marked by a circular ring');
   assert.equal(await page.locator('.coal-body').first().getAttribute('width'),'55','coal tokens are 25 percent larger');

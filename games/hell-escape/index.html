@@ -46,12 +46,16 @@
         <button class="coal-info-button" data-coal-info aria-label="ترکیب زغال‌ها">ⓘ</button>
         <button class="summary-chip" data-summary>خلاصه بازی</button>
       </section>
-      <div class="max-safe-box" aria-live="polite">بیشترین زغال امن این دست: <strong id="maxSafeHaul">۰</strong></div>
+      <div class="max-safe-box" aria-live="polite">
+        <span class="shared-stat stat-best">بیشترین زغال امن <strong id="maxSafeHaul">۰</strong></span>
+        <span class="shared-stat stat-total">جمع زغال‌های رو‌شده <strong id="totalRevealedHaul">۰</strong></span>
+      </div>
       <section class="player-dock" id="seat-0">
         <span class="turn-light" aria-hidden="true"></span>
         <div class="player-identity">
           <img id="myAvatar" alt="آواتار بازیکن">
-          <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small><span id="myPlayerReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></span></div>
+          <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small></div>
+          <span id="myPlayerReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></span>
         </div>
         <div class="chip-bank" id="chipBank"><span class="dock-label">چیپ‌های من</span><div class="chip-row" id="chips"></div></div>
         <div class="bet-tray"><span class="dock-label">شرط این دست <b id="myWager">۰</b></span><div id="myBetChips" class="bet-chips"></div></div>
