@@ -18,12 +18,12 @@ const finishStart = azulHtml.indexOf('function finishRound(){');
 let scan = finishStart + 'function finishRound'.length, depth = 0, finishEnd = -1;
 for (; scan < azulHtml.length; scan++) { if (azulHtml[scan] === '{') depth++; else if (azulHtml[scan] === '}' && --depth === 0) { finishEnd = scan + 1; break; } }
 assert.ok(finishStart >= 0 && finishEnd > finishStart, 'production round scorer should exist');
-const finishRound = new Function('s','PEN','wallPoints','bonus','fa','render','refill','toast','setTimeout','online','onlineRole','onlineAi','botMove','timer','tutorialMode','tutorial', `return (${azulHtml.slice(finishStart, finishEnd)})()`);
+const finishRound = new Function('s','PEN','wallPoints','bonus','fa','render','refill','toast','setTimeout','online','onlineRole','onlineAi','botMove','timer','tutorialMode','tutorial','azulAiThinkDelay', `return (${azulHtml.slice(finishStart, finishEnd)})()`);
 const roundState = { round:1, players:[
   {score:0,lines:[[0],[],[],[],[]],wall:Array.from({length:5},()=>Array(5).fill(null)),floor:[]},
   {score:0,lines:[[],[],[],[],[]],wall:Array.from({length:5},()=>Array(5).fill(null)),floor:[]}
 ], discard:[], nextStarter:null, starter:0, roundHistory:[] };
-finishRound(roundState,[1,1,2,2,2,3,3],()=>1,()=>0,String,()=>{},()=>{},()=>{},()=>0,false,'host',[],()=>{},null,false,null);
+finishRound(roundState,[1,1,2,2,2,3,3],()=>1,()=>0,String,()=>{},()=>{},()=>{},()=>0,false,'host',[],()=>{},null,false,null,()=>15);
 assert.deepEqual(roundState.roundHistory, [{ round:1, scores:[1,0] }], 'completed hands should persist each player’s net score');
 
 (async () => {

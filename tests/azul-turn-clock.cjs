@@ -11,6 +11,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await page.addInitScript(() => {
       window.__vibrations = [];
+      window.__azulRandomValue = 0.01;
       Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { window.__vibrations.push(pattern); return true; } });
       const nativeRandom = Math.random.bind(Math);
       Math.random = () => Number.isFinite(window.__azulRandomValue) ? window.__azulRandomValue : nativeRandom();

@@ -44,7 +44,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
         if ((await frame.locator('#instruction').innerText()).includes('باقی‌مانده')) await frame.locator('.pattern-row.available').first().click();
       }
     };
-    await host.addInitScript(() => { if (location.pathname.endsWith('/games/azul/index.html')) Math.random = () => 0.99; });
+    await host.addInitScript(() => { if (location.pathname.endsWith('/games/azul/index.html')) { window.__FAST = true; Math.random = () => 0.99; } });
     await host.goto('http://127.0.0.1:8765/?hub=1', { waitUntil: 'domcontentloaded' });
     await host.evaluate(fakeTransport);
     await host.locator('[data-hg="azul"]').waitFor({ state: 'visible', timeout: 8000 });

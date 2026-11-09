@@ -37,6 +37,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#seat-0 .active-flames').count(),0,'the active turn uses the card frame itself instead of a rectangular overlay');
   assert.equal(await page.locator('#seat-0 .player-reveal-row').count(),1,'the human has a revealed-coal summary inside their panel');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').count(),1,'each opponent has revealed values inside their card');
+  assert.ok(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>e.getBoundingClientRect().top>=e.previousElementSibling.getBoundingClientRect().bottom-1),'opponent reveal values are placed in a full-width row beneath the card details');
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>e.parentElement.classList.contains('player-dock')),true,'the human reveal row has its own full-width bottom row in the player card');
   assert.equal(await page.locator('#myPlayerReveals').evaluate(e=>getComputedStyle(e).gridRowStart),'4','the human reveal row occupies the bottom row of the player card');
   assert.equal(await page.locator('#seat-1 .opponent-player-reveals').evaluate(e=>getComputedStyle(e).gridRowStart), '4','opponent reveals occupy the bottom row of the card');
@@ -46,7 +47,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('#pawns image').count(),2,'both player pawns render on the score track');
   assert.equal(await page.locator('.pawn-key').count(),2,'each player card identifies the matching pawn color');
   assert.ok((await page.locator('#pawns .pawn-piece').first().getAttribute('aria-label')).includes('۲۰۰'),'the wager escrow does not move the player’s score pawn');
-  assert.equal(await page.locator('#trackLabels .score-box-label').count(),0,'the score labels are part of the board artwork and are not duplicated as HTML labels');
+  assert.equal(await page.locator('#trackLabels .score-box-label').count(),0,'score-box labels are baked into the approved board artwork');
+  assert.match(await page.locator('#boardSvg image').first().getAttribute('href'),/board-art\.webp$/,'the score track and range boxes use the updated board artwork');
   const dockBounds=await page.locator('.player-dock').boundingBox(),actionBounds=await page.locator('.dock-actions').boundingBox();
   assert.ok(actionBounds.x>=dockBounds.x&&actionBounds.y>=dockBounds.y&&actionBounds.x+actionBounds.width<=dockBounds.x+dockBounds.width&&actionBounds.y+actionBounds.height<=dockBounds.y+dockBounds.height,'action buttons are laid out inside the player frame');
   const cardParts=await page.locator('.player-dock').evaluate(e=>['.player-identity','#chipBank','.bet-tray','.dock-actions','#myPlayerReveals'].map(s=>{const r=e.querySelector(s).getBoundingClientRect();return [s,r.x,r.y,r.right,r.bottom]}));
@@ -61,8 +63,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
   assert.equal(await page.locator('.back-button svg').evaluate(e=>{const r=e.getBoundingClientRect(),b=e.closest('button').getBoundingClientRect();return Math.abs(r.left+r.width/2-b.left-b.width/2)<1&&Math.abs(r.top+r.height/2-b.top-b.height/2)<1}),true,'the arrow svg is centered inside its circular button');
-  assert.equal(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).display),'none','the turn highlight is not a single moving dot');
-  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'turn-ring-spin','a multi-point light wave travels along the whole frame');
+  assert.equal(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).display),'block','the turn highlight is drawn on an SVG matching the rounded card frame');
+  assert.equal(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).animationName),'frame-edge-wave','light moves along the fixed rounded frame edges');
+  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').content),'none','the old oversized pseudo-element halo is disabled');
+  assert.equal(await page.locator('#seat-0 .turn-light').evaluate(e=>getComputedStyle(e).animationName),'frame-edge-wave','the traveling edge glints keep following the rounded card border');
   assert.notEqual(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e).borderColor),'rgb(156, 112, 47)','the whole active frame stays illuminated');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
@@ -195,15 +199,25 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   const trackPawns=scoreTrackPage.locator('#pawns .pawn-piece');
   assert.deepEqual(await trackPawns.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('class').match(/score-box-(\d+)/)[1])),['4','3','3','0'],'220 and 300 occupy the merged 200–300 box, while 400 occupies 300–500 and 40 stays below 50');
   const mergedPositions=await trackPawns.evaluateAll(nodes=>nodes.map(n=>{const m=n.transform.baseVal.consolidate().matrix;return{x:m.e,y:m.f};}));
-  assert.equal(Math.round((mergedPositions[1].x+mergedPositions[2].x)/2),330,'220 and 300 are centered on the same merged box, with a small overlap-avoiding offset');
+  assert.equal(Math.round((mergedPositions[1].x+mergedPositions[2].x)/2),330,'220 and 300 share the center of the merged box with a small overlap-avoiding offset');
   assert.equal(mergedPositions[1].y,mergedPositions[2].y,'pawns sharing the merged box stay on the same track position');
-  const safeGame=await scoreTrackPage.evaluate(()=>{
-    const game=HellEscapeEngine.createGame(4,['من','یک','دو','سه'],()=>.5);game.phase='play';game.turn=0;game.turnOrder=[0,1,2,3];game.players[0].haul=75;game.players[0].reveals=[{id:0,kind:'coal',value:75,round:1}];game.players[1].haul=150;game.players[1].reveals=[{id:1,kind:'coal',value:100,round:1},{id:2,kind:'coal',value:50,round:2}];game.players[1].busted=true;game.totalSafeHaul=75;
-    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[]}));return true;
+  await scoreTrackPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(4,['من','یک','دو','سه'],()=>.5);game.phase='play';game.turn=0;game.turnOrder=[0,1,2,3];game.players[0].haul=75;game.players[0].reveals=[{id:0,kind:'coal',value:75,round:1}];game.players[1].haul=150;game.players[1].reveals=[{id:1,kind:'coal',value:100,round:1},{id:2,kind:'coal',value:50,round:1},{id:3,kind:'devil',value:0,round:1}];game.players[1].busted=true;game.totalSafeHaul=225;
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[{seat:0,name:'من',kind:'coal',value:75},{seat:1,name:'یک',kind:'coal',value:100},{seat:1,name:'یک',kind:'coal',value:50},{seat:1,name:'یک',kind:'devil',value:0}]}));
   });
   await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
-  assert.equal(await scoreTrackPage.locator('#myPlayerReveals .safe-haul-total').innerText(),'۷۵','the human card shows only its current-hand safe haul');
-  assert.equal(await scoreTrackPage.locator('#seat-1 .safe-haul-total').innerText(),'۱۵۰','a busted opponent card shows only its own safe coals revealed before the devil, not zero or other players’ haul');
+  assert.equal(await scoreTrackPage.locator('#myPlayerReveals .safe-haul-total').innerText(),'۷۵','the human card shows only its own current-hand safe haul');
+  assert.equal(await scoreTrackPage.locator('#seat-1 .safe-haul-total').innerText(),'۱۵۰','a busted opponent retains only their own safe haul revealed before the devil');
+  await scoreTrackPage.evaluate(()=>{
+    const game=HellEscapeEngine.createGame(2,['من','حریف'],()=>.5);game.phase='play';game.turn=0;game.turnOrder=[0,1];game.turnIndex=0;game.players[0].haul=50;game.players[0].coalCount=1;game.players[0].reveals=[{id:0,kind:'coal',value:50,round:1},{id:1,kind:'devil',value:0,round:1}];game.players[0].busted=true;
+    game.coals[0]={id:0,kind:'coal',value:50,revealed:true};game.coals[1]={id:1,kind:'devil',value:0,revealed:true};game.available=game.available.filter(id=>id>1);
+    localStorage.setItem('mb-hell-escape-save-v1',JSON.stringify({version:1,game,difficulty:1,avatarNames:game.players.map(p=>p.name),roundReveals:[{seat:0,name:'من',kind:'coal',value:50},{seat:0,name:'من',kind:'devil',value:0}]}));
+  });
+  await scoreTrackPage.goto(`http://127.0.0.1:${port}/games/hell-escape/index.html?resume=1`);
+  const revealedCoalStyle=await scoreTrackPage.locator('#coals .coal-token.is-revealed:not(.is-devil) .coal-value').first().evaluate(el=>({fontSize:getComputedStyle(el).fontSize,fontWeight:getComputedStyle(el).fontWeight}));
+  assert.deepEqual(revealedCoalStyle,{fontSize:'28px',fontWeight:'900'},'revealed coal values are twice as large and bold');
+  const devilTile=await scoreTrackPage.locator('#coals .coal-token.is-devil').evaluate(el=>({text:el.querySelector('.devil-face text')?.textContent||'',imageWidth:el.querySelector('.devil-face image')?.getAttribute('width'),imageHeight:el.querySelector('.devil-face image')?.getAttribute('height')}));
+  assert.deepEqual(devilTile,{text:'',imageWidth:'66',imageHeight:'66'},'a revealed devil has no caption and fills the same 66px tile as a normal coal');
   await scoreTrackPage.close();
 
   const aiPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});

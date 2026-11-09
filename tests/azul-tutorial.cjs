@@ -9,6 +9,7 @@ catch { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/depen
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.addInitScript(() => { window.__FAST = true; });
     await page.goto('http://127.0.0.1:8777/games/azul/index.html?fresh=1');
     await page.locator('[data-new="4"]').click();
     const savedBefore = await page.evaluate(() => localStorage.getItem('mahbang-azul-light-v4'));

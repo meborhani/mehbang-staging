@@ -1,10 +1,10 @@
 {
-  "name": "مهبانگ گیم (استیج)",
-  "short_name": "مهبانگ استیج",
+  "name": "مهبانگ گیم",
+  "short_name": "مهبانگ گیم",
   "description": "مجموعه بازی‌های آنلاین: کتان، شطرنج، منچ، دوز و چهار در ردیف",
   "lang": "fa",
   "dir": "rtl",
-  "id": "/mehbang-staging/",
+  "id": "/Mehbang-Catan/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

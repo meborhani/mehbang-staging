@@ -28,6 +28,7 @@
       <header class="topbar">
         <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
         <div class="round-title"><strong>فرار از جهنم</strong><small id="roundLabel">دست ۱</small></div>
+        <button class="icon-button help-button" data-help aria-label="راهنمای بازی">؟</button>
         <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
       </header>
       <nav class="phases" aria-label="مراحل بازی">
@@ -50,6 +51,7 @@
         <span class="shared-stat stat-best">بیشترین زغال امن <strong id="maxSafeHaul">۰</strong></span>
         <span class="shared-stat stat-total">جمع زغال‌های رو‌شده <strong id="totalRevealedHaul">۰</strong></span>
       </div>
+      <aside class="tutorial-guide" id="tutorialGuide" aria-live="polite" hidden><b id="tutorialProgress"></b><span id="tutorialText"></span></aside>
       <section class="player-dock" id="seat-0">
         <span class="turn-light" aria-hidden="true"></span>
         <div class="player-identity">
@@ -73,6 +75,24 @@
       <button class="dialog-close" data-close aria-label="بستن">×</button>
       <h2>خلاصهٔ دست‌ها</h2>
       <section id="summaryTab-summary" class="summary-tab-panel"><div id="summaryContent" class="dialog-content"></div></section>
+    </dialog>
+    <dialog id="helpModal" class="dialog help-dialog">
+      <button class="dialog-close" data-close aria-label="بستن">×</button><h2>راهنمای فرار از جهنم</h2>
+      <div class="dialog-content">
+        <ol class="help-rules">
+          <li><b>شرط ببند:</b> با چیپ‌ها مبلغ شرط را انتخاب و قفل کن. شرط‌ها تا وقتی همه قفل نکنند مخفی‌اند؛ بیشترین شرط آغازگر دست را تعیین می‌کند.</li>
+          <li><b>زغال بردار:</b> هر زغال امن به مجموع امن دست اضافه می‌شود. بعد از حداقل یک برداشت می‌توانی نوبت را تمام کنی.</li>
+          <li><b>مراقب شیطان باش:</b> با رو شدن شیطان، برداشت امن همان بازیکن در آن دست صفر می‌شود و نوبتش فوراً پایان می‌یابد.</li>
+          <li><b>تسویه:</b> اگر بیشترین برداشت امنِ هر بازیکن، حتی حریف، به شرطت برسد، شرطت برمی‌گردد و پرداخت می‌گیری؛ شرطِ بالاترین مبلغ در صورت موفقیت دوبرابر پرداخت می‌شود. شرط ناموفق به بانک می‌سوزد.</li>
+          <li><b>پاداش‌ها و پیمان:</b> بیشترین برداشت امن ۵۰ چیپ می‌گیرد. تنها بازیکن در پایین‌ترین خانهٔ امتیاز می‌تواند پیمان بگیرد؛ اگر حریف شیطان رو کند، ۵۰ چیپ به هم‌پیمان می‌پردازد، اما هم‌پیمان بابت شیطانی که خودش رو کند پولی نمی‌گیرد.</li>
+          <li><b>کوره:</b> زغال‌های باقی‌مانده بین دست‌ها می‌مانند و فقط وقتی کمتر از ۲۴ زغال نمانده باشد، کیسهٔ تازه می‌آید.</li>
+        </ol>
+      </div>
+      <button class="primary-button tutorial-launch" data-start-tutorial>بازی آموزشی سه‌دستی با رایانه</button>
+    </dialog>
+    <dialog id="tutorialDoneModal" class="dialog tutorial-done-dialog">
+      <h2>آموزش تمام شد</h2><div class="dialog-content"><p>سه دست آموزشی را به پایان رساندی. حالا می‌توانی بازی عادی را شروع کنی و قوانین را در بازی واقعی به کار ببری.</p></div>
+      <button class="primary-button" data-tutorial-exit>پایان آموزش</button>
     </dialog>
     <dialog id="settingsModal" class="dialog settings-dialog">
       <button class="dialog-close" data-close aria-label="بستن">×</button><h2>تنظیمات بازی</h2>
