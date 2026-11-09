@@ -27,6 +27,7 @@
     <section id="game" hidden>
       <header class="topbar">
         <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
+        <button class="icon-button summary-icon" data-summary aria-label="خلاصهٔ بازی">!</button>
         <div class="round-title"><strong>فرار از جهنم</strong></div>
         <button class="icon-button help-button" data-help aria-label="راهنمای بازی">؟</button>
         <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
@@ -41,18 +42,14 @@
           <g id="trackLabels" aria-hidden="true"></g><g id="pawns"></g><g id="coals"></g>
         </svg>
       </section>
-      <section class="round-status">
-        <span id="statusText">چیپ‌های شرط را انتخاب کن و «قفل شرط» را بزن؛ مبلغت تا شروع دست مخفی می‌ماند.</span>
-        <button class="summary-chip" data-summary>خلاصه بازی</button>
-      </section>
       <div class="max-safe-box" aria-live="polite">
         <span class="shared-stat stat-round"><span>دست</span><strong id="roundLabel">۱</strong></span>
         <span class="shared-stat stat-bank"><span>بانک</span><strong id="bankValue">۱۰٬۰۰۰</strong><span>زغال مانده</span><strong id="coalCount">۴۸</strong></span>
+        <span class="shared-stat stat-devil"><span>شیطان رو شده</span><strong id="devilCount">۰/۹</strong></span>
         <span class="shared-stat stat-best">بیشترین <strong id="maxSafeHaul">۰</strong></span>
         <span class="shared-stat stat-total">زغال من <strong id="totalRevealedHaul">۰</strong></span>
         <span class="shared-stat stat-wager"><span>شرط من</span><strong id="myRoundWager">۰</strong></span>
       </div>
-      <aside class="tutorial-guide" id="tutorialGuide" aria-live="polite" hidden><b id="tutorialProgress"></b><span id="tutorialText"></span></aside>
       <section class="player-dock" id="seat-0">
         <span class="turn-light" aria-hidden="true"></span>
         <div class="player-identity">
