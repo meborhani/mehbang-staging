@@ -93,6 +93,7 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   await page.waitForFunction(id=>document.querySelector(`[data-coal-id="${id}"]`).classList.contains('is-revealed'),before);
   await page.waitForFunction(()=>document.querySelectorAll('#seat-0 [data-player-reveal]').length===1);
   assert.equal(await page.locator('#coalCount').innerText(),'۴۷','the unrevealed coal count updates after a draw');
+  assert.ok((await page.locator('#toast').innerText()).includes('زغال امن رو شد'),'the temporary guidance updates after the player reveals their first safe coal');
   const boardBeforeReveal=await page.locator('#boardSvg').boundingBox();
   assert.equal(await page.locator('#myPlayerReveals [data-player-reveal]').count(),1,'the player card shows the revealed coal value without an image row');
   assert.match(await page.locator('#maxSafeHaul').innerText(),/[۰-۹]+/,'a shared box shows the maximum safe haul');
