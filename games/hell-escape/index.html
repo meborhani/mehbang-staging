@@ -26,7 +26,7 @@
 
     <section id="game" hidden>
       <header class="topbar">
-        <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
+        <button class="icon-button back-button" data-back aria-label="بازگشت به هاب"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 4.8 7.6 12l7.2 7.2M8 12h11"/></svg></button>
         <div class="round-title"><strong>فرار از جهنم</strong><small id="roundLabel">دست ۱</small></div>
         <button class="icon-button settings-button" data-settings aria-label="تنظیمات">⚙</button>
       </header>
@@ -48,6 +48,7 @@
       </section>
       <div class="max-safe-box" aria-live="polite">بیشترین زغال امن این دست: <strong id="maxSafeHaul">۰</strong></div>
       <section class="player-dock" id="seat-0">
+        <span class="turn-light" aria-hidden="true"></span>
         <div class="player-identity">
           <img id="myAvatar" alt="آواتار بازیکن">
           <div><b id="myName">بازیکن</b><small class="pawn-key" id="myPawnKey"></small><small>موجودی <strong id="myWealth">۲۰۰</strong></small><small id="myPact" class="pact-mark" hidden>♆ هم‌پیمان شیطان</small><span id="myPlayerReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></span></div>

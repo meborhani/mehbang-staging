@@ -216,3 +216,18 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .active-flames{display:none!important}
 .opponent.is-active,.player-dock.is-active{border-color:#9c702f;box-shadow:none}
 .opponent.is-active:after,.player-dock.is-active:after{content:""!important;display:block!important;position:absolute;inset:-4px;z-index:5;padding:5px;border:0;border-radius:calc(var(--frame-radius) + 4px);background:conic-gradient(from var(--turn-angle),transparent 0 74%,rgba(255,136,0,.28) 77%,#ffb20c 79%,#fffbd8 81%,#fff 82%,#ffb20c 84%,rgba(255,126,0,.32) 88%,transparent 92% 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:drop-shadow(0 0 7px #ffcf3f) drop-shadow(0 0 12px rgba(255,104,17,.88));animation:turn-ring-spin 2.2s linear infinite!important;pointer-events:none}
+/* The turn marker is a light bead attached to each player card, not the illustrated board fire. */
+.opponent,.player-dock{isolation:isolate}
+.opponent.is-active,.player-dock.is-active{border-color:#f1c75b;box-shadow:0 0 0 1px rgba(255,215,96,.4),inset 0 0 8px rgba(255,188,38,.12)}
+.opponent.is-active:after{content:""!important;display:block!important;position:absolute;inset:3px;z-index:1;border:1px solid rgba(255,220,137,.38);border-radius:9px;background:none;box-shadow:none;animation:none;pointer-events:none}
+.player-dock.is-active:after{content:none!important;display:none!important;animation:none!important}
+.turn-light{position:absolute;left:0;top:0;width:15px;height:15px;z-index:8;display:block;opacity:0;pointer-events:none;border-radius:50%;offset-path:inset(-5px round calc(var(--frame-radius) + 5px)) border-box;offset-distance:0%;offset-anchor:center;offset-rotate:0deg;background:radial-gradient(circle,#fffde3 0 13%,#fff2a2 25%,#ffd12e 43%,#ff9d08 62%,rgba(255,116,0,0) 78%);filter:drop-shadow(0 0 4px #fff1a1) drop-shadow(0 0 9px #ff9c12)}
+.is-active>.turn-light{opacity:1;animation:turn-light-orbit 2.1s linear infinite}
+@keyframes turn-light-orbit{to{offset-distance:100%}}
+.back-button svg{display:block;width:24px;height:24px;justify-self:center;align-self:center;margin:0;overflow:visible}
+.back-button{display:grid;place-items:center;padding:0}
+.opponent>.turn-light,.player-dock>.turn-light{position:absolute;z-index:8}
+@supports not (offset-path:inset(-1px round 1px)){
+  .is-active>.turn-light{display:none}
+  .opponent.is-active:before,.player-dock.is-active:before{content:""!important;display:block!important;position:absolute;inset:-4px;padding:5px;border-radius:calc(var(--frame-radius) + 5px);background:conic-gradient(from var(--turn-angle),transparent 0 74%,rgba(255,136,0,.28) 77%,#ffb20c 79%,#fffbd8 81%,#fff 82%,#ffb20c 84%,rgba(255,126,0,.32) 88%,transparent 92% 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:turn-ring-spin 2.2s linear infinite!important;pointer-events:none}
+}

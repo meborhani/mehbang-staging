@@ -53,9 +53,10 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.ok(Math.abs(startPawns[0].x-startPawns[1].x)>20&&Math.abs(startPawns[0].y-startPawns[1].y)<2,'the starting pawns form a compact horizontal cluster instead of a vertical line');
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
-  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'turn-ring-spin','the active player highlight follows the rounded card frame');
-  assert.deepEqual(await page.locator('#seat-0').evaluate(e=>({transform:getComputedStyle(e,':after').transform,radius:getComputedStyle(e,':after').borderRadius})),{transform:'none',radius:'20px'},'the frame stays still and its rounded perimeter clips the moving light');
-  assert.ok(await page.locator('#seat-0').evaluate(e=>{const bg=getComputedStyle(e,':after').backgroundImage;return bg.includes('conic-gradient')&&bg.includes('79%')&&bg.includes('81%')&&!bg.includes('flame.svg')}),'one narrow gold light arc travels around the rounded frame while the base border stays still');
+  assert.equal(await page.locator('.back-button svg').evaluate(e=>{const r=e.getBoundingClientRect(),b=e.closest('button').getBoundingClientRect();return Math.abs(r.left+r.width/2-b.left-b.width/2)<1&&Math.abs(r.top+r.height/2-b.top-b.height/2)<1}),true,'the arrow svg is centered inside its circular button');
+  assert.equal(await page.locator('#seat-0 > .turn-light').count(),1,'the active player card owns its own moving light');
+  assert.ok(await page.locator('#seat-0 > .turn-light').evaluate(e=>getComputedStyle(e).animationName==='turn-light-orbit'&&getComputedStyle(e).offsetPath.includes('inset')),'the light follows the player card’s rounded border path');
+  assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'none','the player frame itself does not rotate');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
   await first.click();
