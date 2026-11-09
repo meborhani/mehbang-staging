@@ -54,7 +54,7 @@
     var dist=pos/1600*(path.length-1),idx=Math.min(path.length-2,Math.floor(dist)),t=dist-idx,dx=path[idx+1][0]-path[idx][0],dy=path[idx+1][1]-path[idx][1],len=Math.sqrt(dx*dx+dy*dy)||1,spread=(seat-(count-1)/2)*20;return {x:path[idx][0]+dx*t-dy/len*spread,y:path[idx][1]+dy*t+dx/len*spread};
   }
   function renderPawns(){var h='';g.players.forEach(function(p,i){var q=polyPoint(Math.max(0,Math.min(1600,p.wealth)),i,g.players.length);var pawnAssets=['gold','red','cyan','green'];h+='<g class="pawn-piece" transform="translate('+q.x+' '+q.y+')" aria-label="'+esc(p.name)+' '+fa(p.wealth)+'"><title>'+esc(p.name)+' · '+fa(p.wealth)+'</title><image href="assets/pawn-'+pawnAssets[i%pawnAssets.length]+'.svg" x="-15" y="-30" width="30" height="36"/></g>';;});$('#pawns').innerHTML=h;}
-  function renderLabels(){var labels=[{v:0,x:844,y:880},{v:50,x:945,y:820},{v:200,x:690,y:930},{v:300,x:510,y:936}];$('#trackLabels').innerHTML=labels.map(function(q){return '<text class="track-marker" x="'+q.x+'" y="'+q.y+'">'+fa(q.v)+'</text>';}).join('');}
+  function renderLabels(){$('#trackLabels').innerHTML='';}
   function coalSvg(token,pt){var unavailable=g.available.indexOf(token.id)<0,cls='coal-token'+(unavailable?' not-available':' available')+(token.revealed?' is-revealed':'')+(token.revealed&&token.kind==='devil'?' is-devil':'');
     var body=token.revealed&&token.kind==='coal'?'<text class="coal-value" x="0" y="2">'+fa(token.value)+'</text>':'';
     var face='<g class="devil-face"><image href="assets/devil.svg" x="-21" y="-21" width="42" height="42"/><text class="coal-value" x="0" y="30">شیطان</text></g>';
