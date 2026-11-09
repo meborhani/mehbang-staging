@@ -54,7 +54,8 @@ let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=require('
   assert.equal(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).fill),'none','the back icon is a stroked gold arrow, not a filled triangle');
   assert.notEqual(await page.locator('.back-button path').evaluate(e=>getComputedStyle(e).stroke),'none','the back arrow keeps its visible gold stroke');
   assert.equal(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').animationName),'turn-ring-spin','the active player highlight follows the rounded card frame');
-  assert.ok(await page.locator('#seat-0').evaluate(e=>getComputedStyle(e,':after').backgroundImage.includes('conic-gradient')&&!getComputedStyle(e,':after').backgroundImage.includes('flame.svg')),'the stationary rounded frame uses a moving gold conic gradient like Kahroba');
+  assert.deepEqual(await page.locator('#seat-0').evaluate(e=>({transform:getComputedStyle(e,':after').transform,radius:getComputedStyle(e,':after').borderRadius})),{transform:'none',radius:'20px'},'the frame stays still and its rounded perimeter clips the moving light');
+  assert.ok(await page.locator('#seat-0').evaluate(e=>{const bg=getComputedStyle(e,':after').backgroundImage;return bg.includes('conic-gradient')&&bg.includes('79%')&&bg.includes('81%')&&!bg.includes('flame.svg')}),'one narrow gold light arc travels around the rounded frame while the base border stays still');
   const first=page.locator('.coal-token:not(.is-revealed)').first();
   const before=await first.getAttribute('data-coal-id');
   await first.click();
