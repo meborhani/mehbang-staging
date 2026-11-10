@@ -607,6 +607,7 @@ body[data-skin=cosmic] .btn:active{filter:brightness(1.3)}
 .mg-c.d.p0{background:var(--e1)}.mg-c.d.p1{background:var(--e0)}
 .mg-c.win{outline:3px solid var(--ember);animation:mgp .8s infinite alternate}
 @keyframes mgp{to{filter:brightness(1.5)}}
+.fadd-plus{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#2e9e52;color:#fff;font-weight:900;font-size:14px;line-height:1;border:0;padding:0;vertical-align:middle;margin:0 2px;cursor:pointer}
 .mg-r{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.mg-r .btn{flex:1;min-width:110px}.pk-filters{align-items:flex-end}.pk-fsel{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}.pk-fsel select{padding:7px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:inherit;font:inherit}
 .mg-code{font-family:monospace;font-size:34px;letter-spacing:6px;text-align:center;direction:ltr;color:var(--ember)}
 .ch-bd{display:grid;grid-template-columns:repeat(8,1fr);direction:ltr;width:min(100%,440px);margin:0 auto;border:2px solid var(--line);border-radius:10px;overflow:hidden}
@@ -8023,7 +8024,7 @@ function showHub(){
   mgCloudPull();
   document.title='مهبانگ گیم';
   $('#intro').hidden=true;$('#lobby').hidden=true;$('#hub').hidden=false;
-  presenceStart();ecoDaily();sbSync();hubSync();
+  presenceStart();ecoDaily();sbSync();hubSync();grpPoll();if(!window.__grpTimer)window.__grpTimer=setInterval(grpPoll,window.__FAST?1000:5000);
   if(ECO_ON&&!ACCT&&!cleanName(loadName())&&!window.__nameAsked){window.__nameAsked=1;setTimeout(function(){if(!$('#hub').hidden&&!document.getElementById('acc')){accOpen();toast('اول یک نام نمایشی برای خودت بنویس');}},400);}
 }
 function hubCatan(){$('#hub').hidden=true;applyTheme(loadTheme(),true);showIntro();}
@@ -8061,6 +8062,30 @@ function srvReport(gid,win,pts,online){
 }
 var GNAME={catan:'سیطره کتان',hell:'فرار از جهنم'};
 function gName(id){return GNAME[id]||(MGS[id]&&MGS[id].name)||id;}
+/* ---- groups (leader-led parties) ---- */
+var GRP=null,GRP_BUSY=false;
+function grpPoll(){
+  if(!srvOk()||GRP_BUSY)return;
+  GRP_BUSY=true;var me=ACCT;
+  srvCall('mb_grp_get').then(function(r){
+    GRP_BUSY=false;if(ACCT!==me)return;
+    var prevT=GRP&&GRP.start&&GRP.start.t;
+    GRP=r;
+    if(r&&r.start&&r.start.t&&r.start.t!==prevT&&!r.iamleader)grpAutoJoin(r.start);
+  }).catch(function(){GRP_BUSY=false;});
+}
+function grpAutoJoin(st){
+  if(!st||!st.g||!st.c||!MGS[st.g])return;
+  try{closeSheet();}catch(e){}
+  try{var az=document.getElementById('azulOverlay');if(az)az.remove();}catch(e){}
+  try{var hw=document.getElementById('hellEscapeOverlay');if(hw)hw.remove();}catch(e){}
+  try{if(document.getElementById('hub'))document.getElementById('hub').hidden=false;}catch(e){}
+  toast('لیدر گروه، بازی '+gName(st.g)+' را شروع کرد؛ در حال ورود…');
+  mgOpen(st.g);
+  if(st.g==='jaliz'||st.g==='kahroba'||st.g==='poker')M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[st.g];
+  mgJoin(st.c);
+}
+function grpBlocked(){return !!(GRP&&!GRP.iamleader);}
 function sheetClose(sh){sh.addEventListener('click',function(e){if(e.target.closest('[data-close]'))closeSheet();});}
 function shopOpen(){
   if(needAcct())return;
@@ -8095,7 +8120,7 @@ function ntfOpen(){
 }
 function lobbyOpen(tab){
   if(needAcct())return;
-  var T=tab||'chat',last=0,sh=openSheet('<h3>تالار گفتگو</h3><div class="tabs"><button data-lt="chat">چت و آنلاین‌ها</button><button data-lt="fr">دوستان</button></div><div id="lbBody"></div><button class="btn wide" data-close>بستن</button>');
+  var T=tab||'chat',last=0,glast=0,sh=openSheet('<h3>تالار گفتگو</h3><div class="tabs"><button data-lt="chat">لابی</button><button data-lt="fr">دوستان</button><button data-lt="grp">گروه</button></div><div id="lbBody"></div><button class="btn wide" data-close>بستن</button>');
   var body=sh.querySelector('#lbBody'),timer=0,gone=false;
   function paintTabs(){Array.prototype.forEach.call(sh.querySelectorAll('[data-lt]'),function(b){b.classList.toggle('on',b.dataset.lt===T);});}
   function chatDraw(r){
@@ -8103,11 +8128,36 @@ function lobbyOpen(tab){
     var near=box.scrollTop+box.clientHeight>=box.scrollHeight-30;
     (r.msgs||[]).forEach(function(m){if(m.id>last){last=m.id;box.insertAdjacentHTML('beforeend','<div class="lbm"><b>'+esc2(m.n)+'</b> '+esc2(m.m)+'</div>');}});
     if(near)box.scrollTop=box.scrollHeight;
-    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'">'+esc2(o.n)+(o.f?'':' <button class="btn small" data-fadd2="'+esc2(o.n)+'">+دوست</button>')+'</span>';}).join(' ');
+    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'">'+esc2(o.n)+(o.f?'':' <button class="fadd-plus" data-fadd2="'+esc2(o.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</span>';}).join(' ');
+  }
+  function grpChatDraw(r){
+    var box=body.querySelector('#gpMsgs');if(!box)return;
+    var near=box.scrollTop+box.clientHeight>=box.scrollHeight-30;
+    (r||[]).forEach(function(m){if(m.id>glast){glast=m.id;box.insertAdjacentHTML('beforeend','<div class="lbm"><b>'+esc2(m.n)+'</b> '+esc2(m.m)+'</div>');}});
+    if(near)box.scrollTop=box.scrollHeight;
+  }
+  function grpDraw(){
+    body.innerHTML='<div class="sub">در حال بارگذاری…</div>';
+    srvCall('mb_grp_get').then(function(r){
+      if(T!=='grp')return;
+      GRP=r;
+      if(!r){body.innerHTML='<p class="sub">هنوز عضو هیچ گروهی نیستی.</p><button class="btn wide primary" data-grpmk>ساخت گروه</button>';return;}
+      var h='<div class="sub">لیدر گروه: <b>'+esc2(r.leader)+'</b>'+(r.iamleader?' (تو)':'')+'</div>';
+      h+='<div class="prow-list">'+(r.members||[]).map(function(m){return '<div class="prow"><i class="pdot'+(m.o?' on':'')+'"></i><div class="pn"><b>'+esc2(m.n)+'</b></div></div>';}).join('')+'</div>';
+      if(r.iamleader){
+        var opts=['jaliz','kahroba','poker'].map(function(g){return '<option value="'+g+'">'+esc2(gName(g))+'</option>';}).join('');
+        h+='<div class="addrow"><select id="grpGame" class="inp">'+opts+'</select><button class="btn small primary" data-grpstart>شروع بازی گروهی</button></div>';
+        h+='<button class="btn wide" data-grpdisband>اتمام گروه</button>';
+      }else h+='<button class="btn wide" data-grpleave>خروج از گروه</button>';
+      h+='<div class="sub">چت گروه</div><div id="gpMsgs" class="lbl"></div><div class="addrow"><input id="gpIn" class="inp" maxlength="200" placeholder="پیام…" autocomplete="off"><button class="btn small primary" data-gpsend>ارسال</button></div>';
+      glast=0;body.innerHTML=h;
+      srvCall('mb_grp_chat_get',{p_after:0}).then(grpChatDraw).catch(function(){});
+    }).catch(function(){body.innerHTML='<p class="sub">اتصال به سرور برقرار نشد.</p>';});
   }
   function poll(){
     if(gone||!sh.isConnected){gone=true;clearInterval(timer);return;}
     if(T==='chat')srvCall('mb_chat_get',{p_after:last}).then(chatDraw).catch(function(){});
+    else if(T==='grp')srvCall('mb_grp_chat_get',{p_after:glast}).then(grpChatDraw).catch(function(){});
   }
   function frDraw(){
     body.innerHTML='<div class="sub">در حال بارگذاری…</div>';
@@ -8115,7 +8165,7 @@ function lobbyOpen(tab){
       if(T!=='fr')return;
       var h='<div class="addrow"><input id="frU" class="inp" dir="ltr" maxlength="16" placeholder="نام کاربری دوست" autocomplete="off"><button class="btn small primary" data-fadd>افزودن</button></div>';
       (r.inc||[]).forEach(function(n){h+='<div class="prow"><div class="pn"><b>'+esc2(n)+'</b><small>درخواست دوستی</small></div><div class="pb"><button class="btn small primary" data-facc="'+esc2(n)+'">پذیرش</button><button class="btn small" data-fdel="'+esc2(n)+'">رد</button></div></div>';});
-      (r.fr||[]).forEach(function(f){h+='<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b>'+esc2(f.n)+'</b><small>'+(f.o?'آنلاین':'آفلاین')+'</small></div><div class="pb"><button class="btn small" data-fdel="'+esc2(f.n)+'">حذف</button></div></div>';});
+      (r.fr||[]).forEach(function(f){h+='<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b>'+esc2(f.n)+'</b><small>'+(f.o?'آنلاین':'آفلاین')+'</small></div><div class="pb"><button class="btn small" data-ginv="'+esc2(f.n)+'">افزودن به گروه</button><button class="btn small" data-fdel="'+esc2(f.n)+'">حذف</button></div></div>';});
       (r.out||[]).forEach(function(n){h+='<div class="prow"><div class="pn"><b>'+esc2(n)+'</b><small>در انتظار پذیرش</small></div><div class="pb"><button class="btn small" data-fdel="'+esc2(n)+'">لغو</button></div></div>';});
       if(!(r.fr||[]).length&&!(r.inc||[]).length&&!(r.out||[]).length)h+='<p class="sub">هنوز دوستی نداری. نام کاربری دوستت را بنویس.</p>';
       body.innerHTML=h;
@@ -8125,7 +8175,8 @@ function lobbyOpen(tab){
     paintTabs();
     if(T==='chat'){
       last=0;body.innerHTML='<div id="lbOn" class="sub small"></div><div id="lbMsgs" class="lbl"></div><div class="addrow"><input id="lbIn" class="inp" maxlength="200" placeholder="پیام…" autocomplete="off"><button class="btn small primary" data-lbsend>ارسال</button></div>';poll();
-    }else frDraw();
+    }else if(T==='grp')grpDraw();
+    else frDraw();
   }
   function send(){
     var i=body.querySelector('#lbIn');if(!i||!i.value.trim())return;
@@ -8147,8 +8198,29 @@ function lobbyOpen(tab){
       srvCall('mb_fr_add',{p_user:x.dataset.fadd2}).then(function(r){toast(({none:'کاربری با این نام پیدا نشد',self:'این خودِ توست',already:'او قبلاً دوست توست',sent:'درخواست دوستی فرستاده شد',accepted:'دوست شدید 🎉',full:'فهرست دوستان پر است'})[r]||'انجام نشد');}).catch(function(){toast('اتصال به سرور برقرار نشد');});
       return;
     }
+    if(t.closest('[data-grpmk]')){srvCall('mb_grp_create').then(function(r){GRP=r;grpDraw();}).catch(function(){toast('اتصال به سرور برقرار نشد');});return;}
+    if((x=t.closest('[data-ginv]'))){
+      srvCall('mb_grp_invite',{p_user:x.dataset.ginv}).then(function(r){toast(({ok:'به گروه اضافه شد',busy:'او عضو گروه دیگری است',notfriend:'فقط دوستان را می‌توانی اضافه کنی',notleader:'فقط لیدر گروه می‌تواند عضو اضافه کند',full:'گروه پر است',none:'کاربری پیدا نشد'})[r]||'انجام نشد');}).catch(function(){toast('اتصال به سرور برقرار نشد');});
+      return;
+    }
+    if(t.closest('[data-grpleave]')){srvCall('mb_grp_leave').then(function(){GRP=null;grpDraw();}).catch(function(){toast('اتصال به سرور برقرار نشد');});return;}
+    if(t.closest('[data-grpdisband]')){srvCall('mb_grp_disband').then(function(){GRP=null;grpDraw();}).catch(function(){toast('اتصال به سرور برقرار نشد');});return;}
+    if(t.closest('[data-grpstart]')){
+      var gsel=body.querySelector('#grpGame');if(!gsel)return;var gid=gsel.value;
+      if(!srvOk()){needAcct();return;}
+      renderHub();mgOpen(gid);M.grpStart=true;
+      if(ecoCan(feeOf(gid,true)))jzsMk(gid);
+      closeSheet();
+      return;
+    }
+    if(t.closest('[data-gpsend]')){
+      var gi=body.querySelector('#gpIn');if(!gi||!gi.value.trim())return;
+      var gv=gi.value;gi.value='';
+      srvCall('mb_grp_say',{p_msg:gv}).then(function(ok){if(!ok){gi.value=gv;toast('کمی صبر کن');}else poll();}).catch(function(){gi.value=gv;toast('اتصال به سرور برقرار نشد');});
+      return;
+    }
   });
-  sh.addEventListener('keydown',function(e){if(e.key==='Enter'){if(e.target.id==='lbIn')send();else if(e.target.id==='frU'){var b=sh.querySelector('[data-fadd]');if(b)b.click();}}});
+  sh.addEventListener('keydown',function(e){if(e.key==='Enter'){if(e.target.id==='lbIn')send();else if(e.target.id==='gpIn'){var gb=sh.querySelector('[data-gpsend]');if(gb)gb.click();}else if(e.target.id==='frU'){var b=sh.querySelector('[data-fadd]');if(b)b.click();}}});
   show();timer=setInterval(poll,4000);
 }
 function statsOpen(){
@@ -8877,7 +8949,7 @@ function jzsMk(gid){
   srvCall(fn+'_create',gid==='poker'?{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn,p_cfg:cur.pkcfg}:{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn}).then(function(r){
     if(M!==cur)return;
     if(!r||!r.ok){cur.msg='ساخت اتاق ناموفق بود';mgRender();return;}
-    cur.sv=fn;mgJoin(String(r.code));
+    cur.sv=fn;if(cur.grpStart){cur.grpStart=false;srvCall('mb_grp_start',{p_game:gid,p_code:String(r.code)}).catch(function(){});}mgJoin(String(r.code));
   }).catch(function(){if(M===cur){cur.msg='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';mgRender();}});
 }
 function mgJoin(code,tk0){
@@ -9115,6 +9187,8 @@ $('#mini').addEventListener('click',function(e){
     if(g.type==='kahroba')kbNameAi();
     M.rn=0;mgReset();mgAfter();
   }
+  else if(k==='mk'&&grpBlocked()){M.msg='تا وقتی عضو گروهی، فقط لیدر می‌تواند اتاق بسازد. می‌توانی از گروه خارج شوی.';mgRender();}
+  else if(k==='join'&&grpBlocked()){M.msg='تا وقتی عضو گروهی، فقط لیدر می‌تواند اتاق را انتخاب کند. می‌توانی از گروه خارج شوی.';mgRender();}
   else if(k==='mk'){if(M.g.id==='azul'){M.n=M.pn;M.names.length=M.n;M.wins.length=M.n;M.ai.length=M.n;M.av.length=M.n;while(M.names.length<M.n){M.names.push('');M.wins.push(0);M.ai.push(false);}}if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk())needAcct();else if(ecoCan(feeOf(M.g.id,true)))jzsMk(M.g.id);}else mgHost();}
   else if(k==='join'){if(M.g.type==='jaliz'||M.g.type==='kahroba'||M.g.type==='poker'){if(!srvOk()){needAcct();return;}M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[M.g.type];}if(ecoCan((M.g.land?ecoNeed(M.g,M.pkcfg):0)+feeOf(M.g.id,true)))mgJoin($('#mgCode').value);}
   else if(k==='start'){if(M.sv&&M.svh&&M.link)M.link.send({t:'svstart'});else if(M.wait)mgBegin();}
