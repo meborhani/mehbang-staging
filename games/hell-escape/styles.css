@@ -215,9 +215,8 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent{grid-template-rows:minmax(12px,1fr) 14px 12px 17px}
 .opponent>img.op-avatar{grid-column:1;grid-row:1/4!important;align-self:center;width:30px;height:30px;max-height:100%;object-fit:cover;object-position:center 35%;overflow:hidden}
 .opponent .pact-mark{display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:23px;height:25px;margin-inline-start:3px;padding:1px;background:linear-gradient(145deg,#491007,#190806);border:1px solid #f1b944;border-radius:7px;box-shadow:0 0 7px rgba(255,84,23,.85),inset 0 0 5px rgba(255,177,53,.35);color:#ffd36a;overflow:visible}
-.opponent .pact-mark svg{display:block;width:17px;height:22px;overflow:visible;filter:drop-shadow(0 0 3px #ff4a15)}
-.opponent .pact-mark svg path{fill:none;stroke:#ffe28a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:360px){.opponent{grid-template-rows:minmax(11px,1fr) 13px 11px 16px}.opponent>img.op-avatar{width:28px;height:28px}.opponent-player-reveals{height:15px;min-height:15px}.opponent .pact-mark{width:21px;height:23px}.opponent .pact-mark svg{width:15px;height:20px}}
+.opponent .pact-mark img{display:block;width:20px;height:20px;object-fit:contain;filter:drop-shadow(0 0 3px #ff4a15)}
+@media(max-width:360px){.opponent{grid-template-rows:minmax(11px,1fr) 13px 11px 16px}.opponent>img.op-avatar{width:28px;height:28px}.opponent-player-reveals{height:15px;min-height:15px}.opponent .pact-mark{width:21px;height:23px}.opponent .pact-mark img{width:18px;height:18px}}
 
 /* Compact round summary: keep every label on one line above its value. */
 .max-safe-box{flex:0 0 46px;min-height:46px;grid-template-columns:.5fr 1.45fr 1.2fr 1fr .75fr;gap:2px;padding:3px 4px}
@@ -340,3 +339,4 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
    badge was showing even at the very start of a new game, before any pact exists. The [hidden]
    selector here has higher specificity than the plain class rule, so it wins and actually hides it. */
 #myPact[hidden]{display:none}
+#myPact img.pact-mark-icon{width:12px!important;height:12px!important;min-width:0;border:0!important;border-radius:0!important;box-shadow:none!important;object-fit:contain;vertical-align:-2px;margin-inline-end:2px}
