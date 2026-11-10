@@ -3996,6 +3996,7 @@ function catJoinServer(code){
 }
 function catLeaveServer(){
   if(NET.srv){try{NET.srv.close();}catch(e){}}
+  if(NET.code&&ROLE!=='solo'){var lc=NET.code;srvCall('cat_leave',{p_code:lc}).catch(function(){});}
   NET.srv=null;NET.srvLink=null;NET.catPrompt=null;
 }
 /* test hook, same shape/gating as the mg system's own window.__mg (search for it): only exists when
