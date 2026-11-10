@@ -110,7 +110,7 @@
   }
   function activeStep(){var step=g.phase==='bet'?'bet':g.phase==='play'?'coal':g.phase==='settlement'?'settle':'move';$$('[data-step]').forEach(function(el){el.classList.toggle('active',el.dataset.step===step);});}
   function renderDock(){var p=g.players[0],mine=g.phase==='play'&&g.turn===0&&!p.turnDone;
-    var dock=$('#seat-0');dock.classList.toggle('is-active',mine);dock.classList.toggle('show-bet',g.phase==='play'||g.phase==='settlement'||g.phase==='game-over');dock.classList.toggle('compact-play',g.phase==='play');
+    var dock=$('#seat-0');dock.classList.toggle('is-active',mine);dock.classList.remove('show-bet');dock.classList.remove('compact-play');
     $('#myAvatar').src=avatarFor(0);$('#myName').textContent=p.name;$('#myWealth').textContent=fa(p.wealth);$('#myWager').textContent=p.wager?fa(p.wager):'۰';$('#chips').innerHTML=playerChipRow();$('#myBetChips').innerHTML=wagerRow();$('#myPact').hidden=!p.pact;
     var lock=$('[data-lock]'),end=$('[data-end-turn]'),next=$('[data-next]'),undo=$('[data-undo]');
     lock.hidden=g.phase!=='bet'||p.locked;lock.disabled=!p.wager||p.locked;
