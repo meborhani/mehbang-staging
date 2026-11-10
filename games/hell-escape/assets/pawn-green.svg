@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-200 140 400 730">
+  <defs>
+    <linearGradient id="greenBody" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#087b19"/><stop offset=".25" stop-color="#76ef42"/>
+      <stop offset=".6" stop-color="#22c817"/><stop offset="1" stop-color="#075b12"/>
+    </linearGradient>
+    <radialGradient id="greenHead" cx=".32" cy=".22" r=".82">
+      <stop offset="0" stop-color="#b6ff83"/><stop offset=".38" stop-color="#55e52a"/>
+      <stop offset=".78" stop-color="#18a90b"/><stop offset="1" stop-color="#07510c"/>
+    </radialGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity=".78"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+  </defs>
+  <g>
+    <ellipse cx="0" cy="824" rx="174" ry="23" fill="#777" opacity=".22" filter="url(#shadow)"/>
+    <path d="M-158 795 C-145 690 -110 520 -54 365 L54 365 C110 520 145 690 158 795 Q0 829 -158 795Z" fill="url(#greenBody)" stroke="#087316" stroke-width="5"/>
+    <path d="M-116 780 C-92 625 -68 475 -38 390 C-20 378 -8 377 5 382 C-31 518 -57 665 -67 790Z" fill="url(#shine)" opacity=".58"/>
+    <ellipse cx="0" cy="794" rx="158" ry="34" fill="#1dbd14" stroke="#07530d" stroke-width="6"/>
+    <ellipse cx="0" cy="784" rx="151" ry="20" fill="#a5ff72" opacity=".28"/>
+    <circle cx="0" cy="270" r="108" fill="url(#greenHead)" stroke="#087016" stroke-width="4"/>
+    <ellipse cx="-40" cy="218" rx="34" ry="18" transform="rotate(-42 -40 218)" fill="#fff" opacity=".9"/>
+    <circle cx="-72" cy="258" r="10" fill="#fff" opacity=".55"/>
+  </g>
+</svg>
