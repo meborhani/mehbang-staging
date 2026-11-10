@@ -1,5 +1,5 @@
 // Catan server: loads room state, runs the shared engine (cat_core.mjs), saves with version CAS.
-import {run} from "https://raw.githubusercontent.com/meborhani/mehbang-staging/a4733cb/supabase/functions/cat/cat_core.mjs";
+import {run} from "https://raw.githubusercontent.com/meborhani/mehbang-staging/adc863e/supabase/functions/cat/cat_core.mjs";
 import {createClient} from "npm:@supabase/supabase-js@2.45.4";
 const sb=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false}});
 const H={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Content-Type":"application/json"};
