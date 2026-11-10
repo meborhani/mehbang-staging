@@ -2704,7 +2704,7 @@ function aiBHTile(p,opts){
     return sc;
   });
 }
-function aiTrade(p){
+function aiTradeBank(p){
   var goal=aiGoal(p),want=-1,i;
   for(i=0;i<5;i++)if(goal[i]>p.res[i]){want=i;break;}
   if(want<0)return false;
@@ -2717,6 +2717,50 @@ function aiTrade(p){
   p.res[best]-=br;p.res[want]++;
   log(p.name+' '+fa(br)+' '+RS[best]+' را برون‌سپاری کرد و یک '+RS[want]+' گرفت.');
   render();return true;
+}
+function aiPickGive(p,goal,want){
+  var best=-1,surplus=-1;
+  for(var j=0;j<5;j++){
+    if(j===want)continue;
+    var s=p.res[j]-Math.max(goal[j],0);
+    if(s>=1&&s>surplus){surplus=s;best=j;}
+  }
+  return best;
+}
+async function aiTrade(p){
+  var goal=aiGoal(p),want=-1,i;
+  for(i=0;i<5;i++)if(goal[i]>p.res[i]){want=i;break;}
+  if(want<0)return aiTradeBank(p);
+  var give=aiPickGive(p,goal,want);
+  if(give<0)return aiTradeBank(p);
+  /* if an opponent is close to winning, don't risk handing them a useful resource via a fair trade;
+     just use the bank/port directly */
+  var risky=S.players.some(function(q){return q.id!==p.id&&totalPoints(q)>=WIN-(S.diff===2?4:2);});
+  if(!risky){
+    var portR=ratio(p,give),steps=[1];
+    if(portR>2)steps.push(2);
+    if(portR>3)steps.push(3);
+    for(var s=0;s<steps.length;s++){
+      var n=steps[s];
+      if(p.res[give]<n)continue;
+      var giveArr=[0,0,0,0,0],getArr=[0,0,0,0,0];
+      giveArr[give]=n;getArr[want]=1;
+      var results=[];
+      try{results=await collectTradeResponses(p,giveArr,getArr);}catch(e){console.error(e);}
+      if(S.over||S.cur!==p.id)return false;
+      var acc=results.filter(function(r){return r.ok===true;})[0];
+      if(acc){
+        var q=S.players[acc.id];
+        if(p.res[give]>=n&&q.res[want]>=1){
+          for(var k=0;k<5;k++){p.res[k]+=getArr[k]-giveArr[k];q.res[k]+=giveArr[k]-getArr[k];}
+          p.stats.ptr++;q.stats.ptr++;
+          log(p.name+' با '+q.name+' معامله کرد: داد '+fmtRes(giveArr)+'، گرفت '+fmtRes(getArr)+'.');
+          render();return true;
+        }
+      }
+    }
+  }
+  return aiTradeBank(p);
 }
 function aiAccepts(q,give,get,h){
   var gi=sum(give),go=sum(get),i;
@@ -2795,7 +2839,7 @@ async function aiAct(p,st){
     var sp=filSpots(p);
     if(sp.length){doBuild(p,'fil',aiPickFil(p,sp));return true;}
   }
-  if(Math.random()<AK().trade&&aiTrade(p))return true;
+  if(Math.random()<AK().trade&&await aiTrade(p))return true;
   return false;
 }
 async function aiTurn(p,st,skipRoll){
