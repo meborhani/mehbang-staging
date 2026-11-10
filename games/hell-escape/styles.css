@@ -380,3 +380,21 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 
 /* Board size is measured from the real mobile layout to preserve a square playfield. */
 .board-svg{width:auto;height:auto;max-width:100%;max-height:100%}
+
+/* Stage follow-up: keep the player's chips visible while drawing. */
+.player-dock.compact-play{flex:0 0 104px;min-height:104px;height:104px;grid-template-columns:minmax(0,1fr);grid-template-rows:18px 42px 30px;gap:1px;padding:3px 5px;overflow:hidden}
+.player-dock.compact-play .player-identity,.player-dock.compact-play .bet-tray{display:none!important}
+.player-dock.compact-play #myPlayerReveals{grid-column:1!important;grid-row:1!important;width:100%;height:18px;min-height:18px;align-self:center;justify-self:stretch;justify-content:center;margin:0;padding:0 5px;border:0;border-radius:8px;background:linear-gradient(90deg,rgba(7,35,49,.56),rgba(88,47,17,.38),rgba(7,35,49,.56))}
+.player-dock.compact-play #myPlayerReveals:before{content:"برداشت‌های من";color:#f6d797;font-size:9px;white-space:nowrap}
+.player-dock.compact-play #myPlayerReveals .coal-reveal-badge{height:15px;min-width:22px;font-size:10px}
+.player-dock.compact-play #chipBank{display:flex!important;grid-column:1!important;grid-row:2!important;width:100%;height:42px;min-height:0;max-height:42px;padding:1px 5px;gap:0}
+.player-dock.compact-play #chipBank .dock-label{font-size:8px;line-height:8px}
+.player-dock.compact-play #chipBank .chip-row{height:31px;min-height:31px;max-height:31px;flex:0 0 31px;gap:1px}
+.player-dock.compact-play #chipBank .chip-button{height:29px;max-height:29px;padding:0;transform:none}
+.player-dock.compact-play #chipBank .chip-button svg{width:100%;height:29px;max-height:29px}
+.player-dock.compact-play .dock-actions{position:static!important;grid-column:1!important;grid-row:3!important;display:flex;width:100%;height:30px;justify-content:stretch;align-self:stretch}
+.player-dock.compact-play .dock-actions .end-turn{flex:1 1 100%;width:100%;min-width:0;max-width:none;height:30px;min-height:30px;padding:4px 8px;font-size:11px}
+/* A fixed anchor and fade-only transition prevent the warning from jumping. */
+.toast{bottom:calc(clamp(160px,20vh,170px) + var(--safe-bottom))!important;height:54px;min-height:54px;max-height:54px;display:flex;align-items:center;justify-content:center;white-space:normal;text-align:center;overflow:hidden;opacity:0;visibility:hidden;transform:translateX(-50%);transition:opacity .18s ease,visibility .18s ease;}
+.toast.show{opacity:1;visibility:visible;transform:translateX(-50%)}
+#app[data-phase="play"] .toast,#app[data-phase="bet"] .toast,#app[data-phase="bet-reveal"] .toast,#app[data-phase="settlement"] .toast,#app[data-phase="game-over"] .toast{bottom:calc(clamp(160px,20vh,170px) + var(--safe-bottom))!important}
