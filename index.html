@@ -1570,7 +1570,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 @media (orientation:landscape) and (max-height:520px){.v3-brand{display:none}.v3-mg{grid-template-columns:repeat(4,minmax(0,1fr))}.v3-st{margin:8px 0}}
 .shopr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .lbl{height:34vh;min-height:120px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;gap:3px;font-size:13px}.lbm b{color:var(--ember)}.lbo{display:inline-block;margin:0 2px;padding:0 6px;border:1px solid var(--line);border-radius:9px;font-size:11px}.lbo.f{border-color:#5fbc43}.rktb{width:100%;border-collapse:collapse;font-size:12px}.rktb td,.rktb th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:center}.rktb tr.me{background:rgba(233,184,103,.15)}
-.ntf{max-height:46vh;overflow-y:auto}#stBody.endbody{max-height:46vh;overflow-y:auto}
+.ntf{max-height:46vh;overflow-y:auto}#stBody.endbody{max-height:46vh;overflow-y:auto}#hfBody.endbody{max-height:46vh;overflow-y:auto}
 .ntf{display:grid;gap:6px}.ntf>div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px}.ntf small{display:block;color:var(--ink-dim);font-size:11px}
 </style>
 <style>#azulOverlay{position:fixed;inset:0;z-index:99999;background:#082b4f}#azulOverlay iframe{display:block;border:0;width:100%;height:100%;height:100dvh}</style><style>#hellEscapeOverlay{position:fixed;inset:0;z-index:100000;background:#130b09}#hellEscapeOverlay iframe{display:block;width:100%;height:100%;height:100dvh;border:0}.v3-g.v3-hell{aspect-ratio:444/318}</style><style id="hellMainVisualFix">
@@ -8323,7 +8323,7 @@ function statsOpen(){
     srvCall('mb_rank',{p_scope:RK}).then(function(r){
       if(T!=='rk')return;
       var h='<div class="tabs sm">'+[['all','کلی'],['wk','هفتگی'],['mo','ماهانه'],['fr','بین دوستان']].map(function(x){return '<button data-rk="'+x[0]+'" class="'+(RK===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
-      h+='<table class="rktb"><tr><th>#</th><th>نام</th><th>بازی</th><th>برد</th><th>امتیاز</th></tr>'+((r.rows||[]).map(function(x){return '<tr'+(x.me?' class="me"':'')+'><td>'+fa(x.rk)+'</td><td>'+esc2(x.n)+'</td><td>'+fa(x.g)+'</td><td>'+fa(x.w)+'</td><td>'+fa(x.p)+'</td></tr>';}).join('')||'<tr><td colspan="5">هنوز بازی آنلاینی ثبت نشده.</td></tr>')+'</table>';
+      h+='<table class="rktb"><tr><th>#</th><th>نام</th><th>بازی</th><th>برد</th><th>امتیاز</th><th></th></tr>'+((r.rows||[]).map(function(x){return '<tr'+(x.me?' class="me"':'')+'><td>'+fa(x.rk)+'</td><td>'+esc2(x.n)+'</td><td>'+fa(x.g)+'</td><td>'+fa(x.w)+'</td><td>'+fa(x.p)+'</td><td>'+(x.me||x.fr?'':'<button class="fadd-plus" data-fadd2="'+esc2(x.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</td></tr>';}).join('')||'<tr><td colspan="6">هنوز بازی آنلاینی ثبت نشده.</td></tr>')+'</table>';
       if(r.mine&&!(r.rows||[]).some(function(x){return x.me;}))h+='<p class="sub">رتبهٔ تو: '+fa(r.mine.rk)+'</p>';
       h+='<p class="sub small">فقط بازی‌های آنلاین حساب می‌شود. هر برد ۱۰ امتیاز + امتیاز بازی.</p>';
       body.innerHTML=h;
@@ -8333,6 +8333,10 @@ function statsOpen(){
     var x;if(e.target.closest('[data-close]')){closeSheet();return;}
     if((x=e.target.closest('[data-st]'))){T=x.dataset.st;draw();return;}
     if((x=e.target.closest('[data-rk]'))){RK=x.dataset.rk;draw();return;}
+    if((x=e.target.closest('[data-fadd2]'))){
+      srvCall('mb_fr_add',{p_user:x.dataset.fadd2}).then(function(r){toast(({none:'کاربری با این نام پیدا نشد',self:'این خودِ توست',already:'او قبلاً دوست توست',sent:'درخواست دوستی فرستاده شد',accepted:'دوست شدید 🎉',full:'فهرست دوستان پر است'})[r]||'انجام نشد');}).catch(function(){toast('اتصال به سرور برقرار نشد');});
+      return;
+    }
   });
   draw();
 }
