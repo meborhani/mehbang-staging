@@ -401,3 +401,11 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .op-reveal-count{grid-row:2;grid-column:2;justify-self:end;align-self:center;position:relative;z-index:2;min-width:15px;height:14px;padding:0 4px;border-radius:999px;border:1px solid rgba(237,187,92,.72);background:linear-gradient(145deg,#412619,#160f0d);box-shadow:inset 0 0 3px #000,0 1px 2px #000;color:#fff4d1;font:800 9px/14px Vazirmatn,Tahoma,sans-serif;text-align:center;white-space:nowrap;direction:ltr}
 .op-reveal-count:empty{display:none}
 #app[data-phase="play"] .toast,#app[data-phase="bet"] .toast,#app[data-phase="bet-reveal"] .toast,#app[data-phase="settlement"] .toast,#app[data-phase="game-over"] .toast{bottom:calc(clamp(160px,20vh,170px) + var(--safe-bottom))!important}
+/* Final, authoritative active-turn highlight: ported 1:1 from Kahroba's .kx-o.on/.kx-me.on technique
+   (a static gold halo plus a slowly rotating gold conic-gradient ring masked down to just the border),
+   replacing every earlier flame/light-bead/color experiment defined above in this file. */
+.turn-light{display:none!important}
+.active-flames{display:none!important}
+.opponent.is-active,.player-dock.is-active{animation:none!important;filter:none!important;border-color:#f1c75b;box-shadow:0 0 0 2px rgba(241,194,75,.8),0 0 10px rgba(245,184,0,.55)}
+.opponent.is-active:before,.player-dock.is-active:before{content:none!important;display:none!important}
+.opponent.is-active:after,.player-dock.is-active:after{content:""!important;display:block!important;position:absolute;inset:-3px;z-index:5;padding:3px;border:0;border-radius:calc(var(--frame-radius) + 3px);background:conic-gradient(from var(--turn-angle),#c9a24d 0,#fff1a0 14%,#e0a800 28%,#c9a24d 50%,#fff1a0 64%,#e0a800 78%,#c9a24d 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:turn-ring-spin 2.2s linear infinite!important;pointer-events:none}
