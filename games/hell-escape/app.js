@@ -39,7 +39,7 @@
       reportSent=true;g.reportSent=true;
       var rp=view.rp||makeReport();
       msgParent({type:'hell:report',report:rp,result:view.res===0?'w':(view.res==='draw'?'d':'l'),gameId:g.gameId,opponents:g.players.slice(1).map(function(p){return p.name;})});
-      renderSummary();
+      summaryOpen();
     }
     if(g.phase==='settlement'&&g.pactOffer===0)showPact();
   }
