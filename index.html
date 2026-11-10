@@ -8121,7 +8121,7 @@ function mgClose(){
     if(realClose){lsSet(MGH,null);MGW_LAST='';if(M.mode==='host')mgCloudPush(1);}
     Object.keys(M.links).forEach(function(s){var l=M.links[s];if(l){l.onclose=null;if(realClose&&!M.over){try{l.send({t:'bye'});}catch(e){}setTimeout(function(){try{l.close();}catch(e){}},400);}else l.close();}});
     if(M.link){M.link.onclose=null;M.link.close();}
-    if(M.sv&&M.code&&!M.over&&srvOk()){try{srvCall('jz_leave',{p_code:M.code}).catch(function(){});}catch(e){}}
+    if(M.sv&&M.code&&!M.over&&srvOk()){try{srvCall(M.sv+'_leave',{p_code:M.code}).catch(function(){});}catch(e){}}
     if(M.srv)M.srv.close();
   }
   M=null;$('#mini').hidden=true;
