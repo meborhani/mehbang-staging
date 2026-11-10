@@ -191,7 +191,11 @@
     document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-coal-id]')){e.preventDefault();reveal(e.target.dataset.coalId);}});
   }
   function init(){var params=new URLSearchParams(location.search);onlineMode=params.get('online')==='1'||params.has('room');$('[data-start-tutorial]').hidden=onlineMode;$('[data-vibration]').textContent='لرزش نوبت: '+(vibrationEnabled?'روشن':'خاموش');profileName=(params.get('player')||'بازیکن').slice(0,24);$('#myName').textContent=profileName;events();window.addEventListener('resize',fitBoard,{passive:true});if(window.visualViewport)window.visualViewport.addEventListener('resize',fitBoard,{passive:true});
-    if(onlineMode){$('.setup-lead').textContent='در حال اتصال به اتاق…';return;}
+    if(onlineMode){
+      $('.setup-lead').textContent='در حال اتصال به اتاق…';
+      Array.prototype.forEach.call(document.querySelectorAll('.setup-block,[data-start],[data-resume],.setup-rules,.setup-coal-info'),function(el){el.hidden=true;});
+      return;
+    }
     if(validSave())$('[data-resume]').hidden=false;if(params.has('resume')&&validSave())resumeGame();}
   init();
 })();
