@@ -8189,7 +8189,71 @@ function openHellEscape(opts){
   var frame=wrap.querySelector('iframe');frame.addEventListener('load',function(){frame.contentWindow.postMessage({type:'hell:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);});document.body.appendChild(wrap);
 }
 function hellFrame(){var w=document.getElementById('hellEscapeOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
-window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=hellFrame();if(!f||e.source!==f)return;if(d.type==='hell:back'){var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();return;}if(d.type==='hell:report'&&d.report&&d.report.id==='hell'){var rp=d.report,h=lsGet(histKey(),[]);if(rp.gid&&h.some(function(x){return x&&x.rp&&x.rp.gid===rp.gid;}))return;histAdd({rp:rp,s:0,t:rp.t||Date.now(),g:'فرار از جهنم',r:d.result==='w'?'w':d.result==='d'?'d':'l',n:rp.n||2,o:0,ops:Array.isArray(d.opponents)?d.opponents:[]});}});
+window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=hellFrame();if(!f||e.source!==f)return;if(d.type==='hell:back'){if(HELLNET.link)hellLeaveRoom();var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();return;}if(d.type==='hell:action'){if(HELLNET.link)hellSend(d.action);return;}if(d.type==='hell:report'&&d.report&&d.report.id==='hell'){var rp=d.report,h=lsGet(histKey(),[]);if(rp.gid&&h.some(function(x){return x&&x.rp&&x.rp.gid===rp.gid;}))return;histAdd({rp:rp,s:0,t:rp.t||Date.now(),g:'فرار از جهنم',r:d.result==='w'?'w':d.result==='d'?'d':'l',n:rp.n||2,o:0,ops:Array.isArray(d.opponents)?d.opponents:[]});}});
+/* ---------- Hell Escape: online rooms (same server-authoritative pattern as Jaliz/Kahroba/Poker/Catan,
+   via the shared jzsT transport; see catSend/catApplyView above for the sibling implementation) ---------- */
+var HELLNET={link:null,code:null,n:4,names:[],isHost:false,seat:0,sheet:null};
+function hellSend(m){if(HELLNET.link)HELLNET.link.send({t:'hell',m:m});}
+function hellCloseRoom(){try{if(HELLNET.link){HELLNET.link.onclose=null;HELLNET.link.close();}}catch(e){}HELLNET.link=null;HELLNET.code=null;HELLNET.isHost=false;if(HELLNET.sheet){closeSheet();HELLNET.sheet=null;}}
+function hellLeaveRoom(){if(HELLNET.code)srvCall('hell_leave',{p_code:HELLNET.code}).catch(function(){});hellCloseRoom();}
+function hellLobbyHtml(){
+  var n=HELLNET.n||4,names=HELLNET.names||[],rows='';
+  for(var i=0;i<n;i++)rows+='<div class="row">'+fa(i+1)+'. '+(names[i]?esc2(names[i]):'<span class="dim">خالی…</span>')+'</div>';
+  var sizeBtns='';if(HELLNET.isHost)[2,3,4].forEach(function(k){sizeBtns+='<button class="btn sm'+(n===k?' active':'')+'" data-hell-n="'+k+'">'+fa(k)+' نفره</button>';});
+  return '<h3>فرار از جهنم · اتاق آنلاین</h3><p class="sub">این کد را برای دوستانت بفرست:</p><div class="mg-code">'+(HELLNET.code||'')+'</div>'+(sizeBtns?'<div class="opts">'+sizeBtns+'</div>':'')+rows+(HELLNET.isHost?'<button class="btn primary wide" data-hell-start>شروع بازی</button>':'<p class="sub">منتظر شروع بازی توسط میزبان…</p>')+'<button class="btn wide" data-hell-leave>خروج از اتاق</button>';
+}
+function hellRenderLobby(){if(!HELLNET.sheet)HELLNET.sheet=openSheet(hellLobbyHtml(),{dismiss:false,cls:'hell-lobby'});else HELLNET.sheet.innerHTML=hellLobbyHtml();}
+function hellOpenOnlineFrame(){
+  var old=document.getElementById('hellEscapeOverlay');if(old)return;
+  var playerName=encodeURIComponent((ACCT&&ACCT.name)||cleanName(loadName())||'بازیکن'),wrap=document.createElement('div');wrap.id='hellEscapeOverlay';
+  wrap.innerHTML='<iframe title="فرار از جهنم" src="games/hell-escape/index.html?player='+playerName+'&online=1"></iframe>';
+  document.body.appendChild(wrap);
+}
+function hellJoin(code){
+  if(!srvOk()){needAcct();return;}
+  code=dg(String(code||'')).replace(/[^0-9]/g,'');
+  if(code.length!==5){toast('کد ۵ رقمی را درست وارد کن');return;}
+  hellCloseRoom();HELLNET.code=code;HELLNET.names=[];HELLNET.n=4;
+  toast('در حال اتصال…');
+  jzsT({sv:'hell',g:{id:'hell'}}).join(code,function(link){
+    HELLNET.link=link;
+    link.onclose=function(){if(HELLNET.link!==link)return;toast('اتصال اتاق قطع شد');var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();hellCloseRoom();};
+    link.onmessage=function(d){
+      if(!d||typeof d!=='object')return;
+      if(d.t==='no'){toast('ورود ممکن نیست: '+String(d.why||'').slice(0,60));hellCloseRoom();return;}
+      if(d.t==='bye'||d.t==='svx'){toast(String(d.why||'اتاق بسته شد').slice(0,60));var w2=document.getElementById('hellEscapeOverlay');if(w2)w2.remove();hellCloseRoom();return;}
+      if(d.t==='lob'){HELLNET.n=d.n;HELLNET.names=d.names;HELLNET.isHost=!!d.host;HELLNET.seat=d.you;hellRenderLobby();return;}
+      if(d.t==='st'){if(HELLNET.sheet){closeSheet();HELLNET.sheet=null;}HELLNET.seat=d.you;hellOpenOnlineFrame();var f=hellFrame();if(f)f.postMessage({type:'hell:state',view:d},location.origin);return;}
+    };
+  },function(){toast('اتصال به اتاق ممکن نشد');hellCloseRoom();});
+}
+function hellCreate(){
+  if(!srvOk()){needAcct();return;}
+  var nm=cleanName(loadName())||'میزبان',a=myAvN();
+  toast('در حال ساخت اتاق…');
+  srvCall('hell_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:4}).then(function(r){
+    if(!r||!r.ok){toast('ساخت اتاق ناموفق بود');return;}
+    hellJoin(String(r.code));
+  }).catch(function(){toast('ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن');});
+}
+function hellChoice(){
+  var sh=openSheet('<h3>فرار از جهنم</h3><div class="opts"><button class="btn" data-hell-ai>بازی با رایانه</button><button class="btn" data-hell-mk>ساخت اتاق آنلاین</button><button class="btn" data-hell-jn>پیوستن با کد</button></div>');
+  sh.addEventListener('click',function(e){
+    if(e.target.closest('[data-hell-ai]')){closeSheet();openHellEscape();return;}
+    if(e.target.closest('[data-hell-mk]')){closeSheet();hellCreate();return;}
+    if(e.target.closest('[data-hell-jn]')){
+      closeSheet();
+      var sh2=openSheet('<h3>پیوستن به اتاق</h3><input id="hellCode" inputmode="numeric" maxlength="5" placeholder="کد ۵ رقمی" class="inp"><button class="btn primary wide" data-hell-jn2>پیوستن</button>');
+      sh2.addEventListener('click',function(e2){if(e2.target.closest('[data-hell-jn2]')){var v=document.getElementById('hellCode').value;closeSheet();hellJoin(v);}});
+      return;
+    }
+  });
+}
+document.addEventListener('click',function(e){
+  if(e.target.closest('[data-hell-start]')){if(HELLNET.link)HELLNET.link.send({t:'svstart'});return;}
+  if(e.target.closest('[data-hell-leave]')){hellLeaveRoom();return;}
+  var szN=e.target.closest('[data-hell-n]');if(szN&&HELLNET.link){HELLNET.link.send({t:'svn',n:+szN.dataset.hellN});return;}
+});
 function azulFrame(){var w=document.getElementById('azulOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
 function azulConnection(state,seat,until){var f=azulFrame();if(f)f.postMessage({type:'azul:connection',state:state,seat:seat,until:until||0},location.origin);}
 function azulInitFrame(){if(!M||M.g.id!=='azul'||(M.mode!=='host'&&M.mode!=='guest')||M.wait||M.glob)return;var f=azulFrame();if(!f)return;var urls=[];for(var i=0;i<M.n;i++){var a=mgAv(i);urls.push(typeof a==='number'&&a>=0?avUrl(a):null);}f.postMessage({type:'azul:online-init',role:M.mode,seat:M.me,n:M.n,names:M.names,ai:M.ai,avatars:urls,state:M.x},location.origin);}
@@ -8703,7 +8767,7 @@ function jzsT(cur){
     var link={onmessage:null,onclose:null,
       send:function(d){
         if(!d||closed)return;
-        if((d.t==='jz'||d.t==='kb'||d.t==='pk'||d.t==='cat')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
+        if((d.t==='jz'||d.t==='kb'||d.t==='pk'||d.t==='cat'||d.t==='hell')&&d.m&&typeof d.m==='object')jzsPost(fn,'act',code,d.m).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);}).catch(function(){});
         else if(d.t==='svstart')jzsPost(fn,'start',code).then(function(r){if(r&&r.ok&&r.view)emit(r.view,r.ver);else if(r&&r.why)toast(String(r.why).slice(0,60));}).catch(function(){});
         else if(d.t==='svn')srvCall(fn+'_setn',{p_code:code,p_n:d.n|0}).then(function(){loop();}).catch(function(){});
       },
@@ -8945,7 +9009,7 @@ $('#hub').addEventListener('click',function(e){
   if(k==='mgparkx'){mgParkDrop();renderHub();return;}
   if(PARK&&M===PARK&&MGS[k]){var sh=openSheet('<h3>اتاق فعال داری</h3><p class="sub">برای باز کردن بازی دیگر، اتاق فعلی بسته می‌شود.</p><button class="btn primary wide" data-pk="y">بستن اتاق و ادامه</button><button class="btn wide" data-pk="n">بازگشت به اتاق</button>');sh.addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;closeSheet();if(b.dataset.pk==='y'){mgParkDrop();renderHub();mgOpen(k);}else{$('#mini').hidden=false;mgRender();}});return;}
   if(k==='mgrj'&&PARK&&M===PARK){$('#mini').hidden=false;mgRender();return;}
-  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='azul'){mgOpen('azul');}else if(k==='hell'){openHellEscape();}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
+  if(k==='mgrj'){var rj=lsGet('mb_mgrj',null);if(mgrjOk()){mgOpen(rj.g);if(rj.sr)M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[rj.g]||'jz';mgJoin(rj.code,rj.tk);}else{lsSet('mb_mgrj',null);renderHub();}}else if(k==='azul'){mgOpen('azul');}else if(k==='hell'){hellChoice();}else if(k==='catan')hubCatan();else if(k==='people')openPeople();else if(k==='acct')accOpen();else mgOpen(k);
 });
 $('#mini').addEventListener('click',function(e){
   var t=e.target;if(!M)return;
