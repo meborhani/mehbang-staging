@@ -334,15 +334,3 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent-player-reveals::-webkit-scrollbar{display:none}
 .opponent-player-reveals:empty{visibility:hidden}
 .opponent-player-reveals .coal-reveal-badge{height:14px;min-height:14px;min-width:17px;padding:0 3px;font-size:8px;line-height:12px}
-/* Octagon-corner frames: the player's main dock, the opponent cards, and the round-info bar above
-   the dock all get the same cut-corner (two 135deg angles instead of one 90deg) treatment, via
-   clip-path polygons, and the same 3px border thickness as the player's dock. border-radius is left
-   at 0 since clip-path fully determines the visible corner now. */
-.player-dock,.opponent,.max-safe-box{border-radius:0!important}
-.opponent{border-width:3px!important}
-.max-safe-box{border-width:3px!important}
-.player-dock{clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 16px,100% calc(100% - 16px),calc(100% - 16px) 100%,16px 100%,0 calc(100% - 16px),0 16px)}
-.opponent{clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)}
-.max-safe-box{clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px)}
-.opponent:after{border-radius:0;clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px)}
-.player-dock:before{border-radius:0;clip-path:polygon(13px 0,calc(100% - 13px) 0,100% 13px,100% calc(100% - 13px),calc(100% - 13px) 100%,13px 100%,0 calc(100% - 13px),0 13px)}
