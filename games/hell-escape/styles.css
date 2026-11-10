@@ -334,3 +334,9 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .opponent-player-reveals::-webkit-scrollbar{display:none}
 .opponent-player-reveals:empty{visibility:hidden}
 .opponent-player-reveals .coal-reveal-badge{height:14px;min-height:14px;min-width:17px;padding:0 3px;font-size:8px;line-height:12px}
+/* Bug fix: #myPact carries the "hidden" attribute to stay hidden until the player actually has a
+   devil's pact (toggled by JS as p.pact changes), but .pact-mark{display:inline-block} above is an
+   author rule that unconditionally overrides the browser's built-in [hidden]{display:none} - so the
+   badge was showing even at the very start of a new game, before any pact exists. The [hidden]
+   selector here has higher specificity than the plain class rule, so it wins and actually hides it. */
+#myPact[hidden]{display:none}
