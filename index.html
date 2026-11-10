@@ -3822,7 +3822,7 @@ function catFirstView(v){
   S.players.forEach(function(p){if(!p.ai)p.hum=true;});
   catApplyBoard(v.x);
   MY=v.you;ROLE='client';S.n=v.n;
-  NET.catChatSeen=0;NET.catPrompt=null;NET.ptResultShown=false;
+  NET.catChatSeen=0;NET.catPrompt=null;NET.ptResultShown=false;NET.catEndShown=false;
   recSave({type:'svcat',code:NET.code}); // covers joining/reconnecting to a room that is already in 'play' (no 'lob' message is ever sent for that case)
 }
 function catApplyView(v){
@@ -3844,6 +3844,7 @@ function catApplyView(v){
   render();
   catApplyChat(x.chat);
   catHandlePending(x);
+  if(x.over&&!NET.catEndShown){NET.catEndShown=true;showEnd();}
 }
 function catApplyChat(chat){
   if(!chat||!chat.length)return;
