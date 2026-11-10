@@ -4384,7 +4384,8 @@ function histOpen(){
 function recordGame(){
   if(!S||MY==null||S.recd||!S.players[MY])return;
   S.recd=true;
-  srvReport('catan',S.winner===MY,totalPoints(S.players[MY]),ROLE!=='solo');
+  /* online games are already recorded server-side (cat_done); reporting again here would double-count them */
+  if(ROLE==='solo')srvReport('catan',S.winner===MY,totalPoints(S.players[MY]),false);
   var crp=null;
   try{crp={k:'catan',title:S.winner==null?'پایان بازی':S.players[S.winner].name+' برنده شد',a:endBody('a',0),b:S.players.map(function(q,i){return endBody('b',i);}),c:endBody('c',0)};}catch(e){}
   if(!S.spectate)histAdd({rp:crp,t:Date.now(),g:'سیطره کتان · '+TH.name,r:S.winner===MY?'w':'l',n:S.players.length,o:ROLE==='solo'?0:1,ops:S.players.filter(function(q){return q.id!==MY;}).map(function(q){return q.name;})});
@@ -4475,12 +4476,20 @@ function handleInvite(id,inv){
   var code=dg(inv&&inv.code||'').replace(/[^0-9]/g,'');
   if(code.length!==5)return;
   var e=frFind(id),nm=e?e.name:'یک دوست';
-  var gid=inv&&MGS[inv.g]?inv.g:null;
-  if((S&&!S.over)||(M&&M.mode!=='menu'&&!M.over)){toast(nm+' تو را به اتاق '+code+' دعوت کرد.');return;}
-  var sh=openSheet('<h3>دعوت به بازی</h3><p class="sub"></p><button class="btn primary wide" data-join>ورود به اتاق '+code+'</button><button class="btn wide" data-close>بعداً</button>');
-  sh.querySelector('.sub').textContent=nm+' تو را به یک اتاق بازی دعوت کرد.';
+  var gRaw=inv&&inv.g,gid=(gRaw&&(MGS[gRaw]||gRaw==='catan'||gRaw==='hell'))?gRaw:null;
+  if((S&&!S.over)||(M&&M.mode!=='menu'&&!M.over)||NET.lobbyOn||HELLNET.code){toast(nm+' تو را به اتاق '+code+' دعوت کرد.');return;}
+  var names=(inv&&Array.isArray(inv.names)?inv.names.filter(function(s){return typeof s==='string'&&s;}).slice(0,9):[]);
+  var gnm=gid?gName(gid):'بازی';
+  var sh=openSheet('<h3>دعوت به بازی</h3><p class="sub"></p>'+(names.length?'<p class="sub small">بازیکن‌های اتاق: '+names.map(esc2).join('، ')+'</p>':'')+'<button class="btn primary wide" data-join>ورود به اتاق '+code+'</button><button class="btn wide" data-close>بعداً</button>');
+  sh.querySelector('.sub').textContent=nm+' تو را به یک اتاق '+gnm+' دعوت کرد.';
   sh.addEventListener('click',function(ev){
-    if(ev.target.closest('[data-join]')){closeSheet();if(gid){$('#hub').hidden=false;mgOpen(gid);mgJoin(code);}else joinRoom(code,cleanName(loadName())||'مهمان',null);}
+    if(ev.target.closest('[data-join]')){
+      closeSheet();
+      if(gid==='hell')hellJoin(code);
+      else if(gid==='catan')joinRoom(code,cleanName(loadName())||'مهمان',null);
+      else if(gid){$('#hub').hidden=false;mgOpen(gid);mgJoin(code);}
+      else joinRoom(code,cleanName(loadName())||'مهمان',null);
+    }
     else if(ev.target.closest('[data-close]'))closeSheet();
   });
 }
@@ -4497,7 +4506,7 @@ function pRow(c,btns){
   return '<div class="prow" data-id="'+c.id+'"><span class="pav" data-av></span><i class="pdot'+(isOn(c.id)?' on':'')+'"></i><div class="pn"><b></b><small>'+(c.st==='fr'?'دوست':(c.st==='out'?'در انتظار پذیرش':(c.st==='in'?'درخواست دوستی':'هم‌بازی')))+(isOn(c.id)?' · آنلاین':'')+'</small></div><div class="pb">'+btns+'</div></div>';
 }
 function peopleHtml(){
-  var h='',hosting=!!(NET.lobbyOn&&ROLE==='host'&&NET.code)||!!(M&&M.wait&&M.code&&M.mode!=='guest');
+  var h='',hosting=!!(NET.lobbyOn&&ROLE==='host'&&NET.code)||!!(M&&M.wait&&M.code&&M.mode!=='guest')||!!(HELLNET.code&&HELLNET.isHost);
   if(PEO.tab==='on'){
     var on=contacts().filter(function(c){return c.st!=='in'&&isOn(c.id);});
     h+=on.length?on.map(function(c){return pRow(c,(hosting?'<button class="btn small" data-inv="'+c.id+'">دعوت</button>':'')+(c.st==='rec'?'<button class="btn small" data-add="'+c.id+'">افزودن دوست</button>':''));}).join(''):'<p class="sub">فعلاً کسی از دوستان و هم‌بازی‌هایت آنلاین نیست.</p>';
@@ -5021,7 +5030,7 @@ function renderLobby(){
   for(var i=0;i<L.n;i++)seats+='<div class="seat '+(L.names[i]?'on':'')+'">'+(L.names[i]?L.names[i]:'خالی (هوش مصنوعی)')+'</div>';
   var st=L.isHost?(L.ready?'<div class="sub">اتاق آماده است ✓ منتظر دوستان…</div>':'<div class="sub">در حال اتصال به سرور اتاق…</div>'):(NET.you!=null?'<div class="sub">به اتاق وصل شدی ✓</div>':'<div class="sub">در حال اتصال به اتاق…</div>');
   var h='<div class="over">اتاق بازی</div>'+st+'<div class="sub">این کد را به دوستانت بده تا وارد شوند</div>'+
-    '<div class="lobby-code">'+(L.code||'…')+'</div><div class="row"><button class="btn small" data-copy>کپی کد</button></div>'+
+    '<div class="lobby-code">'+(L.code||'…')+'</div><div class="row"><button class="btn small" data-copy>کپی کد</button>'+(L.isHost?'<button class="btn small" data-invite>دعوت دوستان</button>':'')+'</div>'+
     '<div class="seats">'+seats+'</div>';
   if(L.isHost){
     h+='<div class="sub">تعداد صندلی‌ها. جاهای خالی را هوش مصنوعی پر می‌کند.</div><div class="seg-n">'+[2,3,4,5,6].map(function(n){var occ=L.names.filter(function(x){return !!x;}).length;return '<button data-sn="'+n+'" class="'+(L.n===n?'on':'')+'" '+(n<occ?'disabled':'')+'>'+fa(n)+'</button>';}).join('')+'</div>'+
@@ -5167,6 +5176,7 @@ $('#lobby').addEventListener('click',function(e){
     try{navigator.clipboard.writeText(c).then(function(){toast('کد کپی شد');},function(){toast('کد: '+c);});}catch(x){toast('کد: '+c);}
     return;
   }
+  if(t.closest('[data-invite]')){openPeople();return;}
   var sn=t.closest('[data-sn]');
   if(sn&&!sn.disabled){
     if(NET.srv){if(NET.lv&&NET.lv.isHost){NET.lv.n=+sn.dataset.sn;chosenN=NET.lv.n;renderLobby();srvCall('cat_setn',{p_code:NET.code,p_n:+sn.dataset.sn}).catch(function(){});}return;}
@@ -8022,7 +8032,7 @@ function srvReport(gid,win,pts,online){
   if(!srvOk())return;
   srvCall('mb_game_report',{p_game:String(gid||'').toLowerCase(),p_win:!!win,p_pts:pts|0,p_online:!!online}).then(function(){HS=null;hubSync();}).catch(function(){});
 }
-var GNAME={catan:'سیطره کتان'};
+var GNAME={catan:'سیطره کتان',hell:'فرار از جهنم'};
 function gName(id){return GNAME[id]||(MGS[id]&&MGS[id].name)||id;}
 function sheetClose(sh){sh.addEventListener('click',function(e){if(e.target.closest('[data-close]'))closeSheet();});}
 function shopOpen(){
@@ -8066,7 +8076,7 @@ function lobbyOpen(tab){
     var near=box.scrollTop+box.clientHeight>=box.scrollHeight-30;
     (r.msgs||[]).forEach(function(m){if(m.id>last){last=m.id;box.insertAdjacentHTML('beforeend','<div class="lbm"><b>'+esc2(m.n)+'</b> '+esc2(m.m)+'</div>');}});
     if(near)box.scrollTop=box.scrollHeight;
-    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'">'+esc2(o.n)+'</span>';}).join(' ');
+    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'">'+esc2(o.n)+(o.f?'':' <button class="btn small" data-fadd2="'+esc2(o.n)+'">+دوست</button>')+'</span>';}).join(' ');
   }
   function poll(){
     if(gone||!sh.isConnected){gone=true;clearInterval(timer);return;}
@@ -8106,6 +8116,10 @@ function lobbyOpen(tab){
     }
     if((x=t.closest('[data-facc]'))){srvCall('mb_fr_accept',{p_user:x.dataset.facc}).then(function(){toast('دوست شدید 🎉');frDraw();hubSync();});return;}
     if((x=t.closest('[data-fdel]'))){srvCall('mb_fr_del',{p_user:x.dataset.fdel}).then(function(){frDraw();hubSync();});return;}
+    if((x=t.closest('[data-fadd2]'))){
+      srvCall('mb_fr_add',{p_user:x.dataset.fadd2}).then(function(r){toast(({none:'کاربری با این نام پیدا نشد',self:'این خودِ توست',already:'او قبلاً دوست توست',sent:'درخواست دوستی فرستاده شد',accepted:'دوست شدید 🎉',full:'فهرست دوستان پر است'})[r]||'انجام نشد');}).catch(function(){toast('اتصال به سرور برقرار نشد');});
+      return;
+    }
   });
   sh.addEventListener('keydown',function(e){if(e.key==='Enter'){if(e.target.id==='lbIn')send();else if(e.target.id==='frU'){var b=sh.querySelector('[data-fadd]');if(b)b.click();}}});
   show();timer=setInterval(poll,4000);
@@ -8191,7 +8205,10 @@ function openHellEscape(opts){
   var frame=wrap.querySelector('iframe');frame.addEventListener('load',function(){frame.contentWindow.postMessage({type:'hell:set-avatars',profile:playerAvatar,opponents:cpuAvatars},location.origin);});document.body.appendChild(wrap);
 }
 function hellFrame(){var w=document.getElementById('hellEscapeOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
-window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=hellFrame();if(!f||e.source!==f)return;if(d.type==='hell:back'){if(HELLNET.link)hellLeaveRoom();var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();return;}if(d.type==='hell:action'){if(HELLNET.link)hellSend(d.action);return;}if(d.type==='hell:report'&&d.report&&d.report.id==='hell'){var rp=d.report,h=lsGet(histKey(),[]);if(rp.gid&&h.some(function(x){return x&&x.rp&&x.rp.gid===rp.gid;}))return;histAdd({rp:rp,s:0,t:rp.t||Date.now(),g:'فرار از جهنم',r:d.result==='w'?'w':d.result==='d'?'d':'l',n:rp.n||2,o:0,ops:Array.isArray(d.opponents)?d.opponents:[]});}});
+window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=hellFrame();if(!f||e.source!==f)return;if(d.type==='hell:back'){if(HELLNET.link)hellLeaveRoom();var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();return;}if(d.type==='hell:action'){if(HELLNET.link)hellSend(d.action);return;}if(d.type==='hell:report'&&d.report&&d.report.id==='hell'){var rp=d.report,h=lsGet(histKey(),[]);if(rp.gid&&h.some(function(x){return x&&x.rp&&x.rp.gid===rp.gid;}))return;histAdd({rp:rp,s:0,t:rp.t||Date.now(),g:'فرار از جهنم',r:d.result==='w'?'w':d.result==='d'?'d':'l',n:rp.n||2,o:d.online?1:0,ops:Array.isArray(d.opponents)?d.opponents:[]});
+  /* online games are already recorded server-side (hell_done); only self-report offline (vs-computer) games here */
+  if(!d.online){var hw=rp.rows&&rp.rows[0]&&Array.isArray(rp.rows[0].v)?rp.rows[0].v[0]:0;srvReport('hell',d.result==='w',Math.max(0,Math.min(30,Math.round((+hw||0)/100))),false);}
+}});
 /* ---------- Hell Escape: online rooms (same server-authoritative pattern as Jaliz/Kahroba/Poker/Catan,
    via the shared jzsT transport; see catSend/catApplyView above for the sibling implementation) ---------- */
 var HELLNET={link:null,code:null,n:4,names:[],isHost:false,seat:0,sheet:null};
@@ -8202,7 +8219,7 @@ function hellLobbyHtml(){
   var n=HELLNET.n||4,names=HELLNET.names||[],rows='';
   for(var i=0;i<n;i++)rows+='<div class="row">'+fa(i+1)+'. '+(names[i]?esc2(names[i]):'<span class="dim">خالی…</span>')+'</div>';
   var sizeBtns='';if(HELLNET.isHost)[2,3,4].forEach(function(k){sizeBtns+='<button class="btn sm'+(n===k?' active':'')+'" data-hell-n="'+k+'">'+fa(k)+' نفره</button>';});
-  return '<h3>فرار از جهنم · اتاق آنلاین</h3><p class="sub">این کد را برای دوستانت بفرست:</p><div class="mg-code">'+(HELLNET.code||'')+'</div>'+(sizeBtns?'<div class="opts">'+sizeBtns+'</div>':'')+rows+(HELLNET.isHost?'<button class="btn primary wide" data-hell-start>شروع بازی</button>':'<p class="sub">منتظر شروع بازی توسط میزبان…</p>')+'<button class="btn wide" data-hell-leave>خروج از اتاق</button>';
+  return '<h3>فرار از جهنم · اتاق آنلاین</h3><p class="sub">این کد را برای دوستانت بفرست:</p><div class="mg-code">'+(HELLNET.code||'')+'</div>'+(HELLNET.isHost?'<div class="row"><button class="btn small" data-hell-copy>کپی کد</button><button class="btn small" data-hell-invite>دعوت دوستان</button></div>':'')+(sizeBtns?'<div class="opts">'+sizeBtns+'</div>':'')+rows+(HELLNET.isHost?'<button class="btn primary wide" data-hell-start>شروع بازی</button>':'<p class="sub">منتظر شروع بازی توسط میزبان…</p>')+'<button class="btn wide" data-hell-leave>خروج از اتاق</button>';
 }
 function hellRenderLobby(){if(!HELLNET.sheet)HELLNET.sheet=openSheet(hellLobbyHtml(),{dismiss:false,cls:'hell-lobby'});else HELLNET.sheet.innerHTML=hellLobbyHtml();}
 function hellOpenOnlineFrame(){
@@ -8254,6 +8271,12 @@ function hellChoice(){
 document.addEventListener('click',function(e){
   if(e.target.closest('[data-hell-start]')){if(HELLNET.link)HELLNET.link.send({t:'svstart'});return;}
   if(e.target.closest('[data-hell-leave]')){hellLeaveRoom();return;}
+  if(e.target.closest('[data-hell-invite]')){openPeople();return;}
+  if(e.target.closest('[data-hell-copy]')){
+    var hc=HELLNET.code;
+    try{navigator.clipboard.writeText(hc).then(function(){toast('کد کپی شد');},function(){toast('کد: '+hc);});}catch(x){toast('کد: '+hc);}
+    return;
+  }
   var szN=e.target.closest('[data-hell-n]');if(szN&&HELLNET.link){HELLNET.link.send({t:'svn',n:+szN.dataset.hellN});return;}
 });
 function azulFrame(){var w=document.getElementById('azulOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
@@ -8995,7 +9018,12 @@ function mgCellClick(i){
 }
 function mgrjOk(){var r=lsGet('mb_mgrj',null);return !!(r&&typeof r.g==='string'&&typeof r.tk==='string'&&/^\d{5}$/.test(String(r.code))&&Date.now()-(+r.t||0)<8*60*1000&&GAMES_BY_ID(r.g));}
 function GAMES_BY_ID(id){return typeof MGS!=='undefined'&&MGS&&MGS[id];}
-function mgInvInfo(){return M&&M.wait&&M.code?{code:M.code,g:M.g.id}:{code:NET.code};}
+function mgInvInfo(){
+  if(M&&M.wait&&M.code)return {code:M.code,g:M.g.id,names:(M.names||[]).filter(Boolean)};
+  if(NET.lobbyOn&&NET.lv&&NET.lv.code)return {code:NET.lv.code,g:'catan',names:(NET.lv.names||[]).filter(Boolean)};
+  if(HELLNET.code)return {code:HELLNET.code,g:'hell',names:(HELLNET.names||[]).filter(Boolean)};
+  return {code:NET.code};
+}
 $('#hub').addEventListener('click',function(e){
   var c=e.target.closest('[data-hg]');if(!c)return;
   var k=c.dataset.hg;
