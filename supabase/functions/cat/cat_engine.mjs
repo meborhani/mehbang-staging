@@ -118,14 +118,45 @@ function initBoard(x,n){
     for(var jj=0;jj<6;jj++){var A=vs[jj],B=vs[(jj+1)%6],ek=A<B?A+'|'+B:B+'|'+A;cnt[ek]=(cnt[ek]||0)+1;}
   });
   var coastEdges=Object.keys(x.edges).filter(function(ek){return cnt[ek]===1;});
-  coastEdges=shuffle(coastEdges);
+  var cycle=orderCoastCycle(coastEdges,x);
+  if(cycle.length!==coastEdges.length)cycle=shuffle(coastEdges);
   var np=R===2?9:11;
   var types=shuffle(R===2?[-1,-1,-1,-1,0,1,2,3,4]:[-1,-1,-1,-1,-1,-1,0,1,2,3,4]);
+  var chosen=pickPortEdges(cycle,Math.min(np,cycle.length));
   x.ports=[];
-  for(var pi=0;pi<np&&pi<coastEdges.length;pi++){
-    var e=x.edges[coastEdges[pi]];
-    x.ports.push({a:e.a,b:e.b,type:types[pi]});
+  chosen.forEach(function(ek,pi){var e=x.edges[ek];x.ports.push({a:e.a,b:e.b,type:types[pi]});});
+}
+/* walks the coastal edges in true perimeter order so adjacent picks never share a vertex */
+function orderCoastCycle(coastEdges,x){
+  var byVert={};
+  coastEdges.forEach(function(ek){
+    var e=x.edges[ek];
+    (byVert[e.a]=byVert[e.a]||[]).push(ek);
+    (byVert[e.b]=byVert[e.b]||[]).push(ek);
+  });
+  var visited={},cycle=[];
+  if(!coastEdges.length)return cycle;
+  var cur=coastEdges[0],enterV=x.edges[cur].a;
+  while(cur&&!visited[cur]){
+    visited[cur]=true;cycle.push(cur);
+    var e=x.edges[cur];
+    var exitV=(e.a===enterV)?e.b:e.a;
+    var opts=(byVert[exitV]||[]).filter(function(ek){return ek!==cur&&!visited[ek];});
+    if(!opts.length)break;
+    cur=opts[0];enterV=exitV;
   }
+  return cycle;
+}
+/* picks np edges from the perimeter cycle with a minimum gap, so no two chosen ports ever share a vertex */
+function pickPortEdges(cycle,np){
+  var n=cycle.length;
+  if(n<=0||np<=0)return [];
+  var gap=2;
+  if(np*(gap+1)>n)gap=1;
+  if(np*(gap+1)>n)gap=0;
+  var start=rint(n),chosen=[],idx=start;
+  for(var i=0;i<np;i++){chosen.push(cycle[idx%n]);idx+=gap+1;}
+  return chosen;
 }
 function portAtMap(x){
   var m={};x.ports.forEach(function(pt){m[pt.a]=pt.type;m[pt.b]=pt.type;});return m;
@@ -402,6 +433,7 @@ function nextTurn(){
   x.cur=ord[ni];M.turn=x.cur;
   var p=x.players[x.cur];p.fresh={};p.playedCard=false;x.hotNum=null;p.stats.turns++;
   x.sub='roll';x.dice=null;
+  doRoll(x.cur); // dice roll automatically as soon as it becomes a player's turn
   if(x.round>60){ // safety valve identical in spirit to the client's round>60 draw-by-points
     var best=0,bp=-1;x.players.forEach(function(_,i2){var pt=totalPoints(i2);if(pt>bp){bp=pt;best=i2;}});
     x.over=true;x.winner=best;M.over=true;M.res=best;
@@ -440,6 +472,7 @@ function advanceSetup(){
     var p=x.players[x.cur];p.stats.turns++;
     x.sub='roll';
     armTurn();
+    doRoll(x.cur); // dice roll automatically for the very first turn too
     return;
   }
   x.cur=st.seq[st.idx];M.turn=x.cur;st.stage='house';st.houseV=null;
@@ -457,7 +490,9 @@ function doRoll(seat){
 }
 function doEnd(seat){
   var x=X();
-  if(x.phase!=='play'||x.sub!=='main'||x.cur!==seat)return false;
+  if(x.phase!=='play'||x.cur!==seat)return false;
+  if(x.sub==='tradeWait'&&x.trade&&x.trade.from===seat){x.trade=null;x.pt=null;x.sub='main';}
+  if(x.sub!=='main')return false;
   nextTurn();
   return true;
 }
@@ -569,9 +604,9 @@ function doPtradePropose(seat,give,get){
   var results={},pendingHumans=[];
   for(var q=0;q<M.n;q++){
     if(q===seat)continue;
+    var canAfford=true;for(var k=0;k<5;k++)if(x.players[q].res[k]<get[k])canAfford=false;
+    if(!canAfford){results[q]=null;continue;}
     if(M.ai[q]){results[q]=aiAccepts(q,give,get,seat);continue;}
-    var ok=true;for(var k=0;k<5;k++)if(x.players[q].res[k]<get[k])ok=false;
-    if(!ok){results[q]=false;continue;}
     pendingHumans.push(q);
   }
   x.pt={give:give,get:get,results:results};

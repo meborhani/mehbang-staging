@@ -3200,11 +3200,12 @@ function openPlayerTrade(){
       sh.innerHTML='<h3>معامله با بازیکن‌ها</h3>'+haveStrip()+'<p class="sub">بگو چه قطعاتی می‌دهی و چه قطعاتی می‌خواهی. بازیکن‌ها جواب می‌دهند.</p><div class="sub">می‌دهی</div>'+grid('give',give)+'<div class="sub">می‌خواهی</div>'+grid('get',get)+
         '<button class="btn primary wide" data-submit '+(ok?'':'disabled')+'>پیشنهاد به بقیه</button><button class="btn wide" data-close>بستن</button>';
     }else{
-      var yes=results.filter(function(r){return r.ok;});
+      var yes=results.filter(function(r){return r.ok===true;});
+      var elig=results.filter(function(r){return r.ok!==null;});
       sh.innerHTML='<h3>پاسخ بازیکن‌ها</h3><p class="sub">تو می‌دهی: '+fmtRes(give)+' · تو می‌گیری: '+fmtRes(get)+'</p><div class="score">'+
-        results.map(function(r){return '<div><i class="dot" style="--pc:'+PH[r.id]+'"></i><span>'+S.players[r.id].name+'</span><b style="font-size:15px;font-family:var(--font-body)">'+(r.ok?'می‌پذیرد':'نمی‌پذیرد')+'</b></div>';}).join('')+'</div>'+
+        results.map(function(r){return '<div><i class="dot" style="--pc:'+PH[r.id]+'"></i><span>'+S.players[r.id].name+'</span><b style="font-size:15px;font-family:var(--font-body)">'+(r.ok===true?'می‌پذیرد':(r.ok===null?'واجد شرایط نیست':'نمی‌پذیرد'))+'</b></div>';}).join('')+'</div>'+
         yes.map(function(r){return '<button class="btn primary wide" data-with="'+r.id+'">معامله با '+S.players[r.id].name+'</button>';}).join('')+
-        (yes.length?'':'<p class="sub">هیچ‌کس قبول نکرد. پیشنهاد را عوض کن یا چیزی بیشتر بده.</p>')+
+        (yes.length?'':(elig.length?'<p class="sub">هیچ‌کس قبول نکرد. پیشنهاد را عوض کن یا چیزی بیشتر بده.</p>':'<p class="sub">کسی واجد شرایط این معامله نیست؛ هیچ‌کس این قطعات را ندارد.</p>'))+
         '<button class="btn wide" data-back>تغییر پیشنهاد</button><button class="btn wide" data-close>بستن</button>';
     }
   }
@@ -3320,7 +3321,7 @@ function aiReact(victim,thief){
 }
 function sendChat(k,i,r){
   if(!S||MY==null)return;
-  var now=Date.now();if(NET.chatAt&&now-NET.chatAt<900)return;NET.chatAt=now;
+  var now=Date.now();if(NET.chatAt&&now-NET.chatAt<120)return;NET.chatAt=now;
   var m={k:k,i:i|0,r:r|0};if(!chatValid(m))return;
   if(NET.srvLink){catSend({a:'chat',k:m.k,i:m.i,r:m.r});return;}
   if(ROLE==='client'){if(NET.hostLink)NET.hostLink.send({t:'chat',k:m.k,i:m.i,r:m.r});}
@@ -8626,7 +8627,8 @@ function mgResign(seat){
 }
 function mgDo(kind,m){
   if(!M||M.over||M.wait)return;
-  if(M.g.type!=='jaliz'&&M.g.type!=='poker'&&M.turn!==M.me)return;
+  var isChat=m&&m.a==='ct';
+  if(!isChat&&M.g.type!=='jaliz'&&M.g.type!=='poker'&&M.turn!==M.me)return;
   if(M.mode==='guest'){M.link&&M.link.send({t:kind,m:m});return;}
   mgAct(M.me,kind,m);
 }
