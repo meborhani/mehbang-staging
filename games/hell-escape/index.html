@@ -36,6 +36,7 @@
         <span data-step="bet">شرط‌بندی</span><span data-step="coal">برداشت زغال</span><span data-step="settle">تسویه حساب</span><span data-step="move">حرکت مهره‌ها</span>
       </nav>
       <section id="opponents" class="opponents" aria-label="حریفان"></section>
+      <div class="toast-anchor"><div id="toast" class="toast" role="status" aria-live="polite"></div></div>
       <section class="board-zone">
         <svg id="boardSvg" class="board-svg" viewBox="0 0 1000 1000" role="img" aria-label="صفحه امتیاز و کوره زغال">
           <image href="assets/board-art.webp" x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid slice"></image>
@@ -66,7 +67,6 @@
         </div>
         <span id="myPlayerReveals" class="player-reveal-row" aria-label="زغال‌های رو شدهٔ شما"></span>
       </section>
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
 
     <dialog id="summaryModal" class="dialog summary-dialog">
@@ -104,6 +104,10 @@
     <dialog id="pactModal" class="dialog pact-dialog">
       <h2>پیمان با شیطان</h2><p id="pactText"></p><p>اگر بازیکنی شیطان را رو کند، ۵۰ چیپ به تو می‌پردازد.</p>
       <div class="dialog-actions"><button class="secondary-button" data-pact="no">رد پیمان</button><button class="primary-button" data-pact="yes">پذیرفتن پیمان</button></div>
+    </dialog>
+    <dialog id="backConfirmModal" class="dialog pact-dialog">
+      <h2>خروج از بازی؟</h2><p>بازی آنلاین در پس‌زمینه باز می‌ماند و می‌توانی بعداً به آن برگردی.</p>
+      <div class="dialog-actions"><button class="secondary-button" data-backconf="stay">ماندن در بازی</button><button class="primary-button" data-backconf="go">بله، برگرد به منو</button></div>
     </dialog>
   </main>
 </body>

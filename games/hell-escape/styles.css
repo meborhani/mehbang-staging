@@ -340,3 +340,6 @@ html,body{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
    selector here has higher specificity than the plain class rule, so it wins and actually hides it. */
 #myPact[hidden]{display:none}
 #myPact img.pact-mark-icon{width:12px!important;height:12px!important;min-width:0;border:0!important;border-radius:0!important;box-shadow:none!important;object-fit:contain;vertical-align:-2px;margin-inline-end:2px}
+.toast-anchor{position:relative;height:0}
+#app #toast{position:absolute!important;left:50%!important;top:6px!important;bottom:auto!important;transform:translate(-50%,-140%)!important;}
+#app #toast.show{transform:translate(-50%,0)!important}

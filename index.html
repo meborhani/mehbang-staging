@@ -4714,7 +4714,23 @@ $('#endGame').addEventListener('click',function(){
     if(b.dataset.eg==='y'){clearTimeout(TMR);recClear();if(online){NET.restore=null;if(sessionKind())leaveOnline();S=null;NET.lv=null;NET.lobbyOn=false;}else if(ROLE==='solo')S=null;refreshResume();toast(online?'اتاق بسته شد':'بازی تمام شد');}
   });
 });
-$('#btnBack').addEventListener('click',function(){if(VIEW==='session')showIntro();});
+function stopSoloGame(){
+  if(!S||S.over||ROLE!=='solo')return;
+  try{saveCheckpoint(true);}catch(e){}
+  clearTimeout(TMR);TMR=null;if(S)S.tEnd=0;
+  clearTimeout(saveT);
+  S=null;
+}
+$('#btnBack').addEventListener('click',function(){
+  if(VIEW!=='session')return;
+  if(S&&!S.over&&ROLE!=='solo'){
+    var sh=openSheet('<h3>خروج از بازی؟</h3><p class="sub">بازی آنلاین در پس‌زمینه باز می‌ماند و می‌توانی بعداً از همین‌جا به آن برگردی.</p><button class="btn primary wide" data-ob="go">بله، برگرد به منو</button><button class="btn wide" data-ob="stay">ماندن در بازی</button>');
+    sh.addEventListener('click',function(e){var b=e.target.closest('[data-ob]');if(!b)return;closeSheet();if(b.dataset.ob==='go')showIntro();});
+    return;
+  }
+  if(S&&!S.over&&ROLE==='solo'){stopSoloGame();showIntro();return;}
+  showIntro();
+});
 $('#resume').addEventListener('click',function(){if(sessionKind())resumeSession();else resumeSaved();});
 function leaveOnline(){
   catLeaveServer();
@@ -4813,6 +4829,13 @@ var RelayTransport=(function(){
     };
   }
   /* a link: send() seals, deliver() is called with already-authenticated payloads */
+  var RLY_LINKS=[];
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden)return;
+    /* coming back from background (minimized app/tab): ping right away on every active relay
+       link instead of waiting for the next tick, so a brief minimize doesn't look stale to the peer */
+    RLY_LINKS.forEach(function(l){try{if(l&&!l.closed&&l.ping)l.ping();}catch(e){}});
+  });
   function mkLink(sealSend,onGone){
     var buf=[],om=null,l={onclose:null,seen:Date.now(),closed:false,
       send:function(m){if(!l.closed)sealSend({m:m});},
@@ -4837,8 +4860,8 @@ var RelayTransport=(function(){
           var cid=p.cid;l=links[cid]={pkIn:p.pk,closed:false,seen:Date.now(),pend:true};
           derive(kp.priv,p.pk).then(function(key){
             if(dead)return;
-            var cr=crypt(key,'h','g'),lk=mkLink(function(o){cr.seal(o,function(e){ch.send({k:'d',to:cid,iv:e.iv,ct:e.ct});});},function(){delete links[cid];});
-            lk.pkIn=p.pk;lk.cr=cr;links[cid]=lk;ch.send({k:'ack',to:cid,pk:kp.pub});onLink(lk);
+            var cr=crypt(key,'h','g'),lk=mkLink(function(o){cr.seal(o,function(e){ch.send({k:'d',to:cid,iv:e.iv,ct:e.ct});});},function(){delete links[cid];var ix=RLY_LINKS.indexOf(lk);if(ix>=0)RLY_LINKS.splice(ix,1);});
+            lk.pkIn=p.pk;lk.cr=cr;links[cid]=lk;RLY_LINKS.push(lk);ch.send({k:'ack',to:cid,pk:kp.pub});onLink(lk);
           }).catch(function(){delete links[cid];});
         }else if(p.k==='d'&&p.to==='h'&&typeof p.from==='string'){
           var lk2=links[p.from];if(!lk2||!lk2.cr)return;
@@ -4850,7 +4873,7 @@ var RelayTransport=(function(){
       tm=setInterval(function(){
         var now=Date.now();
         Object.keys(links).forEach(function(id){var l=links[id];if(!l)return;
-          if(!l.closed&&now-l.seen>(l.cr?18000:20000)){delete links[id];if(l.gone)l.gone();return;}
+          if(!l.closed&&now-l.seen>(l.cr?45000:50000)){delete links[id];if(l.gone)l.gone();return;}
           if(l.ping&&l.cr)l.ping();});
       },4000);
       return {close:function(){dead=true;clearInterval(tm);Object.keys(links).forEach(function(id){var l=links[id];try{if(l&&l.close)l.close();}catch(e){}});setTimeout(function(){ch.close();},400);}};
@@ -4874,9 +4897,9 @@ var RelayTransport=(function(){
           derive(kp.priv,p.pk).then(function(key){
             if(dead||link)return;
             var cr=crypt(key,'g','h');
-            link=mkLink(function(o){cr.seal(o,function(e){ch.send({k:'d',from:cid,to:'h',iv:e.iv,ct:e.ct});});},function(){clearInterval(pt);});
-            link.cr=cr;done=true;clearInterval(tm);
-            pt=setInterval(function(){if(link.closed)return;link.ping();if(Date.now()-link.seen>18000)link.gone();},4000);
+            link=mkLink(function(o){cr.seal(o,function(e){ch.send({k:'d',from:cid,to:'h',iv:e.iv,ct:e.ct});});},function(){clearInterval(pt);var ix=RLY_LINKS.indexOf(link);if(ix>=0)RLY_LINKS.splice(ix,1);});
+            link.cr=cr;done=true;clearInterval(tm);RLY_LINKS.push(link);
+            pt=setInterval(function(){if(link.closed)return;link.ping();if(Date.now()-link.seen>45000)link.gone();},4000);
             onLink(link);
           }).catch(function(){deriving=false;});
         }else if(p.k==='d'&&link&&link.cr){
@@ -9231,7 +9254,14 @@ $('#mini').addEventListener('click',function(e){
   }
   var a=t.closest('[data-mg]');if(!a)return;
   var k=a.dataset.mg;
-  if(k==='back'){if(!mgPark())mgClose();return;}
+  if(k==='back'){
+    if(M.mode==='host'||M.mode==='guest'){
+      var bsh=openSheet('<h3>خروج از بازی؟</h3><p class="sub">بازی آنلاین در پس‌زمینه باز می‌ماند و می‌توانی بعداً از همین‌جا به آن برگردی.</p><button class="btn primary wide" data-ob="go">بله، برگرد به منو</button><button class="btn wide" data-ob="stay">ماندن در بازی</button>');
+      bsh.addEventListener('click',function(e){var b=e.target.closest('[data-ob]');if(!b)return;closeSheet();if(b.dataset.ob==='go'){if(!mgPark())mgClose();}});
+      return;
+    }
+    if(!mgPark())mgClose();return;
+  }
   if(k==='azulresume'){mgClose();openAzul({resume:true});return;}
   if(k==='ai'){
     var g=M.g,n=g.max>2?M.pn:2;
