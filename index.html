@@ -607,7 +607,7 @@ body[data-skin=cosmic] .btn:active{filter:brightness(1.3)}
 .mg-c.d.p0{background:var(--e1)}.mg-c.d.p1{background:var(--e0)}
 .mg-c.win{outline:3px solid var(--ember);animation:mgp .8s infinite alternate}
 @keyframes mgp{to{filter:brightness(1.5)}}
-.mg-r{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.mg-r .btn{flex:1;min-width:110px}
+.mg-r{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.mg-r .btn{flex:1;min-width:110px}.pk-filters{align-items:flex-end}.pk-fsel{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}.pk-fsel select{padding:7px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:inherit;font:inherit}
 .mg-code{font-family:monospace;font-size:34px;letter-spacing:6px;text-align:center;direction:ltr;color:var(--ember)}
 .ch-bd{display:grid;grid-template-columns:repeat(8,1fr);direction:ltr;width:min(100%,440px);margin:0 auto;border:2px solid var(--line);border-radius:10px;overflow:hidden}
 .ch-c{aspect-ratio:1;border:0;padding:0;display:grid;place-items:center;position:relative;font-size:clamp(22px,8.4vw,40px);line-height:1;cursor:pointer}
@@ -891,9 +891,15 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .pkp .pk-ctl .btn{min-height:clamp(32px,calc(11*var(--vh)),54px);border-radius:10px;font-size:clamp(12px,calc(3.6*var(--vh)),19px);font-weight:700;padding:2px 6px;background:linear-gradient(#262c4e,#151a34);border:1px solid #4b5488;border-top-color:#7a85c4;color:#eef}
 .pkp .pk-ctl .btn.primary{background:linear-gradient(#3b8a4e,#215c33);border-color:#6fd18a;color:#fff}
 .pkp .pk-ctl .btn:disabled{opacity:.38}
-.pkp .pk-ctl.rz{grid-auto-flow:row;grid-template-columns:repeat(4,1fr) .6fr 1.25fr .6fr 1.15fr;grid-auto-columns:auto}
+.pkp .pk-ctl.rz{display:flex;flex-direction:column;gap:6px;height:auto;padding:4px}
 .pkp .pk-ctl.rz .btn{font-size:clamp(12px,calc(3.6*var(--vh)),19px);min-height:clamp(32px,calc(11*var(--vh)),54px);padding:2px 2px;white-space:nowrap;min-width:0}
-.pkp .pk-ctl.rz .pk-am{display:flex;align-items:center;justify-content:center;min-width:0;height:clamp(32px,calc(11*var(--vh)),54px);border:1px solid #6fd18a;border-radius:10px;background:#0b1a12;color:#ffd35a;font-size:clamp(14px,calc(4.4*var(--vh)),24px);font-weight:800}
+.pkp .pk-ctl.rz .pk-am-row{display:flex;align-items:center;justify-content:center;gap:8px}
+.pkp .pk-ctl.rz .pk-am{display:flex;align-items:center;justify-content:center;min-width:70px;height:clamp(32px,calc(11*var(--vh)),54px);border:1px solid #6fd18a;border-radius:10px;background:#0b1a12;color:#ffd35a;font-size:clamp(14px,calc(4.4*var(--vh)),24px);font-weight:800}
+.pkp .pk-ctl.rz .pk-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pk-chip-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:0;cursor:pointer;min-width:44px}
+.pk-chip-btn:disabled{opacity:.35;cursor:default}
+.pk-chip-ico{display:block;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe07a,#c99a1f 70%,#8a6a10);border:2px dashed #fff8;box-shadow:0 2px 4px #0006}
+.pk-chip-btn small{color:#ffd35a;font-size:11px;font-weight:700}
 .pkp .pk-ctl .pk-q{display:flex;align-items:center;justify-content:center}
 .hb-in.lm2{display:grid !important;grid-template-columns:1fr 1fr;gap:clamp(2px,calc(.6*var(--vh)),8px) 14px;align-content:start;overflow:hidden}
 .lm2>.mg-top,.lm2>.mg-top+.hb-s,.lm2>.mg-st{grid-column:1/-1}
@@ -3500,6 +3506,7 @@ function paintDiff(){
 }
 function setDiff(d){DIFF=d;saveDiff(d);if(NET.lobby){NET.lobby.diff=d;lobbySave();}paintDiff();}
 document.addEventListener('click',function(e){var b=e.target.closest('.seg-d [data-d]');if(b)setDiff(+b.dataset.d);});
+document.addEventListener('change',function(e){var sel=e.target.closest('[data-pkf]');if(!sel||!M)return;var k=sel.dataset.pkf,v=+sel.value;if(k==='pn')M.pn=v;else if(k==='diff')setDiff(v);else if(k==='bl')M.pkcfg.bl=v;mgRender();});
 function loadTheme(){try{return localStorage.getItem('datis_theme')||'orig';}catch(e){return 'orig';}}
 function saveTheme(k){try{localStorage.setItem('datis_theme',k);}catch(e){}}
 function applyTheme(key,noSave){
@@ -7160,8 +7167,11 @@ function pkHtml(){
     if(M.rz<minTo||M.rz>maxTo)M.rz=minTo;
     if(M.rzo&&maxTo>v.cur){
       rzm=true;
-      ctl+='<button class="btn sm" data-pr="'+minTo+'">حداقل</button><button class="btn sm" data-pr="'+Math.min(maxTo,v.cur+Math.max(v.minr,Math.floor(pot/2)))+'">½ پات</button><button class="btn sm" data-pr="'+Math.min(maxTo,v.cur+Math.max(v.minr,pot))+'">پات</button><button class="btn sm" data-pr="'+maxTo+'">آل‌این</button>'+
-        '<button class="btn sm" data-pstep="-1">−</button><b class="pk-am">'+fa(M.rz)+'</b><button class="btn sm" data-pstep="1">+</button><button class="btn sm primary" data-pa="r">ریز</button>';
+      var unit=v.cfg.bl||1,room=maxTo-M.rz,chipDenoms=[unit,unit*2,unit*5,unit*10,unit*20,unit*50].filter(function(cv){return cv<=maxTo-minTo+unit;});
+      ctl+='<div class="pk-am-row"><b class="pk-am">'+fa(M.rz)+'</b>'+(M.rz>minTo?'<button class="btn sm" data-pclr="1">پاک کردن</button>':'')+'</div>'+
+        '<div class="pk-chips">'+chipDenoms.map(function(cv){return '<button class="pk-chip-btn" data-pchip="'+cv+'" '+(cv>room?'disabled':'')+'><i class="pk-chip-ico"></i><small>'+fa(cv)+'</small></button>';}).join('')+'</div>'+
+        '<div class="mg-r"><button class="btn sm" data-pr="'+Math.min(maxTo,v.cur+Math.max(v.minr,pot))+'">پات</button><button class="btn sm" data-pr="'+maxTo+'">آل‌این</button>'+
+        '<button class="btn sm primary" data-pa="r">ریز '+fa(M.rz)+'</button></div>';
     }else{
       ctl+='<button class="btn" data-pa="f">فولد</button>'+
         '<button class="btn primary" data-pa="c">'+(toCall<=0?'چک':(toCall>=chips?'آل‌این '+fa(chips):'کال '+fa(toCall)))+'</button>'+
@@ -7207,12 +7217,29 @@ function pkClick(t){
     if(a==='pvy'||a==='pvn'){mgDo('pk',{a:'pv',v:a==='pvy'});return true;}
   }
   if((el=t.closest('[data-pr]'))&&el.closest('.pk-ctl')){M.rz=+el.dataset.pr;mgRender();return true;}
-  if((el=t.closest('[data-pstep]'))){M.rz+=(+el.dataset.pstep)*(v.cfg.bl);mgRender();return true;}
+  if((el=t.closest('[data-pchip]'))&&!el.disabled){
+    var toCall2=v.cur-v.bet[me],maxTo2=v.bet[me]+v.ch[me],minTo2=Math.min(v.cur+v.minr,maxTo2);
+    if(!M.rz||M.rz<minTo2)M.rz=minTo2;
+    M.rz=Math.min(maxTo2,M.rz+(+el.dataset.pchip));
+    mgRender();return true;
+  }
+  if((el=t.closest('[data-pclr]'))){var maxTo3=v.bet[me]+v.ch[me];M.rz=Math.min(v.cur+v.minr,maxTo3);mgRender();return true;}
   return false;
 }
 function pkBuyRow(){
   var c=M.pkcfg;
   return '<div class="mg-r"><span class="hb-s">سقف ورودی هر نفر</span>'+[50,100,200,500,1000].map(function(v){return '<button class="btn sm'+(c.buy===v?' primary':'')+'" data-pk="buy:'+v+'">'+fa(v)+'</button>';}).join('')+'</div>';
+}
+function pkMenuHtml(){
+  var c=M.pkcfg;
+  var pnOpts=[2,3,4,5,6,7,8,9].map(function(n){return '<option value="'+n+'"'+(M.pn===n?' selected':'')+'>'+fa(n)+' نفره</option>';}).join('');
+  var diffOpts=['آسان','متوسط','سخت'].map(function(t,d){return '<option value="'+d+'"'+(DIFF===d?' selected':'')+'>'+t+'</option>';}).join('');
+  var blOpts=[[1,'۱ / ۲'],[2,'۲ / ۴'],[5,'۵ / ۱۰']].map(function(it){return '<option value="'+it[0]+'"'+(c.bl===it[0]?' selected':'')+'>'+it[1]+'</option>';}).join('');
+  return '<div class="mg-r pk-filters">'+
+    '<label class="pk-fsel"><span class="hb-s">تعداد بازیکن</span><select class="inp" data-pkf="pn">'+pnOpts+'</select></label>'+
+    '<label class="pk-fsel"><span class="hb-s">سختی رایانه</span><select class="inp" data-pkf="diff">'+diffOpts+'</select></label>'+
+    '<label class="pk-fsel"><span class="hb-s">سطح شرط</span><select class="inp" data-pkf="bl">'+blOpts+'</select></label>'+
+  '</div>';
 }
 function pkCfgHtml(){
   var c=M.pkcfg;
@@ -8390,9 +8417,9 @@ function mgRender(){
   var el=$('#mini'),h='',g=M.g,i;
   if(M.mode==='menu'&&!M.wait){
     h=mgShell('<div class="hb-s">'+g.sub+'</div>'+
-      (g.max>2?'<div class="hb-s">تعداد بازیکنان در بازی با رایانه</div><div class="mg-r">'+[2,3,4,5,6,7,8,9].filter(function(n){return n<=g.max&&(g.type!=='jaliz'||n>=3);}).map(function(n){return '<button class="btn'+(M.pn===n?' primary':'')+'" data-pn="'+n+'">'+fa(n)+'</button>';}).join('')+'</div>':'')+
-      (g.type==='poker'?pkCfgHtml():'')+(g.type==='tavla'?'<div class="mg-r"><span class="hb-s">مبلغ شرط هر دست (سکه)</span>'+[5,10,20,50].map(function(v){return '<button class="btn sm'+(M.stake===v?' primary':'')+'" data-tk="'+v+'">'+fa(v)+'</button>';}).join('')+'</div>'+pkBuyRow()+'<div class="hb-s">برنده شرط را از بازنده می‌گیرد؛ مارس ×۲ و مارس سنگین ×۳. هر نفر در کل این نشست بیشتر از سقف ورودی (و موجودی‌اش) نمی‌بازد.</div>':'')+
-      '<div class="seg-d mgdf"><span class="hb-s">سختی هوش مصنوعی</span>'+['آسان','متوسط','سخت'].map(function(t,d){return '<button data-d="'+d+'"'+(DIFF===d?' class="on"':'')+'>'+t+'</button>';}).join('')+'</div>'+
+      (g.type==='poker'?pkMenuHtml():(g.max>2?'<div class="hb-s">تعداد بازیکنان در بازی با رایانه</div><div class="mg-r">'+[2,3,4,5,6,7,8,9].filter(function(n){return n<=g.max&&(g.type!=='jaliz'||n>=3);}).map(function(n){return '<button class="btn'+(M.pn===n?' primary':'')+'" data-pn="'+n+'">'+fa(n)+'</button>';}).join('')+'</div>':''))+
+      (g.type==='tavla'?'<div class="mg-r"><span class="hb-s">مبلغ شرط هر دست (سکه)</span>'+[5,10,20,50].map(function(v){return '<button class="btn sm'+(M.stake===v?' primary':'')+'" data-tk="'+v+'">'+fa(v)+'</button>';}).join('')+'</div>'+pkBuyRow()+'<div class="hb-s">برنده شرط را از بازنده می‌گیرد؛ مارس ×۲ و مارس سنگین ×۳. هر نفر در کل این نشست بیشتر از سقف ورودی (و موجودی‌اش) نمی‌بازد.</div>':'')+
+      (g.type==='poker'?'':'<div class="seg-d mgdf"><span class="hb-s">سختی هوش مصنوعی</span>'+['آسان','متوسط','سخت'].map(function(t,d){return '<button data-d="'+d+'"'+(DIFF===d?' class="on"':'')+'>'+t+'</button>';}).join('')+'</div>')+
       '<button class="btn primary big" data-mg="ai">بازی با هوش مصنوعی</button>'+
       (g.id==='azul'&&azulHasSave()?'<button class="btn big" data-mg="azulresume">ادامهٔ بازی ذخیره‌شده</button>':'')+
       '<button class="btn big" data-mg="mk">ساخت اتاق آنلاین</button>'+
