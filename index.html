@@ -4394,7 +4394,7 @@ function recordGame(){
   if(!S||MY==null||S.recd||!S.players[MY])return;
   S.recd=true;
   /* online games are already recorded server-side (cat_done); reporting again here would double-count them */
-  if(ROLE==='solo')srvReport('catan',S.winner===MY,totalPoints(S.players[MY]),false);
+  if(ROLE==='solo')srvReport('catan',S.winner===MY,totalPoints(S.players[MY]),true);
   var crp=null;
   try{crp={k:'catan',title:S.winner==null?'پایان بازی':S.players[S.winner].name+' برنده شد',a:endBody('a',0),b:S.players.map(function(q,i){return endBody('b',i);}),c:endBody('c',0)};}catch(e){}
   if(!S.spectate)histAdd({rp:crp,t:Date.now(),g:'سیطره کتان · '+TH.name,r:S.winner===MY?'w':'l',n:S.players.length,o:ROLE==='solo'?0:1,ops:S.players.filter(function(q){return q.id!==MY;}).map(function(q){return q.name;})});
@@ -5078,6 +5078,7 @@ function hostLobby(name,old){
   showLobby();
   srvCall('cat_create',{p_name:nm,p_av:typeof av==='number'?av:-1,p_n:Math.max(chosenN,2)}).then(function(r){
     if(!r||!r.ok){NET.lv.err='ساخت اتاق ناموفق بود';renderLobby();return;}
+    if(GRP_PENDING==='catan'){GRP_PENDING=null;srvCall('mb_grp_start',{p_game:'catan',p_code:String(r.code)}).catch(function(){});}
     catJoinServer(String(r.code));
   }).catch(function(){if(NET.lv){NET.lv.err='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';renderLobby();}});
 }
@@ -8064,7 +8065,7 @@ function srvReport(gid,win,pts,online){
 var GNAME={catan:'سیطره کتان',hell:'فرار از جهنم'};
 function gName(id){return GNAME[id]||(MGS[id]&&MGS[id].name)||id;}
 /* ---- groups (leader-led parties) ---- */
-var GRP=null,GRP_BUSY=false;
+var GRP=null,GRP_BUSY=false,GRP_PENDING=null;
 function grpPoll(){
   if(!srvOk()||GRP_BUSY)return;
   GRP_BUSY=true;var me=ACCT;
@@ -8076,12 +8077,15 @@ function grpPoll(){
   }).catch(function(){GRP_BUSY=false;});
 }
 function grpAutoJoin(st){
-  if(!st||!st.g||!st.c||!MGS[st.g])return;
+  if(!st||!st.g||!st.c)return;
   try{closeSheet();}catch(e){}
-  try{var az=document.getElementById('azulOverlay');if(az)az.remove();}catch(e){}
-  try{var hw=document.getElementById('hellEscapeOverlay');if(hw)hw.remove();}catch(e){}
+  try{var az=document.getElementById('azulOverlay');if(az&&st.g!=='azul')az.remove();}catch(e){}
+  try{var hw=document.getElementById('hellEscapeOverlay');if(hw&&st.g!=='hell')hw.remove();}catch(e){}
   try{if(document.getElementById('hub'))document.getElementById('hub').hidden=false;}catch(e){}
   toast('لیدر گروه، بازی '+gName(st.g)+' را شروع کرد؛ در حال ورود…');
+  if(st.g==='catan'){hubCatan();catJoinServer(String(st.c));return;}
+  if(st.g==='hell'){hellOpenMenu();hellJoin(String(st.c));return;}
+  if(!MGS[st.g])return;
   mgOpen(st.g);
   if(st.g==='jaliz'||st.g==='kahroba'||st.g==='poker')M.sv={jaliz:'jz',kahroba:'kb',poker:'pk'}[st.g];
   mgJoin(st.c);
@@ -8146,7 +8150,7 @@ function lobbyOpen(tab){
       var h='<div class="sub">لیدر گروه: <b>'+esc2(r.leader)+'</b>'+(r.iamleader?' (تو)':'')+'</div>';
       h+='<div class="prow-list">'+(r.members||[]).map(function(m){return '<div class="prow"><i class="pdot'+(m.o?' on':'')+'"></i><div class="pn"><b>'+esc2(m.n)+'</b></div></div>';}).join('')+'</div>';
       if(r.iamleader){
-        var opts=['jaliz','kahroba','poker'].map(function(g){return '<option value="'+g+'">'+esc2(gName(g))+'</option>';}).join('');
+        var opts=['catan','hell','azul','jaliz','kahroba','poker'].map(function(g){return '<option value="'+g+'">'+esc2(gName(g))+'</option>';}).join('');
         h+='<div class="addrow"><select id="grpGame" class="inp">'+opts+'</select><button class="btn small primary" data-grpstart>شروع بازی گروهی</button></div>';
         h+='<button class="btn wide" data-grpdisband>اتمام گروه</button>';
       }else h+='<button class="btn wide" data-grpleave>خروج از گروه</button>';
@@ -8209,9 +8213,12 @@ function lobbyOpen(tab){
     if(t.closest('[data-grpstart]')){
       var gsel=body.querySelector('#grpGame');if(!gsel)return;var gid=gsel.value;
       if(!srvOk()){needAcct();return;}
-      renderHub();mgOpen(gid);M.grpStart=true;
-      if(ecoCan(feeOf(gid,true)))jzsMk(gid);
+      GRP_PENDING=gid;
       closeSheet();
+      if(gid==='catan'){hubCatan();hostLobby(cleanName(loadName())||'میزبان');}
+      else if(gid==='hell'){hellOpenMenu();hellCreate();}
+      else if(gid==='azul'){renderHub();mgOpen('azul');if(ecoCan(feeOf('azul',true)))mgHost();}
+      else{renderHub();mgOpen(gid);if(ecoCan(feeOf(gid,true)))jzsMk(gid);}
       return;
     }
     if(t.closest('[data-gpsend]')){
@@ -8307,7 +8314,7 @@ function openHellEscape(opts){
 function hellFrame(){var w=document.getElementById('hellEscapeOverlay'),f=w&&w.querySelector('iframe');return f&&f.contentWindow;}
 window.addEventListener('message',function(e){if(e.origin!==location.origin)return;var d=e.data||{},f=hellFrame();if(!f||e.source!==f)return;if(d.type==='hell:back'){if(HELLNET.link)hellLeaveRoom();var w=document.getElementById('hellEscapeOverlay');if(w)w.remove();return;}if(d.type==='hell:action'){if(HELLNET.link)hellSend(d.action);return;}if(d.type==='hell:report'&&d.report&&d.report.id==='hell'){var rp=d.report,h=lsGet(histKey(),[]);if(rp.gid&&h.some(function(x){return x&&x.rp&&x.rp.gid===rp.gid;}))return;histAdd({rp:rp,s:0,t:rp.t||Date.now(),g:'فرار از جهنم',r:d.result==='w'?'w':d.result==='d'?'d':'l',n:rp.n||2,o:d.online?1:0,ops:Array.isArray(d.opponents)?d.opponents:[]});
   /* online games are already recorded server-side (hell_done); only self-report offline (vs-computer) games here */
-  if(!d.online){var hw=rp.rows&&rp.rows[0]&&Array.isArray(rp.rows[0].v)?rp.rows[0].v[0]:0;srvReport('hell',d.result==='w',Math.max(0,Math.min(30,Math.round((+hw||0)/100))),false);}
+  if(!d.online){var hw=rp.rows&&rp.rows[0]&&Array.isArray(rp.rows[0].v)?rp.rows[0].v[0]:0;srvReport('hell',d.result==='w',Math.max(0,Math.min(30,Math.round((+hw||0)/100))),true);}
   setTimeout(function(){var hsh=openSheet('<h3>گزارش بازی</h3>'+rpHtml(rp,0)+'<button class="btn wide" data-close>بستن</button>');if(hsh&&hsh.parentNode)hsh.parentNode.style.zIndex=100010;hsh.addEventListener('click',function(e){if(e.target.closest('[data-close]'))closeSheet();});},window.__FAST?0:600);
 }});
 /* ---------- Hell Escape: online rooms (same server-authoritative pattern as Jaliz/Kahroba/Poker/Catan,
@@ -8365,6 +8372,7 @@ function hellCreate(){
   toast('در حال ساخت اتاق…');
   srvCall('hell_create',{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:4}).then(function(r){
     if(!r||!r.ok){toast('ساخت اتاق ناموفق بود');return;}
+    if(GRP_PENDING==='hell'){GRP_PENDING=null;srvCall('mb_grp_start',{p_game:'hell',p_code:String(r.code)}).catch(function(){});}
     hellJoin(String(r.code));
   }).catch(function(){toast('ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن');});
 }
@@ -8610,7 +8618,7 @@ function mgRecord(){
     setTimeout(function(){if(M===cur0&&M.rn===rn0&&M.over&&M.rp&&!curSheet)rpShow(M.rp,M.me);},window.__FAST?0:1200);
   }
   var w=(M.res===M.me||M.res==='left')?1:0,p=w?3:(M.res==='draw'?1:0);
-  srvReport(M.g.id,w,p,humans>1);
+  srvReport(M.g.id,w,p,true);
 }
 function mgEntry(ai){
   var g=M.g,fee=feeOf(g.id,ai===undefined?M.mode!=='ai':!!ai?false:true);
@@ -8837,6 +8845,7 @@ function mgHost(code0,keepState){
   if(!onlineAvailable()){M.msg='بازی آنلاین به اینترنت نیاز دارد';mgRender();return;}
   if(!keepState)lsSet(MGH,null);
   cur.code=code;cur.names[0]=nm;cur.msg='';if(!keepState){cur.wait=true;}mgRender();
+  if(GRP_PENDING===cur.g.id){GRP_PENDING=null;srvCall('mb_grp_start',{p_game:cur.g.id,p_code:String(code)}).catch(function(){});}
   cur.hr=0;
   function startSrv(){cur.srv=transport().host(code,function(link){
     link.onmessage=function(d){
@@ -8950,7 +8959,7 @@ function jzsMk(gid){
   srvCall(fn+'_create',gid==='poker'?{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn,p_cfg:cur.pkcfg}:{p_name:nm,p_av:typeof a==='number'?a:-1,p_n:dn}).then(function(r){
     if(M!==cur)return;
     if(!r||!r.ok){cur.msg='ساخت اتاق ناموفق بود';mgRender();return;}
-    cur.sv=fn;if(cur.grpStart){cur.grpStart=false;srvCall('mb_grp_start',{p_game:gid,p_code:String(r.code)}).catch(function(){});}mgJoin(String(r.code));
+    cur.sv=fn;if(GRP_PENDING===gid){GRP_PENDING=null;srvCall('mb_grp_start',{p_game:gid,p_code:String(r.code)}).catch(function(){});}mgJoin(String(r.code));
   }).catch(function(){if(M===cur){cur.msg='ساخت اتاق ناموفق بود؛ اینترنت را بررسی کن';mgRender();}});
 }
 function mgJoin(code,tk0){
