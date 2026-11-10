@@ -4420,7 +4420,7 @@ function histOpen(){
     srvCall('mb_games_of',{p_user:name}).then(function(r){
       if(!r||!r.ok){box.innerHTML='<p class="sub">سوابق این کاربر در دسترس نیست.</p>';return;}
       var av=(r.avi?'<img src="'+esc2(r.avi)+'" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover">':'👤');
-      box.innerHTML='<div class="sub"><span style="display:inline-block;vertical-align:middle">'+av+'</span> <b>'+esc2(r.n)+'</b> · '+fa((r.rows||[]).length)+' بازی اخیر</div>'+((r.rows||[]).map(function(x){
+      box.innerHTML='<div class="sub"><span style="display:inline-block;vertical-align:middle">'+av+'</span> <b data-prof="'+esc2(r.n)+'" style="cursor:pointer;text-decoration:underline">'+esc2(r.n)+'</b> · '+fa((r.rows||[]).length)+' بازی اخیر</div>'+((r.rows||[]).map(function(x){
         var dt='';try{dt=new Date(x.t).toLocaleString('fa-IR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){}
         return '<div class="hrow" style="display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--line);border-radius:10px;margin-top:4px"><b style="min-width:42px;text-align:center;color:#fff;background:'+(x.w?'#3fbf6a':'#e0524d')+';border-radius:8px;padding:2px 6px;font-size:12px">'+(x.w?'برد':'باخت/مساوی')+'</b><div style="flex:1;font-size:12.5px"><b>'+esc2(gName(x.g))+'</b> · '+(x.o?'آنلاین':'با رایانه')+' · امتیاز '+fa(x.p)+'</div><small style="color:var(--ink-dim)">'+dt+'</small></div>';
       }).join('')||'<p class="sub">هنوز بازی‌ای ثبت نشده.</p>');
@@ -5416,6 +5416,50 @@ function avHtml(idx,nm,isAi,px){
   if(idx>=0)return '<i class="avc" style="'+sz+'"><img alt="" draggable="false" style="width:100%;height:100%;display:block" src="'+avUrl(idx)+'"></i>';
   return '<i class="avc" style="background:'+avBg(idx,nm)+(px?';width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*.56)+'px':';width:100%;height:100%;font-size:inherit')+'">'+avTxt(idx,nm,isAi)+'</i>';
 }
+/* ---- avatar level-frames: a colored ring around the avatar once a player's offline or online
+   level crosses a tier of 10; unlocked/announced server-side in mb_achv_sync (mb_prof.frame_seen) ---- */
+function frameColor(tier){
+  return {10:'#c08a4e',20:'#b8c0c8',30:'#ffd25a',40:'#7fd9ff',50:'#c79bff',60:'#ff8fc2'}[tier]||'';
+}
+function frameHtml(tier,inner){
+  var c=frameColor(tier||0);
+  return '<div style="display:inline-block;border-radius:50%;'+(c?'box-shadow:0 0 0 3px '+c+',0 0 10px '+c:'')+'">'+inner+'</div>';
+}
+/* ---- player profile sheet: opened from any clickable name (data-prof="username") ---- */
+function profileOpen(uname){
+  if(!uname)return;
+  if(!srvOk()){toast('برای دیدن پروفایل وارد حساب شو');return;}
+  var sh=openSheet('<h3>پروفایل</h3><div class="sub" style="text-align:center">در حال بارگذاری…</div><button class="btn wide" data-close>بستن</button>');
+  function block(d,tag){
+    if(!d)return '';
+    var pct=d.achv_tot?Math.round(d.achv*100/d.achv_tot):0;
+    var bg=(d.by_game||[]).slice(0,6).map(function(x){return '<span class="sub" style="display:inline-block;margin:2px 4px 0 0">'+esc2(gName(x.g))+' '+fa(x.w)+'/'+fa(x.p)+'</span>';}).join('');
+    return '<div class="sub" style="margin-top:10px;font-weight:700">'+tag+' · لول '+fa(d.lvl)+' ('+fa(d.xp)+' امتیاز تجربه)</div>'+
+      '<div class="sub">بازی: '+fa(d.played)+' · برد: '+fa(d.won)+' · اچیومنت: '+fa(d.achv)+'/'+fa(d.achv_tot)+' ('+fa(pct)+'٪)</div>'+bg;
+  }
+  srvCall('mb_profile_get',{p_user:uname}).then(function(r){
+    if(!r){sh.innerHTML='<h3>پروفایل</h3><p class="sub">کاربر پیدا نشد.</p><button class="btn wide" data-close>بستن</button>';return;}
+    var av=avI(r.avi||r.av);
+    var firstDt='—';try{if(r.first_at)firstDt=new Date(r.first_at).toLocaleDateString('fa-IR');}catch(e){}
+    var h='<h3>پروفایل</h3><div style="display:flex;align-items:center;gap:10px">'+
+      frameHtml(r.frame,'<div style="width:64px;height:64px">'+avHtml(av,r.n,false,64)+'</div>')+
+      '<div><b style="font-size:16px">'+esc2(r.n)+'</b><br><small class="sub">اولین بازی: '+firstDt+'</small></div></div>'+
+      block(r.off,'آفلاین')+block(r.on,'آنلاین');
+    if((r.recent_achv||[]).length)h+='<div class="sub" style="margin-top:10px;font-weight:700">اچیومنت‌های اخیر</div>'+r.recent_achv.slice(0,6).map(function(x){return '<div class="sub">🏅 '+esc2(x.t)+' ('+(x.m==='online'?'آنلاین':'آفلاین')+')</div>';}).join('');
+    h+='<div class="mg-r" style="margin-top:10px">'+(r.self?'':(r.friend?'<span class="sub">دوست توست</span>':'<button class="btn primary" data-pfadd="'+esc2(r.n)+'">افزودن دوست</button>'))+'</div>';
+    h+='<button class="btn wide" data-close>بستن</button>';
+    sh.innerHTML=h;
+  }).catch(function(){sh.innerHTML='<h3>پروفایل</h3><p class="sub">اتصال به سرور برقرار نشد.</p><button class="btn wide" data-close>بستن</button>';});
+  sh.addEventListener('click',function(e){
+    if(e.target.closest('[data-close]')){closeSheet();return;}
+    var b=e.target.closest('[data-pfadd]');
+    if(b){srvCall('mb_fr_add',{p_user:b.dataset.pfadd}).then(function(r2){toast(({none:'کاربری با این نام پیدا نشد',self:'این خودِ توست',already:'او قبلاً دوست توست',sent:'درخواست دوستی فرستاده شد',accepted:'دوست شدید 🎉',full:'فهرست دوستان پر است'})[r2]||'انجام نشد');}).catch(function(){toast('اتصال به سرور برقرار نشد');});return;}
+  });
+}
+document.addEventListener('click',function(e){
+  var pf=e.target.closest('[data-prof]');
+  if(pf)profileOpen(pf.dataset.prof);
+});
 function avResize(file,cb){
   var r=new FileReader();
   r.onerror=function(){cb('');};
@@ -8203,7 +8247,7 @@ function lobbyOpen(tab){
     var near=box.scrollTop+box.clientHeight>=box.scrollHeight-30;
     (r.msgs||[]).forEach(function(m){if(m.id>last){last=m.id;box.insertAdjacentHTML('beforeend','<div class="lbm"><b>'+esc2(m.n)+'</b> '+esc2(m.m)+'</div>');}});
     if(near)box.scrollTop=box.scrollHeight;
-    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'">'+esc2(o.n)+(o.f?'':' <button class="fadd-plus" data-fadd2="'+esc2(o.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</span>';}).join(' ');
+    var on=body.querySelector('#lbOn');if(on)on.innerHTML='<b>آنلاین ('+fa((r.on||[]).length)+'):</b> '+(r.on||[]).map(function(o){return '<span class="lbo'+(o.f?' f':'')+'"><span data-prof="'+esc2(o.n)+'" style="cursor:pointer;text-decoration:underline">'+esc2(o.n)+'</span>'+(o.f?'':' <button class="fadd-plus" data-fadd2="'+esc2(o.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</span>';}).join(' ');
   }
   function grpChatDraw(r){
     var box=body.querySelector('#gpMsgs');if(!box)return;
@@ -8240,7 +8284,7 @@ function lobbyOpen(tab){
       if(T!=='fr')return;
       var h='<div class="addrow"><input id="frU" class="inp" dir="ltr" maxlength="16" placeholder="نام کاربری دوست" autocomplete="off"><button class="btn small primary" data-fadd>افزودن</button></div>';
       (r.inc||[]).forEach(function(n){h+='<div class="prow"><div class="pn"><b>'+esc2(n)+'</b><small>درخواست دوستی</small></div><div class="pb"><button class="btn small primary" data-facc="'+esc2(n)+'">پذیرش</button><button class="btn small" data-fdel="'+esc2(n)+'">رد</button></div></div>';});
-      (r.fr||[]).forEach(function(f){h+='<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b>'+esc2(f.n)+'</b><small>'+(f.o?'آنلاین':'آفلاین')+'</small></div><div class="pb"><button class="btn small" data-ginv="'+esc2(f.n)+'">افزودن به گروه</button><button class="btn small" data-fdel="'+esc2(f.n)+'">حذف</button></div></div>';});
+      (r.fr||[]).forEach(function(f){h+='<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b data-prof="'+esc2(f.n)+'" style="cursor:pointer;text-decoration:underline">'+esc2(f.n)+'</b><small>'+(f.o?'آنلاین':'آفلاین')+'</small></div><div class="pb"><button class="btn small" data-ginv="'+esc2(f.n)+'">افزودن به گروه</button><button class="btn small" data-fdel="'+esc2(f.n)+'">حذف</button></div></div>';});
       (r.out||[]).forEach(function(n){h+='<div class="prow"><div class="pn"><b>'+esc2(n)+'</b><small>در انتظار پذیرش</small></div><div class="pb"><button class="btn small" data-fdel="'+esc2(n)+'">لغو</button></div></div>';});
       if(!(r.fr||[]).length&&!(r.inc||[]).length&&!(r.out||[]).length)h+='<p class="sub">هنوز دوستی نداری. نام کاربری دوستت را بنویس.</p>';
       body.innerHTML=h;
@@ -8315,17 +8359,17 @@ function statsOpen(){
         if(T!=='me')return;var m=r.me||{};
         var h='<div class="sub">بازی‌های من: '+fa(m.g|0)+' · برد: '+fa(m.w|0)+' ('+pct(m.w,m.g)+')<br>آنلاین: '+fa(m.og|0)+' بازی · '+fa(m.ow|0)+' برد</div>';
         if((r.by||[]).length)h+='<div class="sub">به تفکیک بازی</div>'+r.by.map(function(x){return '<div class="prow"><div class="pn"><b>'+esc2(gName(x.game))+'</b><small>'+fa(x.g)+' بازی · '+fa(x.w)+' برد</small></div></div>';}).join('');
-        h+='<div class="sub">دوستان</div>'+((r.fr||[]).length?r.fr.map(function(f){return '<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b>'+esc2(f.n)+'</b><small>'+fa(f.g)+' بازی · '+fa(f.w)+' برد ('+pct(f.w,f.g)+')</small></div></div>';}).join(''):'<p class="sub">هنوز دوستی نداری.</p>');
+        h+='<div class="sub">دوستان</div>'+((r.fr||[]).length?r.fr.map(function(f){return '<div class="prow"><i class="pdot'+(f.o?' on':'')+'"></i><div class="pn"><b data-prof="'+esc2(f.n)+'" style="cursor:pointer;text-decoration:underline">'+esc2(f.n)+'</b><small>'+fa(f.g)+' بازی · '+fa(f.w)+' برد ('+pct(f.w,f.g)+')</small></div></div>';}).join(''):'<p class="sub">هنوز دوستی نداری.</p>');
         body.innerHTML=h;
       }).catch(function(){body.innerHTML='<p class="sub">اتصال به سرور برقرار نشد.</p>';});
       return;
     }
     srvCall('mb_rank',{p_scope:RK}).then(function(r){
       if(T!=='rk')return;
-      var h='<div class="tabs sm">'+[['all','کلی'],['wk','هفتگی'],['mo','ماهانه'],['fr','بین دوستان']].map(function(x){return '<button data-rk="'+x[0]+'" class="'+(RK===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
-      h+='<table class="rktb"><tr><th>#</th><th>نام</th><th>بازی</th><th>برد</th><th>امتیاز</th><th></th></tr>'+((r.rows||[]).map(function(x){return '<tr'+(x.me?' class="me"':'')+'><td>'+fa(x.rk)+'</td><td>'+esc2(x.n)+'</td><td>'+fa(x.g)+'</td><td>'+fa(x.w)+'</td><td>'+fa(x.p)+'</td><td>'+(x.me||x.fr?'':'<button class="fadd-plus" data-fadd2="'+esc2(x.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</td></tr>';}).join('')||'<tr><td colspan="6">هنوز بازی آنلاینی ثبت نشده.</td></tr>')+'</table>';
+      var h='<div class="tabs sm">'+[['all','کلی'],['wk','هفتگی'],['mo','ماهانه'],['fr','بین دوستان'],['lvloff','لول آفلاین'],['lvlon','لول آنلاین']].map(function(x){return '<button data-rk="'+x[0]+'" class="'+(RK===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
+      h+='<table class="rktb"><tr><th>#</th><th>نام</th><th>بازی</th><th>برد</th><th>'+(RK==='lvloff'||RK==='lvlon'?'لول':'امتیاز')+'</th><th></th></tr>'+((r.rows||[]).map(function(x){return '<tr'+(x.me?' class="me"':'')+'><td>'+fa(x.rk)+'</td><td><b data-prof="'+esc2(x.n)+'" style="cursor:pointer;text-decoration:underline">'+esc2(x.n)+'</b></td><td>'+fa(x.g)+'</td><td>'+fa(x.w)+'</td><td>'+(x.lvl!=null?fa(x.lvl):fa(x.p))+'</td><td>'+(x.me||x.fr?'':'<button class="fadd-plus" data-fadd2="'+esc2(x.n)+'" title="افزودن دوست" aria-label="افزودن دوست">+</button>')+'</td></tr>';}).join('')||'<tr><td colspan="6">هنوز بازی ثبت نشده.</td></tr>')+'</table>';
       if(r.mine&&!(r.rows||[]).some(function(x){return x.me;}))h+='<p class="sub">رتبهٔ تو: '+fa(r.mine.rk)+'</p>';
-      h+='<p class="sub small">فقط بازی‌های آنلاین حساب می‌شود. هر برد ۱۰ امتیاز + امتیاز بازی.</p>';
+      h+='<p class="sub small">'+(RK==='lvloff'?'رده‌بندی بر اساس لول آفلاین (از بازی‌های با رایانه).':RK==='lvlon'?'رده‌بندی بر اساس لول آنلاین.':'فقط بازی‌های آنلاین حساب می‌شود. هر برد ۱۰ امتیاز + امتیاز بازی.')+'</p>';
       body.innerHTML=h;
     }).catch(function(){body.innerHTML='<p class="sub">اتصال به سرور برقرار نشد.</p>';});
   }
