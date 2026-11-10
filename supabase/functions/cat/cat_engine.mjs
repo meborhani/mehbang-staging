@@ -273,7 +273,7 @@ function catInit(){
   x.deck=makeDeck(n>=5);
   x.players=[];
   for(var i=0;i<n;i++)x.players.push({res:[0,0,0,0,0],cards:{gravity:0,strong:0,em:0,planck:0,fine:0},fresh:{},played:0,playedCard:false,stats:newStats()});
-  x.round=1;x.phase='order';x.sub=null;x.cur=0;x.dice=null;x.hotNum=null;
+  x.round=1;x.phase='order';x.sub=null;x.cur=0;x.dice=null;x.hotNum=null;x.bhBy=null;x.bhRound=0;x.bhN=0;
   x.longest=null;x.dark=null;x.lens=x.players.map(function(){return 0;});
   x.log=[];x.over=false;x.winner=null;x.order=null;x.setup=null;x.dl=0;
   x.discard=null;x.offer=null;x.trade=null;x.pt=null;x.cardTarget=null;
@@ -372,7 +372,7 @@ function victimsOnTile(tk,seat){
 }
 function doRobberMove(seat,tk){
   var x=X();
-  x.bh=tk;x.players[seat].stats.robMoves++;
+  x.bh=tk;x.players[seat].stats.robMoves++;x.bhBy=seat;x.bhRound=x.round;x.bhN=(x.bhN||0)+1;
   addLog(M.names[seat]+' خرابی را به کاشی دیگری برد.');
   var vic=victimsOnTile(tk,seat);
   if(!vic.length){x.cardTarget=null;x.sub='main';return;}
@@ -926,7 +926,7 @@ function catArm(){armTurn();}
 function catView(seat){
   var x=X(),over=x.over;
   return {
-    round:x.round,cur:x.cur,phase:x.phase,sub:x.sub,dice:x.dice,hotNum:x.hotNum,bh:x.bh,R:x.R,
+    round:x.round,cur:x.cur,phase:x.phase,sub:x.sub,dice:x.dice,hotNum:x.hotNum,bh:x.bh,bhBy:x.bhBy,bhRound:x.bhRound,bhN:x.bhN,R:x.R,
     longest:x.longest,dark:x.dark,lens:x.lens,over:x.over,winner:x.winner,deckN:x.deck.length,
     log:x.log.slice(-6),chat:x.chat.slice(-8),
     tiles:Object.keys(x.tiles).map(function(k){var t=x.tiles[k];return [t.q,t.r,t.slot,t.num];}),

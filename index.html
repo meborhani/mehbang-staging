@@ -892,14 +892,15 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .pkp .pk-ctl .btn{min-height:clamp(32px,calc(11*var(--vh)),54px);border-radius:10px;font-size:clamp(12px,calc(3.6*var(--vh)),19px);font-weight:700;padding:2px 6px;background:linear-gradient(#262c4e,#151a34);border:1px solid #4b5488;border-top-color:#7a85c4;color:#eef}
 .pkp .pk-ctl .btn.primary{background:linear-gradient(#3b8a4e,#215c33);border-color:#6fd18a;color:#fff}
 .pkp .pk-ctl .btn:disabled{opacity:.38}
-.pkp .pk-ctl.rz{display:flex;flex-direction:column;gap:6px;height:auto;padding:4px}
+.pkp .pk-ctl.rz{display:flex;flex-direction:column;gap:6px;height:auto;padding:6px;position:absolute;left:4px;right:4px;bottom:4px;z-index:6;background:rgba(10,10,16,.94);border:1px solid #4b5488;border-radius:14px;box-shadow:0 -6px 16px #000a}
 .pkp .pk-ctl.rz .btn{font-size:clamp(12px,calc(3.6*var(--vh)),19px);min-height:clamp(32px,calc(11*var(--vh)),54px);padding:2px 2px;white-space:nowrap;min-width:0}
 .pkp .pk-ctl.rz .pk-am-row{display:flex;align-items:center;justify-content:center;gap:8px}
 .pkp .pk-ctl.rz .pk-am{display:flex;align-items:center;justify-content:center;min-width:70px;height:clamp(32px,calc(11*var(--vh)),54px);border:1px solid #6fd18a;border-radius:10px;background:#0b1a12;color:#ffd35a;font-size:clamp(14px,calc(4.4*var(--vh)),24px);font-weight:800}
 .pkp .pk-ctl.rz .pk-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.pk-chip-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:0;cursor:pointer;min-width:44px}
+.pk-chip-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:0;cursor:pointer;min-width:40px}
 .pk-chip-btn:disabled{opacity:.35;cursor:default}
-.pk-chip-ico{display:block;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe07a,#c99a1f 70%,#8a6a10);border:2px dashed #fff8;box-shadow:0 2px 4px #0006}
+.pk-chip-btn img{display:block;width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px #0008)}
+.pk-chip-btn:active img{transform:scale(.9)}
 .pk-chip-btn small{color:#ffd35a;font-size:11px;font-weight:700}
 .pkp .pk-ctl .pk-q{display:flex;align-items:center;justify-content:center}
 .hb-in.lm2{display:grid !important;grid-template-columns:1fr 1fr;gap:clamp(2px,calc(.6*var(--vh)),8px) 14px;align-content:start;overflow:hidden}
@@ -7168,9 +7169,9 @@ function pkHtml(){
     if(M.rz<minTo||M.rz>maxTo)M.rz=minTo;
     if(M.rzo&&maxTo>v.cur){
       rzm=true;
-      var unit=v.cfg.bl||1,room=maxTo-M.rz,chipDenoms=[unit,unit*2,unit*5,unit*10,unit*20,unit*50].filter(function(cv){return cv<=maxTo-minTo+unit;});
+      var room=maxTo-M.rz,chipDenoms=[10,20,50,100,200,500,1000].filter(function(cv){return cv<=maxTo-minTo+10;});
       ctl+='<div class="pk-am-row"><b class="pk-am">'+fa(M.rz)+'</b>'+(M.rz>minTo?'<button class="btn sm" data-pclr="1">پاک کردن</button>':'')+'</div>'+
-        '<div class="pk-chips">'+chipDenoms.map(function(cv){return '<button class="pk-chip-btn" data-pchip="'+cv+'" '+(cv>room?'disabled':'')+'><i class="pk-chip-ico"></i><small>'+fa(cv)+'</small></button>';}).join('')+'</div>'+
+        '<div class="pk-chips">'+chipDenoms.map(function(cv){return '<button class="pk-chip-btn" data-pchip="'+cv+'" '+(cv>room?'disabled':'')+'><img src="games/hell-escape/assets/chip-'+cv+'.svg" alt="" draggable="false"><small>'+fa(cv)+'</small></button>';}).join('')+'</div>'+
         '<div class="mg-r"><button class="btn sm" data-pr="'+Math.min(maxTo,v.cur+Math.max(v.minr,pot))+'">پات</button><button class="btn sm" data-pr="'+maxTo+'">آل‌این</button>'+
         '<button class="btn sm primary" data-pa="r">ریز '+fa(M.rz)+'</button></div>';
     }else{
