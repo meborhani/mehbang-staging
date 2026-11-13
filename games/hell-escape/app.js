@@ -10,7 +10,7 @@
   var AI_PERSONALITIES=[{id:'risk',name:'ریسک‌پذیر'},{id:'cautious',name:'محتاط'},{id:'smart',name:'باهوش'},{id:'dumb',name:'خنگ'},{id:'normal',name:'نرمال'},{id:'alternating',name:'متناوب'}];
   var BOT_CHIPS=[500,200,100,50,20,10];
   var PAWN_COLORS=['#f2c95b','#ef4944','#35c9dc','#4ccc70'];
-  var g=null,avatarUrls=FALLBACK.slice(),difficulty=1,roundStartedAt=0,autoTimer=null,toastTimer=null,lastTurnKey='',lastGuidanceKey='',reportSent=false,profileName='بازیکن',roundReveals=[],vibrationEnabled=localStorage.getItem('mb-hell-vibration')!=='0',tutorialMode=false,tutorialRound=0,tutorialFinished=false,onlineMode=false,onlineSeat=0;
+  var g=null,avatarUrls=FALLBACK.slice(),difficulty=1,roundStartedAt=0,autoTimer=null,toastTimer=null,lastTurnKey='',lastGuidanceKey='',autoLockKey='',reportSent=false,profileName='بازیکن',roundReveals=[],vibrationEnabled=localStorage.getItem('mb-hell-vibration')!=='0',tutorialMode=false,tutorialRound=0,tutorialFinished=false,onlineMode=false,onlineSeat=0;
   var rows=[4,6,7,8,8,7,5,3];
   var coalPoints=[]; (function(){var cy=520,yy=-189,id=0;rows.forEach(function(count){var gap=56,start=500-(count-1)*gap/2;for(var i=0;i<count;i++)coalPoints.push({id:id++,x:start+i*gap,y:cy+yy});yy+=59;});})();
   var SCORE_BOXES=[
@@ -30,10 +30,22 @@
   }
   window.addEventListener('message',function(e){if(e.origin===location.origin)fromParent(e.data);});
   function sendAction(a){msgParent({type:'hell:action',action:a});}
+  function maybeAutoLock(){
+    if(!g||g.phase!=='bet')return;
+    var p=g.players[0];
+    if(!p||p.locked||p.wealth>=10)return;
+    var key=g.round+':'+p.wealth+':'+(p.wager||0);
+    if(key===autoLockKey)return;
+    autoLockKey=key;
+    if(onlineMode){sendAction({a:'lock'});return;}
+    p.wager=0;p.wagerHidden=false;p.locked=true;
+    if(g.players.every(function(x){return x.locked;})){g.phase='bet-reveal';E.startRound(g);roundStartedAt=Date.now();}
+  }
   function applyOnlineState(view){
     if(!view||!view.x)return;
     onlineSeat=view.you|0;
     g=view.x;
+    maybeAutoLock();
     showGame();render();
     if(view.over&&!reportSent){
       reportSent=true;g.reportSent=true;
@@ -148,7 +160,7 @@
   }
   function tutorialMessage(){if(!tutorialMode||!g)return '';var p=g.players[0],round=tutorialRound;if(g.phase==='bet')return 'چیپ‌ها را انتخاب کن و «قفل شرط» را بزن؛ رایانه هم شرط می‌بندد و تا آن موقع مبلغ‌ها مخفی‌اند.';if(g.phase==='bet-reveal')return 'شرط‌ها رو شدند. بیشترین شرط آغازگر است؛ حالا ترتیب نوبت‌ها را دنبال کن.';if(g.phase==='play'){if(g.turn!==0)return 'به انتخاب رایانه دقت کن: زغال امن به مجموع دست اضافه می‌شود و با شیطان نوبتش تمام می‌شود.';if(round===1)return p.coalCount?'زغال امن رو شد. می‌توانی زغال دیگری برداری یا «پایان نوبت» را بزنی؛ شرطت با بیشترین برداشت امنِ هر بازیکن، حتی حریف، سنجیده می‌شود.':'برای شروع، یکی از زغال‌های وسط را لمس کن؛ فقط زغال رو‌شده مقدارش را نشان می‌دهد.';if(round===2)return p.coalCount?'دست دوم: بعد از برداشت امن تصمیم بگیر ادامه بدهی یا متوقف شوی؛ اگر شیطان رو شود برداشت امن این دستت از بین می‌رود.':'دست دوم روی ریسک تمرکز دارد: زغال بردار و تفاوت زغال امن و شیطان را ببین.';return p.coalCount?'دست سوم: نتیجهٔ امن همه و پاداش بیشترین برداشت را دنبال کن؛ اگر پیمان داری، رو شدن شیطان توسط حریف ۵۰ چیپ منتقل می‌کند.':'دست سوم: پیمان، انتقال ۵۰ چیپی و باقی‌ماندن زغال‌های کوره را در تسویه بررسی می‌کنیم.';}if(g.phase==='settlement'){var best=g.settled?g.settled.bestWager:0,max=g.settled?g.settled.maxHaul:0;return 'تسویهٔ دست '+fa(round)+' · بیشترین برداشت امن '+fa(max)+'، بالاترین شرط '+fa(best)+'؛ شرط‌های موفق پرداخت می‌گیرند و شرط ناموفق می‌سوزد.'+(round===3?' سه دست تمام شد؛ «پایان آموزش» را بزن.':' نتیجه را بخوان و برای درس بعد «دست بعد» را بزن.');}return tutorialFinished?'سه دست تمام شد؛ آموزش را ببند یا از خلاصه بازی نتیجه‌ها را مرور کن.':'';}
   function announceGuidance(){if(!g)return;var active=g.players[g.turn]||g.players[0],key=[g.phase,g.round,g.turn,g.turnIndex,g.phase==='bet'&&g.players[0].locked,g.turn===0?active.coalCount:''].join(':');if(key===lastGuidanceKey)return;lastGuidanceKey=key;var message=tutorialMode?'دست '+fa(tutorialRound)+' از ۳ · '+tutorialMessage():statusText();if(message)toast(message);}
-  function render(){if(!g)return;document.body.dataset.phase=g.phase;$('#app').dataset.phase=g.phase;$('#roundLabel').textContent=fa(g.round);renderOpponents();renderLabels();renderPawns();renderCoals();renderDock();renderPlayerReveals();renderSafeHaul();activeStep();requestAnimationFrame(fitBoard);announceGuidance();persist();
+  function render(){if(!g)return;maybeAutoLock();document.body.dataset.phase=g.phase;$('#app').dataset.phase=g.phase;$('#roundLabel').textContent=fa(g.round);renderOpponents();renderLabels();renderPawns();renderCoals();renderDock();renderPlayerReveals();renderSafeHaul();activeStep();requestAnimationFrame(fitBoard);announceGuidance();persist();
     if(g.phase==='play'){var key=g.round+':'+g.turnIndex;if(key!==lastTurnKey){lastTurnKey=key;if(g.turn===0&&vibrationEnabled)try{navigator.vibrate&&navigator.vibrate([100,45,100]);}catch(e){}}}
   }
   function maybeSettle(){if(g.phase!=='settlement')return;var summary=E.settle(g);if(summary){summary.reveals=roundReveals.slice();if(tutorialMode){tutorialFinished=tutorialRound>=3;if(g.gameOver){g.gameOver=false;g.winners=[];g.phase='settlement';E.offerPact(g);}}render();if(g.gameOver){if(!tutorialMode)finishGame();}else maybeCpuPact();}}
