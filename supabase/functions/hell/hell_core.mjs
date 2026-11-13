@@ -61,7 +61,15 @@ function resolveBots(g,st,now){
       const seat=E.offerPact(g);
       if(seat==null)break;
       const p=g.players[seat];
-      if(!p.isAI){if(st.srv.pactDeadline&&now>=st.srv.pactDeadline){E.resolvePact(g,seat,false);st.srv.pactDeadline=now+30000;changed=true;continue;}break;}
+      if(!p.isAI){
+        /* A settlement can be reached through a timeout/bot step without
+           passing through afterTurn. Always arm the human pact deadline
+           before waiting, otherwise the room can remain in settlement
+           forever if the player never answers. */
+        if(!st.srv.pactDeadline)st.srv.pactDeadline=now+30000;
+        if(now>=st.srv.pactDeadline){E.resolvePact(g,seat,false);st.srv.pactDeadline=now+30000;changed=true;continue;}
+        break;
+      }
       if(now<st.srv.nextAt)break;
       const take=(p.aiPersonality==='risk'||(p.aiPersonality==='smart'&&Math.random()<.75)||Math.random()<.35);
       E.resolvePact(g,seat,take);st.srv.nextAt=now+AI_MIN_MS+rand(AI_MAX_MS-AI_MIN_MS+1);changed=true;continue;
