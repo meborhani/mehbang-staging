@@ -144,7 +144,7 @@
     var dock=$('#seat-0');dock.classList.toggle('is-active',mine);dock.classList.remove('show-bet');dock.classList.remove('compact-play');
     $('#myAvatar').src=avatarFor(0);$('#myName').textContent=p.name;$('#myWealth').textContent=fa(p.wealth);$('#myWager').textContent=p.wager?fa(p.wager):'۰';$('#chips').innerHTML=playerChipRow();$('#myBetChips').innerHTML=wagerRow();$('#myPact').hidden=!p.pact;
     var lock=$('[data-lock]'),end=$('[data-end-turn]'),next=$('[data-next]'),undo=$('[data-undo]');
-    lock.hidden=g.phase!=='bet'||p.locked;lock.disabled=!p.wager||p.locked;
+    lock.hidden=g.phase!=='bet'||p.locked;lock.disabled=p.locked||(p.wealth>=10&&!p.wager);
     undo.style.display=g.phase==='bet'&&!p.locked&&p.wager?'block':'none';
     end.hidden=!mine;end.disabled=!mine||p.coalCount<1;
     next.hidden=g.phase!=='settlement'&&g.phase!=='game-over';next.textContent=tutorialMode&&tutorialFinished?'پایان آموزش':g.gameOver?'بازی تمام شد':'دست بعد';next.disabled=(g.gameOver&&!tutorialFinished)||!!(g.pactOffers&&g.pactOffers.length);
