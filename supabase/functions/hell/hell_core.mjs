@@ -125,7 +125,13 @@ function act(g,seat,m,st,now){
   if(m.a==='wager-add')return E.addWager(g,seat,m.value);
   if(m.a==='clear-wager'){const p=g.players[seat];if(g.phase!=='bet'||p.locked)return false;p.wager=0;return true;}
   if(m.a==='lock'){
-    if(!E.lockBet(g,seat))return false;
+    const p=g.players[seat];
+    /* Match the client rule for a bankrupt player: a zero wager is a valid
+       lock so the room can advance to the next round instead of stalling. */
+    if(p.wealth<10){
+      if(p.wager!==0||p.locked)return false;
+      p.wagerHidden=false;p.locked=true;
+    }else if(!E.lockBet(g,seat))return false;
     if(g.phase==='bet-reveal'){E.startRound(g);setDeadline(st,now);st.srv.nextAt=now+AI_MIN_MS+rand(AI_MAX_MS-AI_MIN_MS+1);}
     return true;
   }
