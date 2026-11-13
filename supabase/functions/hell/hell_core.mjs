@@ -53,6 +53,18 @@ function afterTurn(g,st,now,previousTurn){
 function resolveBots(g,st,now){
   let changed=false;
   for(let guard=0;guard<12;guard++){
+    if(g.phase==='bet'){
+      let autoLocked=false;
+      for(const p of g.players){
+        if(!p.locked&&p.wealth<10&&p.wager===0){p.wagerHidden=false;p.locked=true;autoLocked=true;}
+      }
+      if(autoLocked)changed=true;
+      if(g.players.every(p=>p.locked)){
+        g.phase='bet-reveal';
+        continue;
+      }
+      break;
+    }
     if(g.phase==='bet-reveal'){
       E.startRound(g);setDeadline(st,now);st.srv.nextAt=now+AI_MIN_MS+rand(AI_MAX_MS-AI_MIN_MS+1);changed=true;continue;
     }
