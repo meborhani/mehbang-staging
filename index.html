@@ -18,6 +18,29 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Changa:wght@500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Changa:wght@500;700&display=swap"></noscript>
 <script>try{if(!(navigator.webdriver&&!/[?&]hub/.test(location.search)))document.documentElement.classList.add('pre-hub')}catch(e){}</script>
+<script>
+/* temporary boot-failure diagnostic: if the app is still stuck on the boot screen after 6s,
+   show the first captured JS error in plain text so a stuck "white screen" report can be
+   root-caused instead of guessed at. Safe no-op once boot succeeds normally. */
+window.__bootErr=null;
+window.addEventListener('error',function(e){if(!window.__bootErr)window.__bootErr=(e&&e.message||'error')+' @ '+(e&&e.filename||'?')+':'+(e&&e.lineno||'?');});
+window.addEventListener('unhandledrejection',function(e){if(!window.__bootErr){var r=e&&e.reason;window.__bootErr='promise: '+((r&&(r.message||String(r)))||'unknown');}});
+setTimeout(function(){
+  try{
+    if(!document.documentElement.classList.contains('pre-hub'))return;
+    var d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff;color:#111;font-family:monospace,monospace;padding:18px;direction:ltr;text-align:left;font-size:13px;line-height:1.6;overflow:auto;white-space:pre-wrap;word-break:break-word';
+    d.textContent='Mahbang boot stuck.\nError: '+(window.__bootErr||'(no JS error captured -- likely a network/resource hang)')+'\nUA: '+navigator.userAgent+'\nURL: '+location.href;
+    var btn=document.createElement('button');
+    btn.textContent='Reload / تلاش دوباره';
+    btn.style.cssText='margin-top:14px;padding:10px 18px;font-size:14px';
+    btn.onclick=function(){location.reload();};
+    d.appendChild(document.createElement('br'));
+    d.appendChild(btn);
+    document.body.appendChild(d);
+  }catch(e){}
+},6000);
+</script>
 <style>
 html.pre-hub #intro{display:none!important}
 #boot{display:none}
