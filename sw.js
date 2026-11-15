@@ -4,7 +4,7 @@
    app code is updated, so they must NOT be wiped on every deploy -- only
    the small CORE cache (app shell/html) is tied to VER and rotated. Bump
    ASSETS_VER by hand only if the image files themselves are replaced. */
-var VER='20261115131215',CORE='datis-core-'+VER,RUN='datis-run';
+var VER='20261115133253',CORE='datis-core-'+VER,RUN='datis-run';
 var ASSETS_VER='v1',ASSETS='datis-assets-'+ASSETS_VER;
 var ASSET_RE=/\/(assets|hub-assets)\//;
 var FILES=['./','index.html','manifest.webmanifest','peerjs.min.js','mb-192.png','mb-512.png','mb-maskable.png','mb-apple.png'];

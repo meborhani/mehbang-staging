@@ -9404,6 +9404,42 @@ var r=t.getBoundingClientRect();box.style.display='block';box.style.left=r.left+
 bt.onclick=function(e){e.stopPropagation();on=!on;bt.style.background=on?'#f66':'#fff';if(!on){box.style.display='none';pn.style.display='none'}};
 document.addEventListener('DOMContentLoaded',function(){document.body.append(box,pn,bt)});if(document.body)document.body.append(box,pn,bt)}catch(e){}})();
 </script>
+<script>
+/* Network/cache diagnostic overlay: only active with ?netdiag=1 */
+(function(){try{if(!/[?&]netdiag=1/.test(location.search))return;
+function render(){
+  var lines=[];
+  lines.push('UA: '+navigator.userAgent);
+  lines.push('آدرس: '+location.href);
+  lines.push('زمان: '+new Date().toLocaleString('fa-IR'));
+  lines.push('');
+  var p1=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);
+  var p2=(window.caches?caches.keys():Promise.resolve([]));
+  Promise.all([p1,p2]).then(function(res){
+    var regs=res[0],cacheNames=res[1];
+    lines.push('ثبت سرویس‌ورکر: '+(regs.length?regs.length+' مورد':'هیچ'));
+    regs.forEach(function(r){lines.push('  scope='+r.scope+' active='+!!r.active+' installing='+!!r.installing+' waiting='+!!r.waiting)});
+    lines.push('');
+    var ps=cacheNames.map(function(name){return caches.open(name).then(function(c){return c.keys()}).then(function(keys){lines.push('کش «'+name+'»: '+keys.length+' فایل')})});
+    return Promise.all(ps);
+  }).catch(function(e){lines.push('خطا در خواندن SW/Cache: '+e)}).then(function(){
+    lines.push('');
+    var res=performance.getEntriesByType('resource').map(function(r){return {n:r.name.replace(location.origin,''),d:Math.round(r.duration),size:r.transferSize}}).sort(function(a,b){return b.d-a.d}).slice(0,12);
+    lines.push('۱۲ درخواست کندتر این بارگذاری (میلی‌ثانیه):');
+    res.forEach(function(r){lines.push('  '+r.d+'ms  '+(r.size||0)+'B  '+r.n)});
+    var nav=performance.getEntriesByType('navigation')[0];
+    if(nav)lines.push('\nTTFB: '+Math.round(nav.responseStart)+'ms, DOMContentLoaded: '+Math.round(nav.domContentLoadedEventEnd)+'ms, Load: '+Math.round(nav.loadEventEnd)+'ms');
+    pn.textContent=lines.join('\n');
+  });
+}
+var pn=document.createElement('div');
+pn.style.cssText='position:fixed;inset:6px;z-index:2147483647;background:#111e;color:#0f0;font:11px/1.5 monospace;padding:10px;border-radius:8px;direction:ltr;overflow:auto;white-space:pre-wrap';
+var cb=document.createElement('button');cb.textContent='کپی همه';cb.style.cssText='position:fixed;right:14px;bottom:14px;z-index:2147483647;padding:8px 16px;border-radius:8px;font-size:14px';
+cb.onclick=function(){var ta=document.createElement('textarea');ta.value=pn.textContent;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb.textContent='کپی شد ✓'}catch(e){cb.textContent='دستی کپی کن'}document.body.removeChild(ta)};
+document.addEventListener('DOMContentLoaded',function(){document.body.append(pn,cb);render();setTimeout(render,4000);setTimeout(render,10000)});
+if(document.body){document.body.append(pn,cb);render();setTimeout(render,4000);setTimeout(render,10000)}
+}catch(e){}})();
+</script>
 
 </body>
 </html>
