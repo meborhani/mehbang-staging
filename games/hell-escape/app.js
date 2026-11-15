@@ -207,6 +207,7 @@
     if(onlineMode){
       $('.setup-lead').textContent='در حال اتصال به اتاق…';
       Array.prototype.forEach.call(document.querySelectorAll('.setup-block,[data-start],[data-resume],.setup-rules,.setup-coal-info'),function(el){el.hidden=true;});
+      msgParent({type:'hell:ready'});
       return;
     }
     if(validSave())$('[data-resume]').hidden=false;if(params.has('resume')&&validSave())resumeGame();}
