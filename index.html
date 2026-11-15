@@ -5419,7 +5419,7 @@ var AVSVG=[
 ];
 var AVURL=[];
 var AVNEW=["assets/img/avnew_1.webp", "assets/img/avnew_2.webp", "assets/img/avnew_3.webp", "assets/img/avnew_4.webp", "assets/img/avnew_5.webp", "assets/img/avnew_6.webp", "assets/img/avnew_7.webp", "assets/img/avnew_8.webp", "assets/img/avnew_9.webp", "assets/img/avnew_10.webp"];
-function avUrl(i){return AVNEW[i]||AVURL[i]||(AVURL[i]="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'+AVSVG[i]+'</svg>'));}
+function avUrl(i){if(AVNEW[i])return new URL(AVNEW[i],location.href).href;return AVURL[i]||(AVURL[i]="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'+AVSVG[i]+'</svg>'));}
 var AVIMG_RE=/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
 function avI(v){if(typeof v==='string'&&v.length<12000&&AVIMG_RE.test(v))return v;v=+v;return (v>=0&&v<10&&v%1===0)?v:-1;}
 function myAvN(){return avI(+lsGet('mb_av',-1));}
