@@ -210,6 +210,6 @@
       msgParent({type:'hell:ready'});
       return;
     }
-    if(validSave())$('[data-resume]').hidden=false;if(params.has('resume')&&validSave())resumeGame();}
+    if(validSave())$('[data-resume]').hidden=false;if(params.has('resume')&&validSave())resumeGame();else if(params.get('autostart')==='1'){var reqN=Math.max(2,Math.min(4,Number(params.get('players'))||4));var reqD=params.has('difficulty')?Math.max(0,Math.min(2,Number(params.get('difficulty')))):1;$$('[data-count]').forEach(function(b){b.classList.toggle('selected',+b.dataset.count===reqN);});$$('[data-difficulty]').forEach(function(b){b.classList.toggle('selected',+b.dataset.difficulty===reqD);});startGame(reqN,false);}}
   init();
 })();
